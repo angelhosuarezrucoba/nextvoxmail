@@ -6,6 +6,7 @@
 package com.netvox.mail.configuraciones;
 
 import com.netvox.mail.ServiciosImpl.ConfiguracionesServicioImpl;
+import com.netvox.mail.ServiciosImpl.CoreMailServicioImpl;
 import com.netvox.mail.ServiciosImpl.HiloEntradaServicio;
 import com.netvox.mail.entidades.Configuracion;
 import com.netvox.mail.entidades.Parametros;
@@ -34,14 +35,19 @@ public class InicioHilos {
     @Qualifier("configuracionservicio")
     ConfiguracionesServicioImpl configuracionservicio;
 
+    @Autowired
+    @Qualifier("coremailservicio")
+    CoreMailServicioImpl coremailservicio;
+
     ///esto ejecuta un hilo en cuanto inicia la web.
     @PostConstruct
     public void init() {
 
         configuracionservicio.cargarConfiguracionGlobal();
-
+        coremailservicio.imprimir(2);
+        coremailservicio.imprimir(2);
         //aqui se ejecutan los hilos de entrada y salida
-         taskExecutor.execute(hiloentradaservicio);
+        taskExecutor.execute(hiloentradaservicio);
     }
 
 }
