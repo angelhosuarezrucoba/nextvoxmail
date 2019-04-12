@@ -8,6 +8,7 @@ package com.netvox.mail.ServiciosImpl;
 import com.netvox.mail.entidades.Cola;
 import com.netvox.mail.entidades.Configuracion;
 import com.netvox.mail.entidades.Mail;
+import com.netvox.mail.entidades.MailAjustes;
 import com.netvox.mail.entidades.Parametros;
 import com.netvox.mail.servicios.ClienteMongoServicio;
 import java.sql.CallableStatement;
@@ -43,6 +44,7 @@ public class CoreMailServicioImpl {
     @Qualifier("executor")
     TaskExecutor taskExecutor;
 
+    private static volatile HashMap<String, MailAjustes> mailporcampana;
     private static volatile HashMap<Integer, Integer> capturasporcola; // el original decia captures ... no entiendo , significa mails? cantidad?
     private static volatile HashMap<Integer, Integer> asignadosporcola;
     private static volatile HashMap<Integer, Integer> respondidosporcola;
@@ -53,6 +55,7 @@ public class CoreMailServicioImpl {
         asignadosporcola = new HashMap<>();
         respondidosporcola = new HashMap<>();
         listamails = new LinkedList<>();
+        mailporcampana = new HashMap<>();
     }
 
     public void cargarConfiguracionGlobal() {
@@ -116,9 +119,17 @@ public class CoreMailServicioImpl {
 
     }
 
-     // esto genera el hilo que va a estar constantemente buscando nuevos correos.
+    // esto genera el hilo que va a estar constantemente buscando nuevos correos.
     public void ejecutarHiloEntrada() {
         taskExecutor.execute(hiloentradaservicio);
+    }
+
+    public static HashMap<String, MailAjustes> getMailporcampana() {
+        return mailporcampana;
+    }
+
+    public static void setMailporcampana(HashMap<String, MailAjustes> Mailporcampana) {
+        mailporcampana = Mailporcampana;
     }
 
     public HashMap<Integer, Integer> getCapturasporcola() {
