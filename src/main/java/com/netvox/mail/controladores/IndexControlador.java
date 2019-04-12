@@ -32,7 +32,6 @@ public class IndexControlador {
         ModelAndView modelo = new ModelAndView("index");
         //modelo.addObject("usuario", usuarioservicio.obtenerUsuario());
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
-        System.out.println(mongoops.findOne(new Query(), Configuracion.class).toString());
         return modelo;
     }
 

@@ -5,7 +5,7 @@
  */
 package com.netvox.mail.servicios;
 
-import com.netvox.mail.entidades.Asesor;
+import com.netvox.mail.entidades.Usuario;
 
 public interface AsesorServicio {
 
@@ -15,7 +15,7 @@ public interface AsesorServicio {
 //
 //    public abstract boolean existeCliente(Mensaje mensaje);
 //
-    public boolean enAtencion(Asesor asesor);
+    public boolean enAtencion(Usuario asesor);
 
     public boolean existenAsesoresLibres();
 }
