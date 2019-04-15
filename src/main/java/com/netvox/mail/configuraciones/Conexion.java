@@ -59,7 +59,9 @@ public class Conexion {
         basicDataSource.setDriverClassName("com.mysql.jdbc.Driver");
         basicDataSource.setUsername(usuariomysql);
         basicDataSource.setPassword(clavemysql);
-        basicDataSource.setUrl("jdbc:mysql://" + ipmysql+"/" + bdmysql);
+        basicDataSource.setUrl("jdbc:mysql://" + ipmysql + "/" + bdmysql);
+        basicDataSource.setMaxActive(200);
+        basicDataSource.setMaxOpenPreparedStatements(200);
         return basicDataSource;
     }
 

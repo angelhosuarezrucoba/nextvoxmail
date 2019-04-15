@@ -5,16 +5,16 @@
  */
 package com.netvox.mail.ServiciosImpl;
 
+import com.netvox.mail.entidades.Cola;
+import com.netvox.mail.entidades.Mail;
 import com.netvox.mail.entidades.MailAjustes;
-import com.netvox.mail.entidades.Prueba;
+import com.netvox.mail.entidades.Parametros;
 import com.netvox.mail.servicios.ClienteMongoServicio;
 import java.io.File;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Properties;
 import javax.mail.Address;
 import javax.mail.Authenticator;
@@ -24,12 +24,13 @@ import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.PasswordAuthentication;
 import javax.mail.Session;
+import javax.mail.Store;
 import javax.mail.search.FlagTerm;
+import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.mongodb.core.MongoOperations;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
+import utilidades.Utilidades;
 
 @Service("hiloentradaservicio")
 public class HiloEntradaServicio implements Runnable {
@@ -46,7 +47,13 @@ public class HiloEntradaServicio implements Runnable {
     @Qualifier("coremailservicio")
     CoreMailServicioImpl coremailservicio;
 
+    @Autowired
+    @Qualifier("mailautomatico")
+    MailAutomatico mailautomatico;
+
     SimpleDateFormat formato = new SimpleDateFormat("yyyy-MM-dd");
+    Store store = null;
+    Folder folder = null;
 
     @Override
     public void run() {
@@ -55,40 +62,32 @@ public class HiloEntradaServicio implements Runnable {
             boolean new_message = true;
 
             while (true) {
-
                 try {
-                    //  main.email_by_campana = new HashMap<String, MailAjustes>();
                     coremailservicio.setMailporcampana(new HashMap<>());
                     //abriendo cuentas de correo de entrada
-                    managerbd.executeGetMailsSetup(main.email_by_campana); // lee las configuraciones por campaña
-                    System.out.println("[IN] CANTIDAD COLAS CON MAIL ACTIVO " + main.email_by_campana.size());
+                    coremailservicio.ObtenerConfiguracionMail(); // lee las configuraciones por campaña
+                    System.out.println("[IN] CANTIDAD COLAS CON MAIL ACTIVO " + coremailservicio.getMailporcampana().size());
                     System.out.println("::::LEYENDO CUENTAS DE CORREO:::::::");
-                    for (MailSetupBean mail_setup : main.email_by_campana.values()) {
-                        System.out.println("shost => " + mail_setup.getHost());
-                        System.out.println("puerto => " + mail_setup.getPuerto());
-                        Parametros.USUARIO_MAIL_INBOUND = mail_setup.getUser();
-                        Parametros.PWD_MAIL_INBOUND = mail_setup.getPass();
-                        Parametros.HOST_MAIL_INBOUND = mail_setup.getHost();
-                        Parametros.STORE_INBOUND = mail_setup.getStore();
-
+                    for (MailAjustes mailajustes : coremailservicio.getMailporcampana().values()) {
+                        System.out.println("shost => " + mailajustes.getHost());
+                        System.out.println("puerto => " + mailajustes.getPuerto());
+                        Parametros.USUARIO_MAIL_INBOUND = mailajustes.getUser();
+                        Parametros.PWD_MAIL_INBOUND = mailajustes.getPass();
+                        Parametros.HOST_MAIL_INBOUND = mailajustes.getHost();
+                        Parametros.STORE_INBOUND = mailajustes.getStore();
                         String usuario = Parametros.USUARIO_MAIL_INBOUND;
                         String clave = Parametros.PWD_MAIL_INBOUND;
-
                         String popHost = Parametros.HOST_MAIL_INBOUND;
-                        Parametros.MAXIMO_PESO_ADJUNTO_INBOUND = mail_setup.getMaximo_adjunto();
+                        Parametros.MAXIMO_PESO_ADJUNTO_INBOUND = mailajustes.getMaximo_adjunto();
                         Properties props = System.getProperties();
-                        props.put("mail.smtp.port", mail_setup.getPuerto());
-                        props.put("mail.smtp.host", mail_setup.getHost());
+                        props.put("mail.smtp.port", mailajustes.getPuerto());
+                        props.put("mail.smtp.host", mailajustes.getHost());
                         props.setProperty("mail.smtp.auth", "true");
                         props.setProperty("mail.smtp.starttls.enable", "true");
                         props.setProperty("mail.store.protocol", "imaps");
-                        // props.setProperty("mail.store.protocol", "imaps");
                         props.setProperty("mail.imap.starttls.enable", "true");
-                        // props.setProperty("ssl.SocketFactory.provider", "my.package.name.ExchangeSSLSocketFactory");
-                        // props.setProperty("mail.imap.socketFactory.class", "my.package.name.ExchangeSSLSocketFactory");
-
-                        System.out.println("[IN] " + popHost + "," + usuario + "," + clave + "," + Parametros.STORE_INBOUND);
-                        LinkedList<MailBean> capturers = main.capturers;
+                           System.out.println("[IN] " + popHost + "," + usuario + "," + clave + "," + Parametros.STORE_INBOUND);
+                        LinkedList<Mail> listamails = coremailservicio.getListamails();
                         try {
 
                             final PasswordAuthentication auth = new PasswordAuthentication(usuario, clave);
@@ -99,37 +98,35 @@ public class HiloEntradaServicio implements Runnable {
                                 }
                             });
 
-                            //sesion.setDebug(true);
                             System.out.println("STORE INBOUND => " + Parametros.STORE_INBOUND);
-                            System.out.println("mail_setup.getHost() => " + mail_setup.getHost());
-                            System.out.println("mail_setup.getUser() => " + mail_setup.getUser());
-                            System.out.println("mail_setup.getPass() => " + mail_setup.getPass());
+                            System.out.println("mail_setup.getHost() => " + mailajustes.getHost());
+                            System.out.println("mail_setup.getUser() => " + mailajustes.getUser());
+                            System.out.println("mail_setup.getPass() => " + mailajustes.getPass());
 
                             store = sesion.getStore(Parametros.STORE_INBOUND);
 
-                            store.connect(mail_setup.getHost(), mail_setup.getUser(), mail_setup.getPass());
+                            store.connect(mailajustes.getHost(), mailajustes.getUser(), mailajustes.getPass());
                             folder = store.getFolder("INBOX");
                             folder.open(Folder.READ_WRITE);
 
                             int id = 0;
                             FlagTerm ft = new FlagTerm(new Flags(Flags.Flag.SEEN), false);
                             Message msg[] = folder.search(ft);
-                            // for (Message mensaje : folder.getMessages()) {
                             int count = 0;
                             System.out.println("............................ MENSAJES : " + msg.length);
                             read_message:
                             for (Message mensaje : msg) {
 
-                                if (mensaje.getSubject() != null && mensaje.getSubject().equalsIgnoreCase(mail_setup.getUser())) {
+                                if (mensaje.getSubject() != null && mensaje.getSubject().equalsIgnoreCase(mailajustes.getUser())) {
                                     System.out.println("***** EL CLIENTE Y EL SERVIDOR SON EL MISMO.... IGNORANDO");
                                     continue;
                                 }
 
                                 new_message = true;
-                                for (ColaBean queue : mail_setup.getColas()) {
-                                    id = managerbd.executeGetNewId(true, mail_setup.getId(), queue.getId_cola());
-                                    MailBean mail = new MailBean(id);
-                                    mail.setIdconfiguracion(mail_setup.getId());
+                                for (Cola queue : mailajustes.getColas()) {
+                                    id = coremailservicio.ObtenerNuevoId(true, mailajustes.getId(), queue.getId_cola());
+                                    Mail mail = new Mail(id);
+                                    mail.setIdconfiguracion(mailajustes.getId());//setIdconfiguracion
                                     mail.setCola(queue);
                                     mail.setTipo("IN");
                                     mail.setCampana(queue.getId_campana());
@@ -156,17 +153,16 @@ public class HiloEntradaServicio implements Runnable {
                                         continue;
                                     }
 
-                                    if (mail.getPeso_adjunto() > mail_setup.getMaximo_adjunto()) {
+                                    if (mail.getPeso_adjunto() > mailajustes.getMaximo_adjunto()) {
                                         FileUtils.deleteDirectory(new File(mail.getRuta()));
-                                        MailAutomatico automatico = new MailAutomatico(mail);
-                                        automatico.enviarEmail();
-                                        managerbd.eliminarEmailOnline(mail.getId());
+                                        //MailAutomatico automatico = new MailAutomatico(mail);
+                                        mailautomatico.enviarEmail(mail);
+                                        coremailservicio.eliminarEmailOnline(mail.getId());
                                         continue;
                                     }
 
                                     if (remitente == null) {
                                         System.out.println("REMITENTE NO CAPTURADO");
-                                        // mensaje.setFlag(Flag.DELETED, true);
                                         mensaje.setFlag(Flags.Flag.SEEN, true);
                                         continue;
                                     }
@@ -175,10 +171,8 @@ public class HiloEntradaServicio implements Runnable {
                                     mail.setRemitente(remitente.trim());
                                     Calendar hoy = Calendar.getInstance();
                                     mail.setFecha_index(formato.format(hoy.getTime()));
-                                    capturers.add(mail);
-                                    managerbd.executeGuardarMail(mail, main.add_capturers(queue));
-                                    // mensaje.setFlag(Flag.DELETED, true);
-
+                                    listamails.add(mail);
+                                    coremailservicio.guardarMail(mail, coremailservicio.anadirMails(queue));
                                     mensaje.setFlag(Flags.Flag.SEEN, true);
 
                                 }
@@ -212,10 +206,10 @@ public class HiloEntradaServicio implements Runnable {
                         }
 
                         if (new_message) {
-                            Listar_Capturers(capturers);
+                            Listar_Capturers(listamails);
                             new_message = false;
-                            capturers.clear();
-                            capturers = null;
+                            listamails.clear();
+                            listamails = null;
                         } else {
                             System.out.print(".");
                         }
@@ -237,10 +231,10 @@ public class HiloEntradaServicio implements Runnable {
 
     }
 
-    public void Listar_Capturers(LinkedList<MailBean> mails) {
+    public void Listar_Capturers(LinkedList<Mail> mails) {
         System.out.println("*******************");
 
-        for (MailBean mail : mails) {
+        for (Mail mail : mails) {
             System.out.println(mail.getId() + " _ " + mail.getRemitente() + " / " + mail.getSubject() + " / " + mail.getFecha_index() + " /queue" + mail.getCola().getId_cola());
         }
         System.out.println("*******************");

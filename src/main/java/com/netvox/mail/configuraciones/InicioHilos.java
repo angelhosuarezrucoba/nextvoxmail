@@ -6,7 +6,6 @@
 package com.netvox.mail.configuraciones;
 
 import com.netvox.mail.ServiciosImpl.CoreMailServicioImpl;
-import com.netvox.mail.ServiciosImpl.HiloEntradaServicio;
 import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -26,8 +25,8 @@ public class InicioHilos {
         coremailservicio.cargarConfiguracionGlobal(); //carga las rutas donde se guarda info y etc.
         coremailservicio.cargarCantidadesPorCola(); // al iniciar setea los valores de los hashmap en el coremailservicio
         coremailservicio.cargarListaMailsPorEstado();
-        coremailservicio.ejecutarHiloEntrada();
-       
+        coremailservicio.ejecutarHiloEntrada();       
+        coremailservicio.ejecutarHiloAsignacion();
     }
 
 }
