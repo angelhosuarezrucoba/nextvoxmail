@@ -24,7 +24,7 @@ public class WebsocketConfiguracion extends AbstractWebSocketMessageBrokerConfig
     public void configureMessageBroker(MessageBrokerRegistry configuracion) {
         configuracion.enableSimpleBroker("/controlmensajes"); // esto es el lugar donde se controla la cola de mensajes
         configuracion.setApplicationDestinationPrefixes("/mensajes");//prefijo al que debe enviarse desde el cliente, anexado con el controlador.
-       configuracion.setUserDestinationPrefix("/asesor");
+        configuracion.setUserDestinationPrefix("/asesor");
         /* este prefijo se agrega para generar un control sobre las etiquetas @messagemapping
             es decir /servidor no necesariamente sera el unico metodo que reciba mensajes, entonces
         todo se agrupa en /app/"ruta del controlador"

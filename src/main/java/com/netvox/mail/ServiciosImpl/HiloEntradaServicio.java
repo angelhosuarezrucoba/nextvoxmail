@@ -63,9 +63,9 @@ public class HiloEntradaServicio implements Runnable {
 
             while (true) {
                 try {
-                    coremailservicio.setMailporcampana(new HashMap<>());
+                    coremailservicio.setMailporcampana(new HashMap<>());//limpia los mailporcampana
                     //abriendo cuentas de correo de entrada
-                    coremailservicio.ObtenerConfiguracionMail(); // lee las configuraciones por campaña
+                    coremailservicio.ObtenerConfiguracionMail(); // lee las configuraciones por campaña y setea emailporcampana
                     System.out.println("[IN] CANTIDAD COLAS CON MAIL ACTIVO " + coremailservicio.getMailporcampana().size());
                     System.out.println("::::LEYENDO CUENTAS DE CORREO:::::::");
                     for (MailAjustes mailajustes : coremailservicio.getMailporcampana().values()) {
@@ -89,7 +89,6 @@ public class HiloEntradaServicio implements Runnable {
                            System.out.println("[IN] " + popHost + "," + usuario + "," + clave + "," + Parametros.STORE_INBOUND);
                         LinkedList<Mail> listamails = coremailservicio.getListamails();
                         try {
-
                             final PasswordAuthentication auth = new PasswordAuthentication(usuario, clave);
                             Session sesion = Session.getInstance(props, new Authenticator() {
                                 @Override
@@ -111,9 +110,10 @@ public class HiloEntradaServicio implements Runnable {
 
                             int id = 0;
                             FlagTerm ft = new FlagTerm(new Flags(Flags.Flag.SEEN), false);
-                            Message msg[] = folder.search(ft);
+                            Message[] msg = folder.search(ft);
                             int count = 0;
                             System.out.println("............................ MENSAJES : " + msg.length);
+                            
                             read_message:
                             for (Message mensaje : msg) {
 
@@ -181,6 +181,9 @@ public class HiloEntradaServicio implements Runnable {
                                     break read_message;
                                 }
                             }
+                            
+                            
+                            
 
                         } catch (Exception ex) {
                             Utilidades.printException(ex);
