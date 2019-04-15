@@ -78,7 +78,7 @@ public class CoreMailServicioImpl {
     public void cargarCantidadesPorCola() { //esto consulta la tabla email_configuracion
 
         Connection conexion = null;
-        ResultSet resultado = null;
+        ResultSet resultado ;
 
         try {
             conexion = clientemysqlservicio.obtenerConexion();
@@ -89,11 +89,15 @@ public class CoreMailServicioImpl {
                 asignadosporcola.put(resultado.getInt(1), 0);
                 respondidosporcola.put(resultado.getInt(1), 0);
             }
+            resultado.close();
+            procedimientoalmacenado.close();
+            conexion.close();
         } catch (SQLException ex) {
             ex.printStackTrace();
-        } finally {
-            clientemysqlservicio.cerrarConexion(conexion);
         }
+//        finally {            
+//            clientemysqlservicio.cerrarConexion(conexion);
+//        }
     }
 
     //este procedimiento consulta la tabla email , se han conservado todos los campos identico como los tiene en la bd
@@ -119,12 +123,16 @@ public class CoreMailServicioImpl {
                 mail.setTipo(resultado.getString(7));
                 lista.add(mail);
             }
+            resultado.close();
+            procedimientoalmacenado.close();
+            conexion.close();
         } catch (SQLException ex) {
             ex.printStackTrace();
-        } finally {
-            clientemysqlservicio.cerrarConexion(conexion);
-            listamails = lista;
-        }
+        } 
+//        finally {
+//            clientemysqlservicio.cerrarConexion(conexion);
+//            listamails = lista;
+//        }
 
     }
 
@@ -170,11 +178,15 @@ public class CoreMailServicioImpl {
                 }
                 getMailporcampana().put(mail.getUser(), mail);
             }
+            statement.close();
+            resultado.close();
+            conexion.close();
         } catch (SQLException ex) {
             ex.printStackTrace();
-        } finally {
-            clientemysqlservicio.cerrarConexion(conexion);
         }
+//        finally {
+//            clientemysqlservicio.cerrarConexion(conexion);
+//        }
     }
 
     public int ObtenerNuevoId(boolean inbound, int idconfiguracion, int idCola) {
@@ -190,13 +202,15 @@ public class CoreMailServicioImpl {
             procedimientoalmacenado.setInt(4, idCola);
             procedimientoalmacenado.execute();
             nuevoid = procedimientoalmacenado.getInt(2);
+            procedimientoalmacenado.close();
+            conexion.close();
         } catch (SQLException ex) {
             //Utilidades.printException(ex);
             ex.printStackTrace();
-        } finally {
-            //logBD.schreiben(sentencia);
-            clientemysqlservicio.cerrarConexion(conexion);
-        }
+        } 
+//        finally {
+//            clientemysqlservicio.cerrarConexion(conexion);
+//        }
         return nuevoid;
     }
 
@@ -245,11 +259,15 @@ public class CoreMailServicioImpl {
                 mailconfiguracion.setMaximo_pendiente(resultado.getInt(12));
                 mailconfiguracion.setMensaje_mail_pesado(resultado.getString(13));
             }
+            preparedstatement.close();
+            resultado.close();
+            conexion.close();
         } catch (Exception ex) {
             Utilidades.printException(ex);
-        } finally {
-            clientemysqlservicio.cerrarConexion(conexion);
         }
+//        finally {
+//            clientemysqlservicio.cerrarConexion(conexion);
+//        }
 
         return mailconfiguracion;
     }
@@ -264,12 +282,15 @@ public class CoreMailServicioImpl {
             preparedstatement.setInt(1, idemail);
             preparedstatement.executeUpdate();
             elimino = true;
+            preparedstatement.close();
+            conexion.close();
         } catch (Exception ex) {
             Utilidades.printException(ex);
             elimino = false;
-        } finally {
-            clientemysqlservicio.cerrarConexion(conexion);
-        }
+        } 
+//        finally {
+//            clientemysqlservicio.cerrarConexion(conexion);
+//        }
         return elimino;
     }
 
@@ -295,16 +316,20 @@ public class CoreMailServicioImpl {
             procedimientoalmacenado.execute();
 
             String sql = "insert into servicios_cola_online set id = ?, campana = ?, servicio = 2, fecha_cola = now()";
-            PreparedStatement ps = conexion.prepareStatement(sql);
-            ps.setInt(1, mail.getId());
-            ps.setInt(2, mail.getCola().getId_campana());
-            ps.execute();
-
+            PreparedStatement preparedstatement = conexion.prepareStatement(sql);
+            preparedstatement.setInt(1, mail.getId());
+            preparedstatement.setInt(2, mail.getCola().getId_campana());
+            preparedstatement.execute();
+            preparedstatement.close();
+            
+            procedimientoalmacenado.close();            
+            conexion.close();
         } catch (SQLException ex) {
             Utilidades.printException(ex);
-        } finally {
-            clientemysqlservicio.cerrarConexion(conexion);
-        }
+        } 
+//        finally {
+//            clientemysqlservicio.cerrarConexion(conexion);
+//        }
     }
 
     public synchronized int anadirMails(Cola queue) {
@@ -349,12 +374,15 @@ public class CoreMailServicioImpl {
             if (resultado.next()) {
                 cantidad = resultado.getInt(1);
             }
-
+            statement.close();
+            resultado.close();
+            conexion.close();
         } catch (Exception ex) {
             ex.printStackTrace();
-        } finally {
-            clientemysqlservicio.cerrarConexion(conexion);
-        }
+        } 
+//        finally {
+//            clientemysqlservicio.cerrarConexion(conexion);
+//        }
 
         return cantidad;
     }
@@ -371,11 +399,15 @@ public class CoreMailServicioImpl {
             while (resultado.next()) {
                 listado.add(new Mail(resultado.getInt("id"), resultado.getInt("campana"), resultado.getString("fecha_ingreso_cola"), resultado.getString("asunto"), resultado.getInt("idconfiguracion"), resultado.getInt("cola")));
             }
+            statement.close();
+            resultado.close();
+            conexion.close();
         } catch (SQLException ex) {
             ex.printStackTrace();
-        } finally {
-            clientemysqlservicio.obtenerConexion();
-        }
+        } 
+//        finally {
+//            clientemysqlservicio.obtenerConexion();
+//        }
         return listado;
     }
 
@@ -419,12 +451,16 @@ public class CoreMailServicioImpl {
                     }
                 }
             }
-
+            
+            resultado.close();
+            statement.close();
+            conexion.close();
         } catch (SQLException ex) {
             ex.printStackTrace();
-        } finally {
-            clientemysqlservicio.cerrarConexion(conexion);
-        }
+        } 
+//        finally {
+//            clientemysqlservicio.cerrarConexion(conexion);
+//        }
         return listado;
     }
 
@@ -476,13 +512,16 @@ public class CoreMailServicioImpl {
                     procedimientoalmacenado.execute();
 
                 }
-
+                procedimientoalmacenado.close();               
+                statement.close();
+                conexion.close();
             } catch (SQLException ex) {
                 Utilidades.printException(ex);
                 ex.printStackTrace();
-            } finally {
-                clientemysqlservicio.cerrarConexion(conexion);
-            }
+            } 
+//            finally {
+//                clientemysqlservicio.cerrarConexion(conexion);
+//            }
         }
     }
 

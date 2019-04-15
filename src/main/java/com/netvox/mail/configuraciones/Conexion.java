@@ -32,7 +32,8 @@ public class Conexion {
     String ipmysql;
     String bdmysql;
     String puertomysql;
-
+    BasicDataSource basicDataSource;
+    
     @Autowired
     @Qualifier("lecturaservicio")
     LecturaServicioImpl lecturaservicio;
@@ -55,13 +56,13 @@ public class Conexion {
 
     @Bean(name = "datasource")
     public DataSource dataSource() {
-        BasicDataSource basicDataSource = new BasicDataSource();
+        basicDataSource = new BasicDataSource();
         basicDataSource.setDriverClassName("com.mysql.jdbc.Driver");
         basicDataSource.setUsername(usuariomysql);
         basicDataSource.setPassword(clavemysql);
         basicDataSource.setUrl("jdbc:mysql://" + ipmysql + "/" + bdmysql);
-        basicDataSource.setMaxActive(200);
-        basicDataSource.setMaxOpenPreparedStatements(200);
+        basicDataSource.setMaxActive(10);
+        //basicDataSource.setMaxOpenPreparedStatements(10);
         return basicDataSource;
     }
 
