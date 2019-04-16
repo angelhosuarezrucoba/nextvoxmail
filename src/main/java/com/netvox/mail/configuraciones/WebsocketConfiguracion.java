@@ -5,6 +5,7 @@
  */
 package com.netvox.mail.configuraciones;
 
+import com.netvox.mail.interceptores.Interceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.AbstractWebSocketMessageBrokerConfigurer;
@@ -33,9 +34,8 @@ public class WebsocketConfiguracion extends AbstractWebSocketMessageBrokerConfig
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registro) {
-        registro.addEndpoint("/websocket").setAllowedOrigins("*").withSockJS();
+        registro.addEndpoint("/websocket").addInterceptors(new Interceptor()).setAllowedOrigins("*").withSockJS();
         /*habilita la ruta donde llegan las peticiones de sockjs si es que websocket protocol no esta habilitado*/
-
     }
 
 }

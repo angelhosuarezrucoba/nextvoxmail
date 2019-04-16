@@ -79,10 +79,13 @@ public class HiloAsignacionServicio implements Runnable {
                     //traemos el listado de todos los correos asignados para una campaña
                     LinkedList<Mail> listado = correocolas.get(cola);
                     System.out.println("LISTADO COLA ID: " + cola + ", SIZE MAILS: " + listado.size());
-                    //traemos todos los usuarios que se encuentra disponibles de una campaña amarrado a una cola
-                    HashMap<Integer, Usuario> listausuarioscola = coremailservicio.listarUsuariosCampanaCola();
+
                     //recorremos todos los listado de correos
                     if (!listado.isEmpty()) {
+                        //traemos todos los usuarios que se encuentra disponibles de una campaña amarrado a una cola  
+                        HashMap<Integer, Usuario> listausuarioscola = coremailservicio.listarUsuariosCampanaCola();//se ha cmabiado el lugar de esta expression porque no tiene sentido 
+                        //listar a todos los usuarios de esa cola si no existe un listado de correos en esa cola.
+                        
                         //recorremos todo el listad de mails
                         for (Mail mail : listado) {
                             //recorremos todas las colas de una campaña
@@ -96,7 +99,7 @@ public class HiloAsignacionServicio implements Runnable {
                                 if (listausuarios != null) {
                                     if (mail.getSubject_in() == null) {
                                         mail.setSubject_in("");
-                                    }
+                                    }//
                                     //metodo que sirve para retornar al usuario que tiene menos emails recibidos
                                     //System.out.println("COLA MAIL ID " + mail.getCola().getId_cola());
                                     Usuario usuario_asignado = getUsuario(listausuarios, mailconfiguracion.getMaximo_pendiente(), mail.getCola().getId_cola());
@@ -114,9 +117,8 @@ public class HiloAsignacionServicio implements Runnable {
                                 }
                             }
                             //System.out.println("REMOVIENDO MAILS : " + main.capturers.size());
-                            coremailservicio.getListamails().remove(mail);
+                            //coremailservicio.getListamails().remove(mail);
                             // System.out.println("::: remove mail in queue  " + mail.getId());
-
                         }
                     }
                     listado.clear();

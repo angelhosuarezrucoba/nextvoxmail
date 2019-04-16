@@ -171,7 +171,7 @@ public class HiloEntradaServicio implements Runnable {
                                     Calendar hoy = Calendar.getInstance();
                                     mail.setFecha_index(formato.format(hoy.getTime()));
                                     listamails.add(mail);
-                                    coremailservicio.guardarMail(mail, coremailservicio.anadirMails(queue));
+                                    coremailservicio.guardarMail(mail/*, coremailservicio.anadirMails(queue)*/);
                                     mensaje.setFlag(Flags.Flag.SEEN, true);
 
                                 }
