@@ -7,6 +7,7 @@ package com.netvox.mail.controladores;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
@@ -18,9 +19,10 @@ public class ChatControlador {
     private SimpMessagingTemplate template;
 
     @MessageMapping("/prueba") // este es el destino al que se envian los mensajes y lo redirige a controlmensajes
-    //@SendTo("/controlmensajes/mensajes") // este destino es el la cola por asi decirlo donde los usuarios estan suscrito por el websocket.    
-    public void enviar(String cadena) {
-        this.template.convertAndSendToUser("angelho", "/controlmensajes/respuesta", cadena);       
+    @SendTo("/controlmensajes/mensajes") // este destino es el la cola por asi decirlo donde los usuarios estan suscrito por el websocket.    
+    public String enviar(String cadena) {
+        //this.template.convertAndSendToUser("angelho", "/controlmensajes/respuesta", cadena);       
+        return cadena;
     }
 
 //    @MessageMapping("/chat") // este es el destino al que se envian los mensajes y lo redirige a controlmensajes

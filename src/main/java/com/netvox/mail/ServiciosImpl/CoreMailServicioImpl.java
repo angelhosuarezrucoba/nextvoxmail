@@ -123,6 +123,7 @@ public class CoreMailServicioImpl {
                 mail.setTipo(resultado.getString(7));
                 lista.add(mail);
             }
+            setListamails(lista);
             resultado.close();
             procedimientoalmacenado.close();
             conexion.close();
@@ -391,9 +392,10 @@ public class CoreMailServicioImpl {
         LinkedList<Mail> listado = new LinkedList<>();
         Connection conexion;
         ResultSet resultado;
+        Statement statement ;
         try {
             conexion = clientemysqlservicio.obtenerConexion();
-            Statement statement = conexion.createStatement();
+            statement= conexion.createStatement();
             resultado = statement.executeQuery("select id, campana , fecha_ingreso_cola ,asunto,idconfiguracion, cola  from log_mail_online where estado = 0 and campana <> 0 ");
             System.out.println("email => " + "select id, campana , fecha_ingreso_cola ,asunto,idconfiguracion  from log_mail_online where estado = 0 and campana <> 0  ");
             while (resultado.next()) {
@@ -450,7 +452,7 @@ public class CoreMailServicioImpl {
                         users = list_users.get(i);
                     }
                 }
-            }
+            } // no se para que sirve ,no le encuentro sentido
             
             resultado.close();
             statement.close();

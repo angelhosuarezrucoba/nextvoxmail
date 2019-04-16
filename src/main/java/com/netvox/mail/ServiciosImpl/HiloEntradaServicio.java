@@ -134,8 +134,8 @@ public class HiloEntradaServicio implements Runnable {
                                         mail.setSubject(mensaje.getSubject().trim());
                                     }
                                     String remitente = null;
-                                    for (Address froms : mensaje.getFrom()) {
-                                        // System.out.println("from : " + froms);
+                                    for (Address froms : mensaje.getFrom()) { // 
+                                        
                                         if (froms.toString().contains("<")) {
                                             remitente = froms.toString().split("<")[1];
 
@@ -146,7 +146,7 @@ public class HiloEntradaServicio implements Runnable {
                                         remitente = remitente.trim();
                                     }
                                     mail.setRemitente(remitente);
-                                    // mensaje.setFlag(Flag.DELETED, true);
+                       
                                     if (!Utilidades.createFileHTML(mensaje, mail, true)) {
                                         System.out.println("FALLO EN EL CREATE HTML");
                                         mensaje.setFlag(Flags.Flag.SEEN, true);
@@ -155,7 +155,6 @@ public class HiloEntradaServicio implements Runnable {
 
                                     if (mail.getPeso_adjunto() > mailajustes.getMaximo_adjunto()) {
                                         FileUtils.deleteDirectory(new File(mail.getRuta()));
-                                        //MailAutomatico automatico = new MailAutomatico(mail);
                                         mailautomatico.enviarEmail(mail);
                                         coremailservicio.eliminarEmailOnline(mail.getId());
                                         continue;
@@ -215,7 +214,7 @@ public class HiloEntradaServicio implements Runnable {
                             listamails = null;
                         } else {
                             System.out.print(".");
-                        }
+                        } /// no tiene sentido , porque new_message nunca cambia a falso.
 
                     }
                     System.out.println("::::FIN LECTURA DE CUENTAS:::::::");

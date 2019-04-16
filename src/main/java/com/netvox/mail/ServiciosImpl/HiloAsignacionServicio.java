@@ -57,9 +57,9 @@ public class HiloAsignacionServicio implements Runnable {
                         listado.add(mail);
                         //agrego la lista de mails a una campaña
                         correocolas.put(mail.getId_cola(), listado);
-                    } else {
+                    } else { // aqui entra primero.
                         //el nuevo listado
-                        LinkedList<Mail> listado = new LinkedList<Mail>();
+                        LinkedList<Mail> listado = new LinkedList<>();
                         listado.add(mail);
                         correocolas.put(mail.getId_cola(), listado);
                     }
