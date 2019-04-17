@@ -7,8 +7,8 @@ package com.netvox.mail.entidades;
 
 import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "configuracion")
-public class Configuracion {
+@Document(collection = "rutas")
+public class Rutas {
     private String url_in;
     private String ruta_in;
     private String ruta_out;
@@ -91,11 +91,7 @@ public class Configuracion {
         this.ruta_firmas = ruta_firmas;
     }
 
-//    @Override
-//    public String toString() {
-//        return "Configuracion{" + "url_in=" + url_in + ", ruta_in=" + ruta_in + ", ruta_out=" + ruta_out + ", ruta_adjunto=" + ruta_adjunto + ", ruta_tomcat=" + ruta_tomcat + ", ruta_firmas=" + ruta_firmas + ", ip_ccvox=" + ip_ccvox + ", ip_server_mail=" + ip_server_mail + ", puerto_server_mail=" + puerto_server_mail + '}';
-//    }
-    
+
        
 }
 

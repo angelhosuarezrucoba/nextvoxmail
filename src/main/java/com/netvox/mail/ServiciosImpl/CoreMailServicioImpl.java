@@ -6,10 +6,9 @@
 package com.netvox.mail.ServiciosImpl;
 
 import com.netvox.mail.entidades.Cola;
-import com.netvox.mail.entidades.Configuracion;
+import com.netvox.mail.entidades.Rutas;
 import com.netvox.mail.entidades.Mail;
 import com.netvox.mail.entidades.MailAjustes;
-import com.netvox.mail.entidades.Parametros;
 import com.netvox.mail.entidades.Usuario;
 import com.netvox.mail.servicios.ClienteMongoServicio;
 import java.sql.CallableStatement;
@@ -26,7 +25,7 @@ import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
-import utilidades.Utilidades;
+import com.netvox.mail.utilidades.Utilidades;
 
 @Service("coremailservicio")
 public class CoreMailServicioImpl {
@@ -51,94 +50,35 @@ public class CoreMailServicioImpl {
     @Autowired
     @Qualifier("executor")
     TaskExecutor taskExecutor;
-//
-    private static volatile HashMap<String, MailAjustes> mailporcampana;
-//    private static volatile HashMap<Integer, Integer> capturasporcola; // el original decia captures ... no entiendo , significa mails? cantidad?
-//    private static volatile HashMap<Integer, Integer> asignadosporcola;
-//    private static volatile HashMap<Integer, Integer> respondidosporcola;
-    private static volatile LinkedList<Mail> listamails;
+
+    @Autowired
+    @Qualifier("utilidades")
+    Utilidades utilidades;
+
+    private static volatile HashMap<String, MailAjustes> mapadeajustesmail;
+
     private final int SERVICIO_MAIL = 2;
+    private static String URL_IN;
+    private static String CARPETA_IN;
+    private static String CARPETA_OUT;
 
     public CoreMailServicioImpl() {
 
-        listamails = new LinkedList<>();
-        mailporcampana = new HashMap<>();
     }
 
-    public void cargarConfiguracionGlobal() {
+    public void cargarRutas() {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
-        Configuracion configuracion = mongoops.find(new Query(), Configuracion.class).get(0); //este toma el unico resultado que hay en la base
-        Parametros.URL_IN = configuracion.getUrl_in();
-        Parametros.CARPETA_IN = configuracion.getRuta_in();
-        Parametros.CARPETA_OUT = configuracion.getRuta_out();
+        Rutas rutas = mongoops.find(new Query(), Rutas.class).get(0); //este toma el unico resultado que hay en la base
+        URL_IN = rutas.getUrl_in();
+        CARPETA_IN = rutas.getRuta_in();
+        CARPETA_OUT = rutas.getRuta_out();
     }
 
-//    public void cargarCantidadesPorCola() { //esto consulta la tabla email_configuracion
-//
-//        Connection conexion = null;
-//        ResultSet resultado ;
-//
-//        try {
-//            conexion = clientemysqlservicio.obtenerConexion();
-//            CallableStatement procedimientoalmacenado = conexion.prepareCall("call sp_email_load_quantitys()");//esto coloca las cantidades por cola en 0 0 0 usando el id 17
-//            resultado = procedimientoalmacenado.executeQuery();
-//            while (resultado.next()) {
-//                capturasporcola.put(resultado.getInt(1), 0);
-//                asignadosporcola.put(resultado.getInt(1), 0);
-//                respondidosporcola.put(resultado.getInt(1), 0);
-//            }
-//            resultado.close();
-//            procedimientoalmacenado.close();
-//            conexion.close();
-//        } catch (SQLException ex) {
-//            ex.printStackTrace();
-//        }
-////        finally {            
-////            clientemysqlservicio.cerrarConexion(conexion);
-////        }
-//    }
-
-    //este procedimiento consulta la tabla email , se han conservado todos los campos identico como los tiene en la bd
-    // para evitar confusion por los nombres. 
-//    public void cargarListaMailsPorEstado() {
-//        Connection conexion = null;
-//        ResultSet resultado = null;
-//        LinkedList<Mail> lista = new LinkedList<>();
-//
-//        try {
-//            conexion = clientemysqlservicio.obtenerConexion();
-//            CallableStatement procedimientoalmacenado = conexion.prepareCall("call sp_email_get_by_state(?)");
-//            procedimientoalmacenado.setInt(1, 0);//esto lo enviaban por defecto con 0 , se busco y no existe otra parte donde se use con otro valor
-//            resultado = procedimientoalmacenado.executeQuery();
-//            while (resultado.next()) {
-//                Mail mail = new Mail();
-//                mail.setId(resultado.getInt(1));
-//                mail.setRemitente(resultado.getString(2));
-//                mail.setSubject(resultado.getString(3));
-//                mail.setCola(new Cola(resultado.getInt(8), resultado.getInt(4)));
-//                mail.setFecha_index(resultado.getString(5));
-//                mail.setUsuario(resultado.getInt(6));//se reemplazo agente por usuario , dado el nombre en la bd
-//                mail.setTipo(resultado.getString(7));
-//                lista.add(mail);
-//            }
-//            setListamails(lista);
-//            resultado.close();
-//            procedimientoalmacenado.close();
-//            conexion.close();
-//        } catch (SQLException ex) {
-//            ex.printStackTrace();
-//        } 
-////        finally {
-////            clientemysqlservicio.cerrarConexion(conexion);
-////            listamails = lista;
-////        }
-//
-//    }
-//id 36
-    public void ObtenerConfiguracionMail(/*HashMap<String, MailConfiguracion> email_by_colas*/) {
+//id 36 cambiar a mongo despues
+    public void llenarListaAjustesMail() {
+        setMapadeajustesmail(new HashMap<>());
         Connection conexion = clientemysqlservicio.obtenerConexion();
         ResultSet resultado = null;
-        LinkedList<Mail> lista = new LinkedList<>();
         try {
 
             Statement statement = conexion.createStatement();
@@ -155,27 +95,29 @@ public class CoreMailServicioImpl {
                     + "cola.campana "
                     + "from email_configuracion "
                     + "inner join cola on cola.idCola = email_configuracion.queue "
-                    + "where cola.service_mail = 1 and cola.campana <> 0";
-            //System.out.println(sql);
+                    + "where cola.service_mail = 1 and cola.campana <> 0 and email_configuracion.id=35";
+
             resultado = statement.executeQuery(sql);
             while (resultado.next()) {
                 MailAjustes mail;
-                if (getMailporcampana().containsKey(resultado.getString(2))) {
-                    mail = getMailporcampana().get(resultado.getString(2));
+                if (getMapadeajustesmail().containsKey(resultado.getString(2))) {
+                    mail = getMapadeajustesmail().get(resultado.getString(2));
                     mail.getColas().add(new Cola(
                             resultado.getInt(1),
-                            resultado.getString("nombre_cola"),
+                            resultado.getString(8),
                             "",
                             resultado.getInt(10)));
                 } else {
-                    mail = new MailAjustes(resultado.getString(2), resultado.getString(3), resultado.getString(4), resultado.getString(5), resultado.getInt(6), resultado.getInt(7), resultado.getInt(9));
+                    mail = new MailAjustes(resultado.getString(2), resultado.getString(3),
+                            resultado.getString(4), resultado.getString(5), resultado.getInt(6),
+                            resultado.getInt(7), resultado.getInt(9));
                     mail.getColas().add(new Cola(
                             resultado.getInt(1),
-                            resultado.getString("nombre_cola"),
+                            resultado.getString(8),
                             "",
                             resultado.getInt(10)));
                 }
-                getMailporcampana().put(mail.getUser(), mail);
+                getMapadeajustesmail().put(mail.getUser(), mail);
             }
             statement.close();
             resultado.close();
@@ -183,9 +125,6 @@ public class CoreMailServicioImpl {
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
-//        finally {
-//            clientemysqlservicio.cerrarConexion(conexion);
-//        }
     }
 
     public int ObtenerNuevoId(boolean inbound, int idconfiguracion, int idCola) {// convertir  mongo
@@ -206,7 +145,7 @@ public class CoreMailServicioImpl {
         } catch (SQLException ex) {
             //Utilidades.printException(ex);
             ex.printStackTrace();
-        } 
+        }
 //        finally {
 //            clientemysqlservicio.cerrarConexion(conexion);
 //        }
@@ -262,11 +201,8 @@ public class CoreMailServicioImpl {
             resultado.close();
             conexion.close();
         } catch (Exception ex) {
-            Utilidades.printException(ex);
+            utilidades.printException(ex);
         }
-//        finally {
-//            clientemysqlservicio.cerrarConexion(conexion);
-//        }
 
         return mailconfiguracion;
     }
@@ -284,12 +220,10 @@ public class CoreMailServicioImpl {
             preparedstatement.close();
             conexion.close();
         } catch (Exception ex) {
-            Utilidades.printException(ex);
+            utilidades.printException(ex);
             elimino = false;
-        } 
-//        finally {
-//            clientemysqlservicio.cerrarConexion(conexion);
-//        }
+        }
+
         return elimino;
     }
 
@@ -297,7 +231,6 @@ public class CoreMailServicioImpl {
         Connection conexion = null;
         try {
 
-            
             //convertir mongo
             conexion = clientemysqlservicio.obtenerConexion();
             CallableStatement procedimientoalmacenado = conexion.prepareCall("call sp_email_IN_guardar02(?,?,?,?,?,?)");
@@ -321,48 +254,14 @@ public class CoreMailServicioImpl {
             preparedstatement.setInt(2, mail.getCola().getId_campana());
             preparedstatement.execute();
             preparedstatement.close();
-            
-            procedimientoalmacenado.close();            
+
+            procedimientoalmacenado.close();
             conexion.close();
         } catch (SQLException ex) {
-            Utilidades.printException(ex);
-        } 
-//        finally {
-//            clientemysqlservicio.cerrarConexion(conexion);
-//        }
+            utilidades.printException(ex);
+        }
     }
 
-//    public synchronized int anadirMails(Cola queue) {
-//        try {
-//            System.out.println("********* queue " + queue.toString());
-//            System.out.println("********* queue " + getCapturasporcola().get(queue.getId_cola()));
-//            if (getCapturasporcola().get(getCapturasporcola().get(queue.getId_cola())) == null) {
-//                System.out.println("********* queue NUEVA INSERTANDO EN MEMORIA IDCOLA: " + queue.getId_cola());
-//                getCapturasporcola().put(queue.getId_cola(), 0);
-//            }
-//            int cantidad_actual = getCapturasporcola().get(queue.getId_cola());
-//            getCapturasporcola().put(queue.getId_cola(), cantidad_actual + 1);
-//        } catch (Exception ex) {
-//            Utilidades.printException(ex);
-//        }
-//        return getCapturasporcola().get(queue.getId_cola());
-//    }
-//
-//    public synchronized int removerMails(Cola queue) {
-//        try {
-//            int cantidad_actual = getCapturasporcola().get(queue.getId_cola());
-//            if (cantidad_actual < 1) {
-//                return 0;
-//            }
-//            getCapturasporcola().put(queue.getId_cola(), cantidad_actual - 1);
-//
-//        } catch (Exception ex) {
-//            Utilidades.printException(ex);
-//        }
-//        return getCapturasporcola().get(queue.getId_cola());
-//    }
-
- 
     public int obtenerCantidadPendientesActual(int idUsuario, int idCampana) {
         int cantidad = 0;
         Connection conexion = null;
@@ -379,11 +278,7 @@ public class CoreMailServicioImpl {
             conexion.close();
         } catch (Exception ex) {
             ex.printStackTrace();
-        } 
-//        finally {
-//            clientemysqlservicio.cerrarConexion(conexion);
-//        }
-
+        }
         return cantidad;
     }
 
@@ -391,10 +286,10 @@ public class CoreMailServicioImpl {
         LinkedList<Mail> listado = new LinkedList<>();
         Connection conexion;
         ResultSet resultado;
-        Statement statement ;
+        Statement statement;
         try {
             conexion = clientemysqlservicio.obtenerConexion();
-            statement= conexion.createStatement();
+            statement = conexion.createStatement();
             resultado = statement.executeQuery("select id, campana , fecha_ingreso_cola ,asunto,idconfiguracion, cola  from log_mail_online where estado = 0");
             System.out.println("email => " + "select id, campana , fecha_ingreso_cola ,asunto,idconfiguracion  from log_mail_online where estado = 0 and campana <> 0  ");
             while (resultado.next()) {
@@ -405,10 +300,8 @@ public class CoreMailServicioImpl {
             conexion.close();
         } catch (SQLException ex) {
             ex.printStackTrace();
-        } 
-//        finally {
-//            clientemysqlservicio.obtenerConexion();
-//        }
+        }
+
         return listado;
     }
 
@@ -453,27 +346,25 @@ public class CoreMailServicioImpl {
 //                    }
 //                }
 //            } // no se para que sirve ,no le encuentro sentido
-            
             resultado.close();
             statement.close();
             conexion.close();
         } catch (SQLException ex) {
             ex.printStackTrace();
-        } 
-//        finally {
-//            clientemysqlservicio.cerrarConexion(conexion);
-//        }
+        }
         return listado;
     }
 
     public void asignarMailAgente(Usuario user) {
-        Connection conexion = null;
+        Connection conexion;
+        Statement statement;
+        CallableStatement procedimientoalmacenado = null;
         if (user.getMails().size() > 0) {
             try {
                 System.out.println("Asignando a " + user.getNombre() + " - " + user.getId());
                 conexion = clientemysqlservicio.obtenerConexion();
-                Statement statement = conexion.createStatement();
-                CallableStatement procedimientoalmacenado = null;
+                statement = conexion.createStatement();
+
                 //aumentamos el contador de correos en proceso o encolados , cantidadd de correso que recibio
                 String query = "update resumen_diario set estado_mail = 2, proceso_mails=(proceso_mails+1) ,"
                         + "acumulado_mails=(acumulado_mails+1) , "
@@ -514,20 +405,17 @@ public class CoreMailServicioImpl {
                     procedimientoalmacenado.execute();
 
                 }
-                procedimientoalmacenado.close();               
+                procedimientoalmacenado.close();
                 statement.close();
                 conexion.close();
             } catch (SQLException ex) {
-                Utilidades.printException(ex);
+                utilidades.printException(ex);
                 ex.printStackTrace();
-            } 
-//            finally {
-//                clientemysqlservicio.cerrarConexion(conexion);
-//            }
+            }
+
         }
     }
 
-    // esto genera el hilo que va a estar constantemente buscando nuevos correos.
     public void ejecutarHiloEntrada() {
         taskExecutor.execute(hiloentradaservicio);
     }
@@ -536,44 +424,35 @@ public class CoreMailServicioImpl {
         taskExecutor.execute(hiloasignacionservicio);
     }
 
-    public static HashMap<String, MailAjustes> getMailporcampana() {
-        return mailporcampana;
+    public static String getURL_IN() {
+        return URL_IN;
     }
 
-    public static void setMailporcampana(HashMap<String, MailAjustes> Mailporcampana) {
-        mailporcampana = Mailporcampana;
+    public static void setURL_IN(String aURL_IN) {
+        URL_IN = aURL_IN;
     }
 
-//    public HashMap<Integer, Integer> getCapturasporcola() {
-//        return capturasporcola;
-//    }
-////
-//    public void setCapturasporcola(HashMap<Integer, Integer> capturasporcola) {
-//        this.capturasporcola = capturasporcola;
-//    }
-//
-//    public HashMap<Integer, Integer> getAsignadosporcola() {
-//        return asignadosporcola;
-//    }
-//
-//    public void setAsignadosporcola(HashMap<Integer, Integer> asignadosporcola) {
-//        this.asignadosporcola = asignadosporcola;
-//    }
-//
-//    public HashMap<Integer, Integer> getRespondidosporcola() {
-//        return respondidosporcola;
-//    }
-//
-//    public void setRespondidosporcola(HashMap<Integer, Integer> respondidosporcola) {
-//        this.respondidosporcola = respondidosporcola;
-//    }
-
-    public LinkedList<Mail> getListamails() {
-        return listamails;
+    public static String getCARPETA_IN() {
+        return CARPETA_IN;
     }
 
-    public void setListamails(LinkedList<Mail> listamails) {
-        this.listamails = listamails;
+    public static void setCARPETA_IN(String aCARPETA_IN) {
+        CARPETA_IN = aCARPETA_IN;
     }
 
+    public static String getCARPETA_OUT() {
+        return CARPETA_OUT;
+    }
+
+    public static void setCARPETA_OUT(String aCARPETA_OUT) {
+        CARPETA_OUT = aCARPETA_OUT;
+    }
+
+    public static HashMap<String, MailAjustes> getMapadeajustesmail() {
+        return mapadeajustesmail;
+    }
+
+    public static void setMapadeajustesmail(HashMap<String, MailAjustes> mapadeajustesmail) {
+        CoreMailServicioImpl.mapadeajustesmail = mapadeajustesmail;
+    }
 }

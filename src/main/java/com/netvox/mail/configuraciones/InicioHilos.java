@@ -22,11 +22,8 @@ public class InicioHilos {
     ///esto ejecuta un hilo en cuanto inicia la web.
     @PostConstruct
     public void init() {
-        coremailservicio.cargarConfiguracionGlobal(); //carga las rutas donde se guarda info y etc.
-        //coremailservicio.cargarCantidadesPorCola(); // voy a oiberlo monho al iniciar setea los valores de los hashmap en el coremailservicio
-       // coremailservicio.cargarListaMailsPorEstado();
         coremailservicio.ejecutarHiloEntrada();       
-        coremailservicio.ejecutarHiloAsignacion();
+      // coremailservicio.ejecutarHiloAsignacion();
     }
 
 }

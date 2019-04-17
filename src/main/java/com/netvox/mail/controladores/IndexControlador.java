@@ -5,7 +5,7 @@
  */
 package com.netvox.mail.controladores;
 
-import com.netvox.mail.entidades.Configuracion;
+import com.netvox.mail.entidades.Rutas;
 import com.netvox.mail.entidades.Prueba;
 import com.netvox.mail.servicios.ClienteMongoServicio;
 import org.springframework.beans.factory.annotation.Autowired;

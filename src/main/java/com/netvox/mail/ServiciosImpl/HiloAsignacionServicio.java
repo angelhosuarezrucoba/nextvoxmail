@@ -116,9 +116,6 @@ public class HiloAsignacionServicio implements Runnable {
                                     listausuarios.clear();
                                 }
                             }
-                            //System.out.println("REMOVIENDO MAILS : " + main.capturers.size());
-                            //coremailservicio.getListamails().remove(mail);
-                            // System.out.println("::: remove mail in queue  " + mail.getId());
                         }
                     }
                     listado.clear();

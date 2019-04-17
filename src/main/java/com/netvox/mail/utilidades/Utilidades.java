@@ -1,7 +1,7 @@
-package utilidades;
+package com.netvox.mail.utilidades;
 
+import com.netvox.mail.ServiciosImpl.CoreMailServicioImpl;
 import com.netvox.mail.entidades.Mail;
-import com.netvox.mail.entidades.Parametros;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -20,10 +20,18 @@ import javax.mail.Part;
 import javax.mail.internet.ContentType;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeUtility;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
 
+@Service("utilidades")
 public class Utilidades {
 
-    public static void printException(Exception ex) {
+    @Autowired
+    @Qualifier("coremailservicio")
+    CoreMailServicioImpl coremailservicio;
+
+    public void printException(Exception ex) {
         System.out.println("MSG:" + ex.getMessage() + " ,EXP:" + ex.toString());
         for (int i = 0; i < ex.getStackTrace().length; i++) {
             System.out.println(ex.getStackTrace()[i]);
@@ -31,12 +39,12 @@ public class Utilidades {
         ex.printStackTrace();
     }
 
-    public static boolean createFileHTML(Message mensaje, Mail mail, boolean inbound) {
+    public boolean createFileHTML(Message mensaje, Mail mail, boolean inbound, int peso_maximo_adjunto) {
         boolean created = false;
         int id = mail.getId();
         try {
 
-            File unidad = new File((inbound == true ? Parametros.CARPETA_IN : Parametros.CARPETA_OUT) + id);
+            File unidad = new File((inbound == true ? coremailservicio.getCARPETA_IN() : coremailservicio.getCARPETA_OUT()) + id);
             mail.setRuta(unidad.getAbsolutePath());
             String cuerpoMensaje = "";
             String texto = null;
@@ -143,7 +151,7 @@ public class Utilidades {
                             cuerpoMensaje = part.getContent().toString();
                             texto = cuerpoMensaje;
                         } else if (part.isMimeType("multipart/*")) {
-                            cuerpoMensaje = analizaParteDeMensaje(part, cuerpoMensaje, imagenes, unidad, attach, mail);
+                            cuerpoMensaje = analizaParteDeMensaje(part, cuerpoMensaje, imagenes, unidad, attach, mail, peso_maximo_adjunto);
                             texto = cuerpoMensaje;
                         }
                     }
@@ -153,7 +161,7 @@ public class Utilidades {
                         String disposition = part.getDisposition();
                         if (disposition == null) {
 
-                            cuerpoMensaje = analizaParteDeMensaje(part, cuerpoMensaje, imagenes, unidad, attach, mail);
+                            cuerpoMensaje = analizaParteDeMensaje(part, cuerpoMensaje, imagenes, unidad, attach, mail, peso_maximo_adjunto);
                             //System.out.println("*****\n"+cuerpoMensaje+"\n*****");
 
                             String[] array = cuerpoMensaje.split("\\n");
@@ -218,9 +226,9 @@ public class Utilidades {
                             System.out.println("NOMBRE ADJUNTO " + aux);
                             MimeBodyPart mbp = (MimeBodyPart) part;
                             mbp.saveFile(attach.getAbsolutePath() + "/" + aux);
-                            sumarAdjuntos(new File(attach.getAbsolutePath() + "/" + aux), mail);
+                            sumarAdjuntos(new File(attach.getAbsolutePath() + "/" + aux), mail, peso_maximo_adjunto);
                         } else if ((disposition != null) && (disposition.equalsIgnoreCase(Part.INLINE))) {
-                            analizaParteDeMensaje(part, cuerpoMensaje, imagenes, unidad, attach, mail);
+                            analizaParteDeMensaje(part, cuerpoMensaje, imagenes, unidad, attach, mail, peso_maximo_adjunto);
                         }
                     }
 
@@ -277,14 +285,14 @@ public class Utilidades {
             mail.setTexto(texto);
             created = true;
         } catch (Exception ex) {
-            Utilidades.printException(ex);
+           printException(ex);
         }
         System.out.println("CREADO=> " + created);
         return created;
     }
     public static int i = 0;
 
-    static String analizaParteDeMensaje(Part unaParte, String mensaje, HashMap<String, String> imagenes, File unidad, File attach, Mail mail) {
+    public String analizaParteDeMensaje(Part unaParte, String mensaje, HashMap<String, String> imagenes, File unidad, File attach, Mail mail, int peso_maximo_adjunto) {
 
         try {
 
@@ -294,16 +302,16 @@ public class Utilidades {
                     Part bp = mp.getBodyPart(i);
                     if (bp.isMimeType("text/plain")) {
                         if (mensaje == null) {
-                            mensaje = analizaParteDeMensaje(mp.getBodyPart(i), mensaje, imagenes, unidad, attach, mail);
+                            mensaje = analizaParteDeMensaje(mp.getBodyPart(i), mensaje, imagenes, unidad, attach, mail, peso_maximo_adjunto);
                         }
                         continue;
                     } else if (bp.isMimeType("text/html")) {
-                        mensaje = analizaParteDeMensaje(mp.getBodyPart(i), mensaje, imagenes, unidad, attach, mail);
+                        mensaje = analizaParteDeMensaje(mp.getBodyPart(i), mensaje, imagenes, unidad, attach, mail, peso_maximo_adjunto);
                         if (mensaje != null) {
                             return mensaje;
                         }
                     } else {
-                        return analizaParteDeMensaje(mp.getBodyPart(i), mensaje, imagenes, unidad, attach, mail);
+                        return analizaParteDeMensaje(mp.getBodyPart(i), mensaje, imagenes, unidad, attach, mail, peso_maximo_adjunto);
                     }
                 }
             } else if (unaParte.isMimeType("multipart/*")) {
@@ -312,7 +320,7 @@ public class Utilidades {
                 System.out.println("*******MULTIPART***************");
                 System.out.println(multi.getContentType());
                 for (int j = 0; j < multi.getCount(); j++) {
-                    mensaje = analizaParteDeMensaje(multi.getBodyPart(j), mensaje, imagenes, unidad, attach, mail);
+                    mensaje = analizaParteDeMensaje(multi.getBodyPart(j), mensaje, imagenes, unidad, attach, mail, peso_maximo_adjunto);
                 }
                 System.out.println("********************************");
                 System.out.println("                ");
@@ -358,20 +366,20 @@ public class Utilidades {
                                 if (contentid != null) {
                                     contentid = contentid.replace("<", "");
                                     contentid = contentid.replace(">", "");
-                                    imagenes.put("cid:" + contentid, Parametros.URL_IN + mail.getId() + "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
+                                    imagenes.put("cid:" + contentid, coremailservicio.getURL_IN() + mail.getId() + "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
                                 } else {
-                                    imagenes.put("cid:" + unaParte.getFileName() + "@", Parametros.URL_IN + mail.getId() + "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
+                                    imagenes.put("cid:" + unaParte.getFileName() + "@", coremailservicio.getURL_IN() + mail.getId() + "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
                                 }
 
                             } catch (Exception ex) {
-                                Utilidades.printException(ex);
+                                printException(ex);
                             } finally {
                                 fichero.close();
                                 imagen.close();
                             }
 
                         } catch (Exception ex) {
-                            Utilidades.printException(ex);
+                            printException(ex);
                         }
 
                     } else if (unaParte.isMimeType("AUDIO/*")) {
@@ -381,7 +389,7 @@ public class Utilidades {
                         }
                         MimeBodyPart mbp = (MimeBodyPart) unaParte;
                         mbp.saveFile(attach.getAbsolutePath() + "/" + nombrePart);
-                        sumarAdjuntos(new File(attach.getAbsolutePath() + "/" + nombrePart), mail);
+                        sumarAdjuntos(new File(attach.getAbsolutePath() + "/" + nombrePart), mail, peso_maximo_adjunto);
                     } else if (unaParte.isMimeType("APPLICATION/*")) {
                         String nombrePart = unaParte.getFileName();
                         if (nombrePart == null) {
@@ -389,7 +397,7 @@ public class Utilidades {
                         }
                         MimeBodyPart mbp = (MimeBodyPart) unaParte;
                         mbp.saveFile(attach.getAbsolutePath() + "/" + nombrePart);
-                        sumarAdjuntos(new File(attach.getAbsolutePath() + "/" + nombrePart), mail);
+                        sumarAdjuntos(new File(attach.getAbsolutePath() + "/" + nombrePart), mail, peso_maximo_adjunto);
                     }
                 }
             }
@@ -399,15 +407,15 @@ public class Utilidades {
         return mensaje;
     }
 
-    public static void sumarAdjuntos(File file, Mail mail) {
+    public  void sumarAdjuntos(File file, Mail mail, int peso_maximo_adjunto) {
         double limite = 0;
-        limite = Parametros.MAXIMO_PESO_ADJUNTO_INBOUND;
+        limite = peso_maximo_adjunto;  //mailajustes.getMaximo_adjunto()
         try {
             Double peso_adjunto = Double.parseDouble(String.valueOf(file.length())) / (1024 * 1024);
             mail.setPeso_adjunto(mail.getPeso_adjunto() + peso_adjunto);
             System.out.println("PESO ADJUNTO " + peso_adjunto + "  .PESO PERMITIDO" + limite);
         } catch (Exception ex) {
-            Utilidades.printException(ex);
+           printException(ex);
         }
 
     }

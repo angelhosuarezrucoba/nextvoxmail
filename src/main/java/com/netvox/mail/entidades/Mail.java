@@ -351,10 +351,11 @@ public class Mail {
     public int getId_cola() {
         return id_cola;
     }
-    
+
     @Override
     public String toString() {
-        return "MailBean{" + "id=" + id + ", remitente=" + remitente + ", destino=" + destino + ", subject=" + subject + ", spam=" + spam + ", cola=" + cola + ", fecha_index=" + fecha_index + ", usuario=" + usuario + ", texto=" + texto + ", id_inbound=" + id_inbound + ", id_outbound=" + id_outbound + ", tipo=" + tipo + ", subject_in=" + subject_in + ", inicio_cola=" + inicio_cola + ", campana=" + campana + ", nombre=" + nombre + ", apellido=" + apellido + ", nombre_campana=" + nombre_campana + ", peso_adjunto=" + peso_adjunto + ", ruta=" + ruta + ", idconfiguracion=" + idconfiguracion + '}';
+        return "Mail{" + "id=" + id + ", remitente=" + remitente + ", destino=" + destino + ", subject=" + subject + ", spam=" + spam + ", cola=" + cola + ", fecha_index=" + fecha_index + ", usuario=" + usuario + ", texto=" + texto + ", id_inbound=" + id_inbound + ", id_outbound=" + id_outbound + ", id_cola=" + id_cola + ", tipo=" + tipo + ", subject_in=" + subject_in + ", inicio_cola=" + inicio_cola + ", campana=" + campana + ", nombre=" + nombre + ", apellido=" + apellido + ", nombre_campana=" + nombre_campana + ", peso_adjunto=" + peso_adjunto + ", ruta=" + ruta + ", idconfiguracion=" + idconfiguracion + '}';
     }
-
+    
+   
 }
