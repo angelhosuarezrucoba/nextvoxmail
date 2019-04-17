@@ -9,6 +9,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.netvox.mail.ServiciosImpl.LecturaServicioImpl;
 import java.util.List;
+import java.util.concurrent.Executor;
 import javax.sql.DataSource;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
 public class Conexion {
@@ -33,7 +35,7 @@ public class Conexion {
     String bdmysql;
     String puertomysql;
     BasicDataSource basicDataSource;
-    
+
     @Autowired
     @Qualifier("lecturaservicio")
     LecturaServicioImpl lecturaservicio;
@@ -72,8 +74,8 @@ public class Conexion {
     }
 
     @Bean(name = "executor")
-    public TaskExecutor taskExecutor() {
-        return new SimpleAsyncTaskExecutor();
+    public ThreadPoolTaskExecutor taskExecutor() {
+        return new ThreadPoolTaskExecutor();
     }
 
 }

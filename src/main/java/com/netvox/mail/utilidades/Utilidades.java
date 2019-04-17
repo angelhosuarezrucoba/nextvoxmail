@@ -41,7 +41,7 @@ public class Utilidades {
 
     public boolean createFileHTML(Message mensaje, Mail mail, boolean inbound, int peso_maximo_adjunto) {
         boolean created = false;
-        int id = mail.getId();
+        int id = mail.getIdcorreo();
         try {
 
             File unidad = new File((inbound == true ? coremailservicio.getCARPETA_IN() : coremailservicio.getCARPETA_OUT()) + id);
@@ -366,9 +366,9 @@ public class Utilidades {
                                 if (contentid != null) {
                                     contentid = contentid.replace("<", "");
                                     contentid = contentid.replace(">", "");
-                                    imagenes.put("cid:" + contentid, coremailservicio.getURL_IN() + mail.getId() + "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
+                                    imagenes.put("cid:" + contentid, coremailservicio.getURL_IN() + mail.getIdcorreo()+ "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
                                 } else {
-                                    imagenes.put("cid:" + unaParte.getFileName() + "@", coremailservicio.getURL_IN() + mail.getId() + "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
+                                    imagenes.put("cid:" + unaParte.getFileName() + "@", coremailservicio.getURL_IN() + mail.getIdcorreo()+ "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
                                 }
 
                             } catch (Exception ex) {
@@ -411,7 +411,7 @@ public class Utilidades {
         double limite = 0;
         limite = peso_maximo_adjunto;  //mailajustes.getMaximo_adjunto()
         try {
-            Double peso_adjunto = Double.parseDouble(String.valueOf(file.length())) / (1024 * 1024);
+            int peso_adjunto = Integer.parseInt(String.valueOf(file.length())) / (1024 * 1024);
             mail.setPeso_adjunto(mail.getPeso_adjunto() + peso_adjunto);
             System.out.println("PESO ADJUNTO " + peso_adjunto + "  .PESO PERMITIDO" + limite);
         } catch (Exception ex) {

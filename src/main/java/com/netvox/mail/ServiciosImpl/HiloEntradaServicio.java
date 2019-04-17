@@ -11,7 +11,6 @@ import com.netvox.mail.entidades.MailAjustes;
 import com.netvox.mail.servicios.ClienteMongoServicio;
 import java.io.File;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Properties;
 import javax.mail.Address;
 import javax.mail.Authenticator;
@@ -29,12 +28,10 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import com.netvox.mail.utilidades.Utilidades;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.springframework.context.ApplicationContext;
 
 @Service("hiloentradaservicio")
 public class HiloEntradaServicio implements Runnable {
@@ -67,12 +64,13 @@ public class HiloEntradaServicio implements Runnable {
     private Session sesion;
     private int id;
     private List<Message> listacorreosnoleidos;
+    private boolean activo = true;
 
     @Override
     public void run() {
 
         coremailservicio.cargarRutas();//carga las rutas donde se guardaran los archivos de correos.
-        while (true) {
+        while (isActivo()) {
             try {
                 coremailservicio.llenarListaAjustesMail(); // lee las configuraciones por campaña y setea emailporcampana
                 System.out.println("[IN] CANTIDAD COLAS CON MAIL ACTIVO " + coremailservicio.getMapadeajustesmail().size()); //en este punto ya se tiene con el metodo anterior los mails por campaña
@@ -95,64 +93,64 @@ public class HiloEntradaServicio implements Runnable {
                         folder.open(Folder.READ_WRITE);
                         id = 0; //inicializa el id de la cola
                         listacorreosnoleidos = obtenerCorreosNoLeidos(folder, 20);//el segundo parametro indica cuantos correos debo tomar.
-                       // if (listacorreosnoleidos.size() > 0) {
-                            System.out.println("............................ MENSAJES(CORREOS NO LEIDOS) : " + listacorreosnoleidos.size());
-                            for (Message mensaje : listacorreosnoleidos) {
-                                if (mensaje.getSubject() != null && mensaje.getSubject().equalsIgnoreCase(mailajustes.getUser())) {
-                                    System.out.println("***** EL CLIENTE Y EL SERVIDOR SON EL MISMO.... IGNORANDO");
-                                } else {
-                                    for (Cola cola : mailajustes.getColas()) {//se debe buscar un mejor nombre, la consulta encuentra una clase mail y cada mail tiene una lista de colas
-                                        id = coremailservicio.ObtenerNuevoId(true, mailajustes.getId(), cola.getId_cola());
-                                        Mail mail = new Mail(id);
-                                        mail.setIdconfiguracion(mailajustes.getId());//setIdconfiguracion
-                                        mail.setCola(cola);
-                                        mail.setTipo("IN");
-                                        mail.setCampana(cola.getId_campana());
-                                        if (mensaje.getSubject() != null) {
-                                            mail.setSubject(mensaje.getSubject().trim());
-                                        }
-                                        String remitente = null;
-                                        for (Address froms : mensaje.getFrom()) {
-
-                                            if (froms.toString().contains("<")) {
-                                                remitente = froms.toString().split("<")[1];
-                                            } else {
-                                                remitente = froms.toString();
-                                            }
-                                            remitente = remitente.replace(">", "");
-                                            remitente = remitente.trim();
-                                        }
-                                        mail.setRemitente(remitente);
-
-                                        if (!utilidades.createFileHTML(mensaje, mail, true, mailajustes.getMaximo_adjunto())) {
-                                            System.out.println("FALLO EN EL CREATE HTML");
-                                            mensaje.setFlag(Flags.Flag.SEEN, true);
-                                            continue;
-                                        }
-
-                                        if (mail.getPeso_adjunto() > mailajustes.getMaximo_adjunto()) {
-                                            FileUtils.deleteDirectory(new File(mail.getRuta()));
-                                            mailautomatico.enviarEmail(mail);
-                                            coremailservicio.eliminarEmailOnline(mail.getId());
-                                            continue;
-                                        }
-
-                                        if (remitente == null) {
-                                            System.out.println("REMITENTE NO CAPTURADO");
-                                            mensaje.setFlag(Flags.Flag.SEEN, true);
-                                            continue;
-                                        }
-                                        remitente = remitente.replace("\n", "");
-                                        System.out.println("REMITENTE CAPTURADO " + remitente);
-                                        mail.setRemitente(remitente.trim());
-                                        mail.setFecha_index(formato.format(new Date()));
-                                        listamails.add(mail);
-                                        coremailservicio.guardarMail(mail/*, coremailservicio.anadirMails(queue)*/);
-                                        mensaje.setFlag(Flags.Flag.SEEN, true);
+                        // if (listacorreosnoleidos.size() > 0) {
+                        System.out.println("............................ MENSAJES(CORREOS NO LEIDOS) : " + listacorreosnoleidos.size());
+                        for (Message mensaje : listacorreosnoleidos) {
+                            if (mensaje.getSubject() != null && mensaje.getSubject().equalsIgnoreCase(mailajustes.getUser())) {
+                                System.out.println("***** EL CLIENTE Y EL SERVIDOR SON EL MISMO.... IGNORANDO");
+                            } else {
+                                for (Cola cola : mailajustes.getColas()) {//se debe buscar un mejor nombre, la consulta encuentra una clase mail y cada mail tiene una lista de colas
+                                    id = coremailservicio.obtenerNuevoId("entrada", mailajustes.getId(), cola.getId_cola());
+                                    Mail mail = new Mail();
+                                    mail.setIdconfiguracion(mailajustes.getId());//setIdconfiguracion
+                                    mail.setCola(cola);
+                                    // mail.setTipomail("entrada");//("IN");//settipo
+                                    mail.setCampana(cola.getId_campana());
+                                    if (mensaje.getSubject() != null) {
+                                        mail.setAsunto(mensaje.getSubject().trim());
                                     }
+                                    String remitente = null;
+                                    for (Address froms : mensaje.getFrom()) {
+
+                                        if (froms.toString().contains("<")) {
+                                            remitente = froms.toString().split("<")[1];
+                                        } else {
+                                            remitente = froms.toString();
+                                        }
+                                        remitente = remitente.replace(">", "");
+                                        remitente = remitente.trim();
+                                    }
+                                    mail.setRemitente(remitente);
+
+                                    if (!utilidades.createFileHTML(mensaje, mail, true, mailajustes.getMaximo_adjunto())) {
+                                        System.out.println("FALLO EN EL CREATE HTML");
+                                        mensaje.setFlag(Flags.Flag.SEEN, true);
+                                        continue;
+                                    }
+
+                                    if (mail.getPeso_adjunto() > mailajustes.getMaximo_adjunto()) {
+                                        FileUtils.deleteDirectory(new File(mail.getRuta()));
+                                        mailautomatico.enviarEmail(mail);
+                                        coremailservicio.eliminarEmailOnline(mail.getIdcorreo());
+                                        continue;
+                                    }
+
+                                    if (remitente == null) {
+                                        System.out.println("REMITENTE NO CAPTURADO");
+                                        mensaje.setFlag(Flags.Flag.SEEN, true);
+                                        continue;
+                                    }
+                                    remitente = remitente.replace("\n", "");
+                                    System.out.println("REMITENTE CAPTURADO " + remitente);
+                                    mail.setRemitente(remitente.trim());
+                                    mail.setFecha_ingreso(formato.format(new Date()));
+                                    listamails.add(mail);
+                                    coremailservicio.guardarMail(mail/*, coremailservicio.anadirMails(queue)*/);
+                                    mensaje.setFlag(Flags.Flag.SEEN, true);
                                 }
                             }
-                       // }
+                        }
+                        // }
                     } catch (Exception ex) {
                         utilidades.printException(ex);
                         ex.printStackTrace();
@@ -165,7 +163,7 @@ public class HiloEntradaServicio implements Runnable {
                     listamails.clear();
                 }
                 System.out.println("::::FIN LECTURA DE CUENTAS:::::::");
-                Thread.sleep(1000 * 5);
+                //    Thread.sleep(1000 * 5);
             } catch (Exception ex) {
                 utilidades.printException(ex);
                 ex.printStackTrace();
@@ -227,4 +225,13 @@ public class HiloEntradaServicio implements Runnable {
             ex.printStackTrace();
         }
     }
+
+    public boolean isActivo() {
+        return activo;
+    }
+
+    public void setActivo(boolean activo) {
+        this.activo = activo;
+    }
+
 }

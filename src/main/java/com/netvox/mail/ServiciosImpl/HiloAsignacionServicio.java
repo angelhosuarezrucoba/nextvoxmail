@@ -22,6 +22,7 @@ public class HiloAsignacionServicio implements Runnable {
     CoreMailServicioImpl coremailservicio;
 
     public volatile boolean alive = false;
+    private boolean activo = true;
     String usuario = "";
     String clave = "";
     String popHost = "";
@@ -30,7 +31,7 @@ public class HiloAsignacionServicio implements Runnable {
 
     @Override
     public void run() {
-        while (true) {
+        while (isActivo()) {
             System.out.println("THREAD-ASIGNACION");
             try {
 
@@ -85,7 +86,7 @@ public class HiloAsignacionServicio implements Runnable {
                         //traemos todos los usuarios que se encuentra disponibles de una campaña amarrado a una cola  
                         HashMap<Integer, Usuario> listausuarioscola = coremailservicio.listarUsuariosCampanaCola();//se ha cmabiado el lugar de esta expression porque no tiene sentido 
                         //listar a todos los usuarios de esa cola si no existe un listado de correos en esa cola.
-                        
+
                         //recorremos todo el listad de mails
                         for (Mail mail : listado) {
                             //recorremos todas las colas de una campaña
@@ -97,8 +98,8 @@ public class HiloAsignacionServicio implements Runnable {
                                 listausuarios = listausuarioscola.get(cola).getList_user_queue();
                                 //System.out.println("SIZE USER : " + lista_usuarios.size());
                                 if (listausuarios != null) {
-                                    if (mail.getSubject_in() == null) {
-                                        mail.setSubject_in("");
+                                    if (mail.getAsunto() == null) { //get_subject_in
+                                        mail.setAsunto("");
                                     }//
                                     //metodo que sirve para retornar al usuario que tiene menos emails recibidos
                                     //System.out.println("COLA MAIL ID " + mail.getCola().getId_cola());
@@ -165,5 +166,13 @@ public class HiloAsignacionServicio implements Runnable {
             }
         }
         return elegido;
+    }
+
+    public boolean isActivo() {
+        return activo;
+    }
+
+    public void setActivo(boolean activo) {
+        this.activo = activo;
     }
 }

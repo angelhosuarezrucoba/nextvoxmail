@@ -11,6 +11,7 @@ import com.netvox.mail.entidades.Mail;
 import com.netvox.mail.entidades.MailAjustes;
 import com.netvox.mail.entidades.Usuario;
 import com.netvox.mail.servicios.ClienteMongoServicio;
+import com.netvox.mail.utilidades.FormatoDeFechas;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -26,6 +27,11 @@ import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import com.netvox.mail.utilidades.Utilidades;
+import java.util.Date;
+import org.springframework.context.ApplicationContext;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Service("coremailservicio")
 public class CoreMailServicioImpl {
@@ -49,14 +55,15 @@ public class CoreMailServicioImpl {
     //esto permite ejecutar los hilos.
     @Autowired
     @Qualifier("executor")
-    TaskExecutor taskExecutor;
+    ThreadPoolTaskExecutor taskExecutor;
 
     @Autowired
     @Qualifier("utilidades")
     Utilidades utilidades;
 
-    private static volatile HashMap<String, MailAjustes> mapadeajustesmail;
 
+    private static volatile HashMap<String, MailAjustes> mapadeajustesmail;
+    private FormatoDeFechas formato = new FormatoDeFechas();
     private final int SERVICIO_MAIL = 2;
     private static String URL_IN;
     private static String CARPETA_IN;
@@ -127,28 +134,42 @@ public class CoreMailServicioImpl {
         }
     }
 
-    public int ObtenerNuevoId(boolean inbound, int idconfiguracion, int idCola) {// convertir  mongo
+    /*  public int ObtenerNuevoId(int idconfiguracion, int idCola) {// convertir  mongo
         Connection conexion = null;
         int nuevoid = 0;
         try {
             conexion = clientemysqlservicio.obtenerConexion();
 
-            CallableStatement procedimientoalmacenado = conexion.prepareCall("call sp_email_get_id(?,?,?,?)");
-            procedimientoalmacenado.setString(1, (inbound == true ? "IN" : "OUT"));
-            procedimientoalmacenado.registerOutParameter(2, java.sql.Types.INTEGER);
-            procedimientoalmacenado.setInt(3, idconfiguracion);
+            CallableStatement procedimientoalmacenado = conexion.prepareCall("call sp_email_get_id(?,?,?)");
+          
+            procedimientoalmacenado.registerOutParameter(1, java.sql.Types.INTEGER);
+            procedimientoalmacenado.setInt(2, idconfiguracion);
             procedimientoalmacenado.setInt(4, idCola);
             procedimientoalmacenado.execute();
-            nuevoid = procedimientoalmacenado.getInt(2);
+            nuevoid = procedimientoalmacenado.getInt(1);
             procedimientoalmacenado.close();
             conexion.close();
         } catch (SQLException ex) {
-            //Utilidades.printException(ex);
             ex.printStackTrace();
         }
-//        finally {
-//            clientemysqlservicio.cerrarConexion(conexion);
-//        }
+        return nuevoid;
+    }*/
+    public int obtenerNuevoId(String tipomail, int idconfiguracion, int idcola) {//  mongo, tipomail es entrada o salida
+        MongoOperations mongoops = clientemongoservicio.clienteMongo();
+        int nuevoid = 0;
+        try {
+            Mail mail = mongoops.findOne(new Query().with(new Sort(Direction.DESC, "$natural")), Mail.class);
+
+            if (mail == null) {
+                nuevoid = 1;
+                mongoops.insert(new Mail(1, 0, tipomail, formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA), idconfiguracion, idcola));
+            } else {
+                nuevoid = mail.getIdcorreo() + 1;
+                mongoops.insert(new Mail(nuevoid, 0, tipomail, formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA), idconfiguracion, idcola));
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
         return nuevoid;
     }
 
@@ -234,9 +255,9 @@ public class CoreMailServicioImpl {
             //convertir mongo
             conexion = clientemysqlservicio.obtenerConexion();
             CallableStatement procedimientoalmacenado = conexion.prepareCall("call sp_email_IN_guardar02(?,?,?,?,?,?)");
-            procedimientoalmacenado.setInt(1, mail.getId());
+            procedimientoalmacenado.setInt(1, mail.getIdcorreo());
             procedimientoalmacenado.setString(2, mail.getRemitente());
-            procedimientoalmacenado.setString(3, mail.getSubject() == null ? "" : mail.getSubject());
+            procedimientoalmacenado.setString(3, mail.getAsunto() == null ? "" : mail.getAsunto());
             procedimientoalmacenado.setInt(4, mail.getCola().getId_campana());
             procedimientoalmacenado.setString(5, mail.getCola().getNombre_cola());
             procedimientoalmacenado.setInt(6, mail.getCola().getId_cola());
@@ -250,7 +271,7 @@ public class CoreMailServicioImpl {
 
             String sql = "insert into servicios_cola_online set id = ?, campana = ?, servicio = 2, fecha_cola = now()";
             PreparedStatement preparedstatement = conexion.prepareStatement(sql);
-            preparedstatement.setInt(1, mail.getId());
+            preparedstatement.setInt(1, mail.getIdcorreo());
             preparedstatement.setInt(2, mail.getCola().getId_campana());
             preparedstatement.execute();
             preparedstatement.close();
@@ -293,7 +314,7 @@ public class CoreMailServicioImpl {
             resultado = statement.executeQuery("select id, campana , fecha_ingreso_cola ,asunto,idconfiguracion, cola  from log_mail_online where estado = 0");
             System.out.println("email => " + "select id, campana , fecha_ingreso_cola ,asunto,idconfiguracion  from log_mail_online where estado = 0 and campana <> 0  ");
             while (resultado.next()) {
-                listado.add(new Mail(resultado.getInt("id"), resultado.getInt("campana"), resultado.getString("fecha_ingreso_cola"), resultado.getString("asunto"), resultado.getInt("idconfiguracion"), resultado.getInt("cola")));
+                //  listado.add(new Mail(resultado.getInt("id"), resultado.getInt("campana"), resultado.getString("fecha_ingreso_cola"), resultado.getString("asunto"), resultado.getInt("idconfiguracion"), resultado.getInt("cola")));
             }
             statement.close();
             resultado.close();
@@ -381,7 +402,7 @@ public class CoreMailServicioImpl {
                     query += " usuario = " + user.getId() + " , ";
                     query += " usuario_name ='" + user.getNombre() + "' ,";
                     query += " fecha_inicio_gestion = now() ";
-                    query += " where id = " + mail.getId();
+                    query += " where id = " + mail.getIdcorreo();
                     statement.execute(query);
 
                     query = "insert into servicio_conversacion set "
@@ -389,11 +410,11 @@ public class CoreMailServicioImpl {
                             + "idcampana = " + mail.getCola().getId_campana() + ", "
                             + "fec_ini_conver = now(), "
                             + "servicio = 2, "
-                            + "idconversacion = " + mail.getId();
+                            + "idconversacion = " + mail.getIdcorreo();
                     statement.execute(query);
 
                     query = "delete from servicios_cola_online "
-                            + " where id = " + mail.getId()
+                            + " where id = " + mail.getIdcorreo()
                             + " and campana = " + mail.getCola().getId_campana()
                             + " and servicio = 2";
                     statement.execute(query);
@@ -416,7 +437,7 @@ public class CoreMailServicioImpl {
         }
     }
 
-    public void ejecutarHiloEntrada() {
+    public void ejecutarHiloEntrada() {        
         taskExecutor.execute(hiloentradaservicio);
     }
 
