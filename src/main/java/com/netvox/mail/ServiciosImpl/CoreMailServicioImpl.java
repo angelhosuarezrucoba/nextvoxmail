@@ -22,19 +22,21 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import com.netvox.mail.utilidades.Utilidades;
 import java.util.Date;
-import org.springframework.context.ApplicationContext;
+import java.util.List;
+import java.util.concurrent.ThreadPoolExecutor;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Update;
 
 @Service("coremailservicio")
 public class CoreMailServicioImpl {
+
 
     @Autowired
     @Qualifier("clientemysqlservicio")
@@ -55,19 +57,18 @@ public class CoreMailServicioImpl {
     //esto permite ejecutar los hilos.
     @Autowired
     @Qualifier("executor")
-    ThreadPoolTaskExecutor taskExecutor;
+    ThreadPoolExecutor taskExecutor;
 
     @Autowired
     @Qualifier("utilidades")
     Utilidades utilidades;
 
-
     private static volatile HashMap<String, MailAjustes> mapadeajustesmail;
+
     private FormatoDeFechas formato = new FormatoDeFechas();
     private final int SERVICIO_MAIL = 2;
-    private static String URL_IN;
-    private static String CARPETA_IN;
-    private static String CARPETA_OUT;
+    private static String RUTA_IN;
+    private static String RUTA_OUT;
 
     public CoreMailServicioImpl() {
 
@@ -76,9 +77,8 @@ public class CoreMailServicioImpl {
     public void cargarRutas() {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
         Rutas rutas = mongoops.find(new Query(), Rutas.class).get(0); //este toma el unico resultado que hay en la base
-        URL_IN = rutas.getUrl_in();
-        CARPETA_IN = rutas.getRuta_in();
-        CARPETA_OUT = rutas.getRuta_out();
+        RUTA_IN = rutas.getRuta_in();
+        RUTA_OUT = rutas.getRuta_out();
     }
 
 //id 36 cambiar a mongo despues
@@ -248,20 +248,34 @@ public class CoreMailServicioImpl {
         return elimino;
     }
 
-    public void guardarMail(Mail mail/*, int total*/) {
+    public void guardarMail(Mail mail) {
         Connection conexion = null;
+        ResultSet resultado = null;
+        PreparedStatement preparedstatement;
+        CallableStatement procedimientoalmacenado;
+        MongoOperations mongoops = null;
         try {
 
             //convertir mongo
             conexion = clientemysqlservicio.obtenerConexion();
-            CallableStatement procedimientoalmacenado = conexion.prepareCall("call sp_email_IN_guardar02(?,?,?,?,?,?)");
-            procedimientoalmacenado.setInt(1, mail.getIdcorreo());
-            procedimientoalmacenado.setString(2, mail.getRemitente());
-            procedimientoalmacenado.setString(3, mail.getAsunto() == null ? "" : mail.getAsunto());
-            procedimientoalmacenado.setInt(4, mail.getCola().getId_campana());
-            procedimientoalmacenado.setString(5, mail.getCola().getNombre_cola());
-            procedimientoalmacenado.setInt(6, mail.getCola().getId_cola());
-            procedimientoalmacenado.execute();
+            preparedstatement = conexion.prepareStatement("select campana.nombre from campana where campana.id=?");
+            preparedstatement.setInt(1, mail.getCola().getId_campana());
+            resultado = preparedstatement.executeQuery();
+            while (resultado.next()) {
+                mail.setNombre_campana(resultado.getString(1));
+            }
+            mongoops = clientemongoservicio.clienteMongo();
+            mongoops.updateFirst(new Query(Criteria.where("idcorreo").is(mail.getIdcorreo())),
+                    new Update().set("remitente", mail.getRemitente())
+                            .set("asunto", mail.getAsunto())
+                            .set("estado", 0)
+                            // .set("rango_fecha", formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA))
+                            .set("campana", mail.getCola().getId_campana())
+                            .set("nombre_campana", mail.getNombre_campana())
+                            .set("id_cola", mail.getId_cola())
+                            .set("nombre_cola", mail.getCola().getNombre_cola())
+                            .set("texto", mail.getTexto()),
+                    Mail.class);
 
             procedimientoalmacenado = conexion.prepareCall("call sp_actualiza_resumen_servicio_en_cola(?,?,?)");
             procedimientoalmacenado.setInt(1, mail.getCola().getId_campana());
@@ -270,7 +284,7 @@ public class CoreMailServicioImpl {
             procedimientoalmacenado.execute();
 
             String sql = "insert into servicios_cola_online set id = ?, campana = ?, servicio = 2, fecha_cola = now()";
-            PreparedStatement preparedstatement = conexion.prepareStatement(sql);
+            preparedstatement = conexion.prepareStatement(sql);
             preparedstatement.setInt(1, mail.getIdcorreo());
             preparedstatement.setInt(2, mail.getCola().getId_campana());
             preparedstatement.execute();
@@ -280,6 +294,7 @@ public class CoreMailServicioImpl {
             conexion.close();
         } catch (SQLException ex) {
             utilidades.printException(ex);
+            ex.printStackTrace();
         }
     }
 
@@ -303,26 +318,19 @@ public class CoreMailServicioImpl {
         return cantidad;
     }
 
-    public LinkedList<Mail> listarMailsEnCola() {
-        LinkedList<Mail> listado = new LinkedList<>();
-        Connection conexion;
-        ResultSet resultado;
-        Statement statement;
+    public List<Mail> listarMailsEnCola() {
+        List<Mail> listado = new LinkedList<>();
+        MongoOperations mongoops;
+        Query query;
         try {
-            conexion = clientemysqlservicio.obtenerConexion();
-            statement = conexion.createStatement();
-            resultado = statement.executeQuery("select id, campana , fecha_ingreso_cola ,asunto,idconfiguracion, cola  from log_mail_online where estado = 0");
-            System.out.println("email => " + "select id, campana , fecha_ingreso_cola ,asunto,idconfiguracion  from log_mail_online where estado = 0 and campana <> 0  ");
-            while (resultado.next()) {
-                //  listado.add(new Mail(resultado.getInt("id"), resultado.getInt("campana"), resultado.getString("fecha_ingreso_cola"), resultado.getString("asunto"), resultado.getInt("idconfiguracion"), resultado.getInt("cola")));
-            }
-            statement.close();
-            resultado.close();
-            conexion.close();
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+            mongoops = clientemongoservicio.clienteMongo();
+            query = new Query(Criteria.where("estado").is(0).and("campana").ne(0));
+            query.fields().include("idcorreo").include("campana").include("fecha_ingreso").
+                    include("asunto").include("idconfiguracion").include("id_cola");
+            listado = mongoops.find(query, Mail.class);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-
         return listado;
     }
 
@@ -437,36 +445,28 @@ public class CoreMailServicioImpl {
         }
     }
 
-    public void ejecutarHiloEntrada() {        
-        taskExecutor.execute(hiloentradaservicio);
+    public void ejecutarHiloEntrada() {
+        taskExecutor.submit(hiloentradaservicio);
     }
 
     public void ejecutarHiloAsignacion() {
-        taskExecutor.execute(hiloasignacionservicio);
+        taskExecutor.submit(hiloasignacionservicio);
     }
 
-    public static String getURL_IN() {
-        return URL_IN;
+    public static String getRUTA_IN() {
+        return RUTA_IN;
     }
 
-    public static void setURL_IN(String aURL_IN) {
-        URL_IN = aURL_IN;
-    }
-
-    public static String getCARPETA_IN() {
-        return CARPETA_IN;
-    }
-
-    public static void setCARPETA_IN(String aCARPETA_IN) {
-        CARPETA_IN = aCARPETA_IN;
+    public static void setRUTA_IN(String aCARPETA_IN) {
+        RUTA_IN = aCARPETA_IN;
     }
 
     public static String getCARPETA_OUT() {
-        return CARPETA_OUT;
+        return RUTA_OUT;
     }
 
     public static void setCARPETA_OUT(String aCARPETA_OUT) {
-        CARPETA_OUT = aCARPETA_OUT;
+        RUTA_OUT = aCARPETA_OUT;
     }
 
     public static HashMap<String, MailAjustes> getMapadeajustesmail() {

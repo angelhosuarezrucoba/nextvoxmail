@@ -9,17 +9,16 @@ import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.netvox.mail.ServiciosImpl.LecturaServicioImpl;
 import java.util.List;
-import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import javax.sql.DataSource;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
 public class Conexion {
@@ -74,8 +73,8 @@ public class Conexion {
     }
 
     @Bean(name = "executor")
-    public ThreadPoolTaskExecutor taskExecutor() {
-        return new ThreadPoolTaskExecutor();
+    public ThreadPoolExecutor taskExecutor() {
+        return new ThreadPoolExecutor(10, 10, 9999, TimeUnit.SECONDS, new LinkedBlockingQueue<>());
     }
 
 }

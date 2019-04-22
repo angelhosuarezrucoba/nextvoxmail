@@ -9,6 +9,7 @@ import com.netvox.mail.entidades.Mail;
 import com.netvox.mail.entidades.Usuario;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -21,108 +22,59 @@ public class HiloAsignacionServicio implements Runnable {
     @Qualifier("coremailservicio")
     CoreMailServicioImpl coremailservicio;
 
-    public volatile boolean alive = false;
-    private boolean activo = true;
     String usuario = "";
     String clave = "";
     String popHost = "";
-    private HashMap<Integer, LinkedList<Mail>> correocolas;
+    private HashMap<Integer, LinkedList<Mail>> mailsporcola;
     private LinkedList<Usuario> listausuarios;
+    private boolean activo = true;
 
     @Override
     public void run() {
         while (isActivo()) {
-            System.out.println("THREAD-ASIGNACION");
             try {
-
-                System.out.println("Asignando.....");
-                correocolas = new HashMap<>();
-                System.out.println("...............................................................");
-                //me traigo una lista de mails que ya fueron asignados a una campaña
-                LinkedList<Mail> mails = coremailservicio.listarMailsEnCola();
-                if (mails.isEmpty()) {
-                    TimeUnit.MILLISECONDS.sleep(5000);
-                    continue;
-                }
-
-                System.out.println("CANTIDAD MENSAJES : " + mails.size());
-                //recorro los emails
-                for (Mail mail : mails) {
-                    //si la campañas esta contenida
-                    //System.out.println("MAIL " + mail);
-                    //System.out.println("correoColas " + correoColas.toString());
-                    if (correocolas.containsKey(mail.getId_cola())) {
-                        LinkedList<Mail> listado = correocolas.get(mail.getId_cola());
-                        //System.out.println("listado " + listado);
-                        //agrego la lista de mails de esta campaña al linkedlist
-                        listado.add(mail);
-                        //agrego la lista de mails a una campaña
-                        correocolas.put(mail.getId_cola(), listado);
-                    } else { // aqui entra primero.
-                        //el nuevo listado
-                        LinkedList<Mail> listado = new LinkedList<>();
-                        listado.add(mail);
-                        correocolas.put(mail.getId_cola(), listado);
-                    }
-                }
-
-                //recorremos toda las lista de campañas para recorres todos los correos para despues asignar
-                //a cada usuario asociados a esta.
-                for (Integer cola : correocolas.keySet()) {
-                    //recorrer por colas
-                    //   System.out.println("----->> CAMPANA  " + campana);
-
-                    //traemos las colas  de una campaña con todos sus datos referentes al correo como
-                    //la idcola
-                    //asunto
-                    //nombre de la cola
-                    //HashMap<Integer, ColaBean> list_queue = this.managerbd.colas_campana(campana);
-                    //traemos el listado de todos los correos asignados para una campaña
-                    LinkedList<Mail> listado = correocolas.get(cola);
-                    System.out.println("LISTADO COLA ID: " + cola + ", SIZE MAILS: " + listado.size());
-
-                    //recorremos todos los listado de correos
-                    if (!listado.isEmpty()) {
-                        //traemos todos los usuarios que se encuentra disponibles de una campaña amarrado a una cola  
-                        HashMap<Integer, Usuario> listausuarioscola = coremailservicio.listarUsuariosCampanaCola();//se ha cmabiado el lugar de esta expression porque no tiene sentido 
-                        //listar a todos los usuarios de esa cola si no existe un listado de correos en esa cola.
-
-                        //recorremos todo el listad de mails
-                        for (Mail mail : listado) {
-                            //recorremos todas las colas de una campaña
-                            MailConfiguracion mailconfiguracion = coremailservicio.ObtenerMailConfiguracion(mail.getIdconfiguracion());
-                            listausuarios = new LinkedList<>();
-                            ///validamos si la cola se encuentra activa
-                            if (listausuarioscola.containsKey(cola)) {
-                                //nos traemos la lista de usuarios pertenecientes a una cola
-                                listausuarios = listausuarioscola.get(cola).getList_user_queue();
-                                //System.out.println("SIZE USER : " + lista_usuarios.size());
-                                if (listausuarios != null) {
-                                    if (mail.getAsunto() == null) { //get_subject_in
-                                        mail.setAsunto("");
-                                    }//
-                                    //metodo que sirve para retornar al usuario que tiene menos emails recibidos
-                                    //System.out.println("COLA MAIL ID " + mail.getCola().getId_cola());
-                                    Usuario usuario_asignado = getUsuario(listausuarios, mailconfiguracion.getMaximo_pendiente(), mail.getCola().getId_cola());
-                                    if (usuario_asignado != null) {
-                                        System.out.println("USUARIO : " + usuario_asignado.getNombre() + " , ID : " + usuario_asignado.getId());
-                                        //System.out.println(" ..... " + usuario_asignado.getId());
-                                        //añadimos el listado de emails para ese usuario
-                                        usuario_asignado.getMails().add(mail);
-                                        //
-                                        coremailservicio.asignarMailAgente(usuario_asignado);
-                                        System.out.println(usuario_asignado.getId() + " = " + usuario_asignado.getPendientes() + " ... " + usuario_asignado.getMails().size());
+                System.out.println("----------------------------------------------------------------------------------------");
+                System.out.println("Hilo de Asignacion");
+                List<Mail> mails = coremailservicio.listarMailsEnCola();//las colas representan el correo que se agrega a la campaña , si hay 2 => son dos colas.
+                if (!mails.isEmpty()) {
+                    System.out.println("mensajes sin asignar : " + mails.size());
+                    mailsporcola = obtenerMailsPorCola(mails);
+                    mailsporcola.keySet().stream().map((cola) -> {
+                        LinkedList<Mail> listado = mailsporcola.get(cola);
+                        System.out.println("Id cola: " + cola + ", cantidad de mails: " + listado.size());
+                        if (!listado.isEmpty()) {
+                            HashMap<Integer, Usuario> listausuarioscola = coremailservicio.listarUsuariosCampanaCola();//se ha cmabiado el lugar de esta expression porque no tiene sentido 
+                            listado.forEach((mail) -> {
+                                MailConfiguracion mailconfiguracion = coremailservicio.ObtenerMailConfiguracion(mail.getIdconfiguracion());
+                                listausuarios = new LinkedList<>();
+                                ///validamos si la cola se encuentra activa
+                                if (listausuarioscola.containsKey(cola)) {
+                                    listausuarios = listausuarioscola.get(cola).getList_user_queue();
+                                    if (listausuarios != null) {
+                                        if (mail.getAsunto() == null) {
+                                            mail.setAsunto("");
+                                        }
+                                        Usuario usuario_asignado = getUsuario(listausuarios, mailconfiguracion.getMaximo_pendiente(), mail.getCola().getId_cola());
+                                        if (usuario_asignado != null) {
+                                            System.out.println("USUARIO : " + usuario_asignado.getNombre() + " , ID : " + usuario_asignado.getId());
+                                            usuario_asignado.getMails().add(mail);
+                                            coremailservicio.asignarMailAgente(usuario_asignado);
+                                            System.out.println(usuario_asignado.getId() + " = " + usuario_asignado.getPendientes() + " ... " + usuario_asignado.getMails().size());
+                                        }
+                                        listausuarios.clear();
                                     }
-
-                                    listausuarios.clear();
                                 }
-                            }
+                            });
                         }
-                    }
-                    listado.clear();
-
+                        return listado;
+                    }).forEachOrdered((listado) -> {
+                        listado.clear();
+                    });
+                } else {
+                    System.out.println("Sin mensajes por asignar");
                 }
-                System.out.println("Fin asignacion...");
+                System.out.println("Fin Hilo asignacion");
+                System.out.println("----------------------------------------------------------------------------------------");
                 Thread.sleep(5000);
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -166,6 +118,22 @@ public class HiloAsignacionServicio implements Runnable {
             }
         }
         return elegido;
+    }
+
+    public HashMap<Integer, LinkedList<Mail>> obtenerMailsPorCola(List<Mail> mails) {
+        HashMap<Integer, LinkedList<Mail>> listamailsporcola = new HashMap<>();
+        mails.forEach((mail) -> {//este bucle solo distribuye segun la cola un listado de correos 
+            if (listamailsporcola.containsKey(mail.getId_cola())) {
+                LinkedList<Mail> listado = listamailsporcola.get(mail.getId_cola());
+                listado.add(mail);
+                listamailsporcola.put(mail.getId_cola(), listado);
+            } else { // aqui entra primero.                            
+                LinkedList<Mail> listado = new LinkedList<>();
+                listado.add(mail);
+                listamailsporcola.put(mail.getId_cola(), listado);
+            }
+        });
+        return listamailsporcola;
     }
 
     public boolean isActivo() {

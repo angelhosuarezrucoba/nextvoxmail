@@ -2,19 +2,24 @@ package com.netvox.mail.utilidades;
 
 import com.netvox.mail.ServiciosImpl.CoreMailServicioImpl;
 import com.netvox.mail.entidades.Mail;
+import com.netvox.mail.servicios.ClienteMongoServicio;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.text.Normalizer;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import javax.activation.DataHandler;
 import javax.mail.Message;
+import javax.mail.MessagingException;
 import javax.mail.Multipart;
 import javax.mail.Part;
 import javax.mail.internet.ContentType;
@@ -22,6 +27,10 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.mongodb.core.MongoOperations;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 @Service("utilidades")
@@ -31,6 +40,10 @@ public class Utilidades {
     @Qualifier("coremailservicio")
     CoreMailServicioImpl coremailservicio;
 
+    @Autowired
+    @Qualifier("clientemongoservicio")
+    ClienteMongoServicio clientemongoservicio;
+
     public void printException(Exception ex) {
         System.out.println("MSG:" + ex.getMessage() + " ,EXP:" + ex.toString());
         for (int i = 0; i < ex.getStackTrace().length; i++) {
@@ -39,12 +52,11 @@ public class Utilidades {
         ex.printStackTrace();
     }
 
-    public boolean createFileHTML(Message mensaje, Mail mail, boolean inbound, int peso_maximo_adjunto) {
+    public boolean createFileHTML(Message mensaje, Mail mail, int peso_maximo_adjunto) {
         boolean created = false;
         int id = mail.getIdcorreo();
         try {
-
-            File unidad = new File((inbound == true ? coremailservicio.getCARPETA_IN() : coremailservicio.getCARPETA_OUT()) + id);
+            File unidad = new File(coremailservicio.getRUTA_IN());
             mail.setRuta(unidad.getAbsolutePath());
             String cuerpoMensaje = "";
             String texto = null;
@@ -52,24 +64,22 @@ public class Utilidades {
                 unidad.delete();
             }
             unidad.mkdir();
-            File attach = new File(unidad.getAbsolutePath() + "/ATTACH");
+            File attach = new File(unidad.getAbsolutePath() + "/" + id + "/adjuntos");
             attach.mkdirs();
-            Object o = mensaje.getContent();
+            Object contenidodelmensaje = mensaje.getContent();
 
-            HashMap<String, String> index_nombre_apellido = new HashMap<String, String>();
-            if (o instanceof String) {
-                if (mensaje.getContentType().indexOf("text/html") != -1) {
+            HashMap<String, String> index_nombre_apellido = new HashMap<>();
+            if (contenidodelmensaje instanceof String) {  ///esto verifica si el contenido es solamente texto , si lo es se trata como String
+                if (mensaje.getContentType().contains("text/html")) {
                     DataHandler dh = mensaje.getDataHandler();
-                    //OutputStream os = new FileOutputStream(unidad.getAbsolutePath() + "/" + id + ".html");
                     OutputStream os = new FileOutputStream(unidad.getAbsolutePath() + "/" + id + ".txt");
                     dh.writeTo(os);
                     os.close();
 
                     System.out.println("**********PRUEBA STRING**************");
-                    System.out.println(o.toString());
+                    System.out.println(contenidodelmensaje.toString());
                     System.out.println("*************************************");
 
-                    //    System.out.println("TIPO-1 *********** " + mensaje.getContent().toString());
                     if (!index_nombre_apellido.containsKey("[Nombre*] :")) {
                         String linea = mensaje.getContent().toString();
                         if (linea.contains("[Nombre*] :")) {
@@ -79,7 +89,6 @@ public class Utilidades {
                                 linea = linea.split("</")[0];
                             }
                             index_nombre_apellido.put("[Nombre*] :", linea);
-                            //           System.out.println("CAPTURE NOMBRE : " + linea);
                         }
                     }
                     if (!index_nombre_apellido.containsKey("[Apellido*] :")) {
@@ -91,23 +100,22 @@ public class Utilidades {
                                 linea = linea.split("</")[0];
                             }
                             index_nombre_apellido.put("[Apellido*] :", linea);
-                            //        System.out.println("CAPTURE APELLIDO : " + linea);
                         }
                     }
                 } else {
-                    System.out.println("TIPO-2 *********** " + o);
+                    System.out.println("TIPO-2 *********** " + contenidodelmensaje);
 
                     System.out.println("**********PRUEBA STRING TIPO 2**************");
-                    System.out.println(o.toString());
+                    System.out.println(contenidodelmensaje.toString());
                     System.out.println("*************************************");
 
                     FileWriter fichero = null;
                     PrintWriter pw = null;
                     try {
-                        //fichero = new FileWriter(unidad.getAbsolutePath() + "/" + id + ".html");
-                        fichero = new FileWriter(unidad.getAbsolutePath() + "/" + id + ".txt");
+
+                        fichero = new FileWriter(unidad.getAbsolutePath() + "/" + id + "/" + id + ".txt");
                         pw = new PrintWriter(fichero);
-                        pw.println(o);
+                        pw.println(contenidodelmensaje);
                     } catch (Exception e) {
                         e.printStackTrace();
                     } finally {
@@ -119,7 +127,7 @@ public class Utilidades {
                             e2.printStackTrace();
                         }
                     }
-                    texto = (String) o + " \n";
+                    texto = (String) contenidodelmensaje + " \n";
 
                     if (!index_nombre_apellido.containsKey("[Nombre*] :")) {
                         String linea = texto;
@@ -138,15 +146,16 @@ public class Utilidades {
                         }
                     }
                 }
-            } else if (o instanceof Multipart) {
-                Multipart mp = (Multipart) o;
-                int numPart = mp.getCount();
-                ContentType c = new ContentType(mp.getContentType());
-                HashMap<String, String> imagenes = new HashMap<String, String>();
+            } else if (contenidodelmensaje instanceof Multipart) {
+                System.out.println("ENTRE EN EL ELSEIF COMO MULTIPART");
+                Multipart multipart = (Multipart) contenidodelmensaje;
+                int numPart = multipart.getCount();
+                ContentType tipocontenido = new ContentType(multipart.getContentType());
+                HashMap<String, String> imagenes = new HashMap<>();
 
-                if (c.getSubType().equals("ALTERNATIVE")) {
+                if (tipocontenido.getSubType().equals("ALTERNATIVE")) {
                     for (int i = 0; i < numPart; i++) {
-                        Part part = mp.getBodyPart(i);
+                        Part part = multipart.getBodyPart(i);
                         if (part.isMimeType("text/html")) {
                             cuerpoMensaje = part.getContent().toString();
                             texto = cuerpoMensaje;
@@ -156,16 +165,14 @@ public class Utilidades {
                         }
                     }
                 } else {
+                    List<String> listadeadjuntos = new ArrayList<>(); //esta lista es la que incluire en mongo       
+                    MongoOperations mongoops = clientemongoservicio.clienteMongo();
                     for (int i = 0; i < numPart; i++) {
-                        Part part = mp.getBodyPart(i);
+                        Part part = multipart.getBodyPart(i);
                         String disposition = part.getDisposition();
                         if (disposition == null) {
-
                             cuerpoMensaje = analizaParteDeMensaje(part, cuerpoMensaje, imagenes, unidad, attach, mail, peso_maximo_adjunto);
-                            //System.out.println("*****\n"+cuerpoMensaje+"\n*****");
-
                             String[] array = cuerpoMensaje.split("\\n");
-                            // System.out.println("numero de partes " + array.length);
                             bucle:
                             for (int x = 0; x < array.length; x++) {
                                 String linea = array[x];
@@ -212,8 +219,6 @@ public class Utilidades {
                                     texto = cuerpoMensaje;
                                 }
                             }
-
-                            //  System.out.println("GMAIL : " + gmail + " ,MAIL:" + cuerpoMensaje);
                         } else if ((disposition != null) && (disposition.equalsIgnoreCase(Part.ATTACHMENT))) {
                             String nombrePart = part.getFileName();
                             String aux = "";
@@ -223,18 +228,21 @@ public class Utilidades {
                                 aux = MimeUtility.decodeText(part.getFileName());
                                 aux = Normalizer.normalize(aux, Normalizer.Form.NFC);
                             }
+
                             System.out.println("NOMBRE ADJUNTO " + aux);
                             MimeBodyPart mbp = (MimeBodyPart) part;
+                            String rutadeadjunto = attach.getAbsolutePath() + "/" + aux;
                             mbp.saveFile(attach.getAbsolutePath() + "/" + aux);
+                            listadeadjuntos.add(rutadeadjunto);
                             sumarAdjuntos(new File(attach.getAbsolutePath() + "/" + aux), mail, peso_maximo_adjunto);
                         } else if ((disposition != null) && (disposition.equalsIgnoreCase(Part.INLINE))) {
                             analizaParteDeMensaje(part, cuerpoMensaje, imagenes, unidad, attach, mail, peso_maximo_adjunto);
                         }
                     }
-
+                    mongoops.updateFirst(new Query(Criteria.where("idcorreo").is(id)), new Update().set("listadeadjuntos", listadeadjuntos), Mail.class);
                 }
 
-                System.err.println("CUERPO111\n");
+                System.err.println("CUERPO");
                 System.err.println(cuerpoMensaje);
 
                 for (String key : imagenes.keySet()) {
@@ -245,57 +253,46 @@ public class Utilidades {
                 System.err.println(cuerpoMensaje);
 
                 //CREACION HTML
-                Writer write1 = null;
-                try {
-                    //iso-8859-1
-                    //write1 = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(unidad.getAbsolutePath() + "/" + id + ".html"), "UTF-8"));
-                    write1 = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(unidad.getAbsolutePath() + "/" + id + ".txt"), "UTF-8"));
-                    write1.write(cuerpoMensaje);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    try {
-                        write1.close();
-                    } catch (Exception e2) {
-                        e2.printStackTrace();
-                    }
-                }
-
-                //CREACION TEXT
-                /*    Writer write2 = null;
-                try {
-                    //write2 = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(unidad.getAbsolutePath() + "/" + id + ".txt"), "iso-8859-1"));
-                    write2 = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(unidad.getAbsolutePath() + "/" + id + ".txt"), "UTF-8"));
-                    write2.write(texto);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    write2.close();
-                } */
+                crearArchivoHtml(unidad, cuerpoMensaje, id);
             }
-
             if (index_nombre_apellido.containsKey("[Nombre*] :")) {
                 mail.setNombre(index_nombre_apellido.get("[Nombre*] :"));
             }
-
             if (index_nombre_apellido.containsKey("[Apellido*] :")) {
                 mail.setApellido(index_nombre_apellido.get("[Apellido*] :"));
             }
 
             mail.setTexto(texto);
             created = true;
-        } catch (Exception ex) {
-           printException(ex);
+        } catch (IOException | MessagingException ex) {
+            ex.printStackTrace();
+            printException(ex);
         }
         System.out.println("CREADO=> " + created);
         return created;
     }
     public static int i = 0;
 
+    public void crearArchivoHtml(File unidad, String cuerpoMensaje, int id) {
+        Writer write1 = null;
+        try {
+
+            write1 = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(unidad.getAbsolutePath() + "/" + id + "/" + id + ".txt"), "UTF-8"));
+            write1.write(cuerpoMensaje);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                write1.close();
+            } catch (Exception e2) {
+                e2.printStackTrace();
+            }
+        }
+    }
+
     public String analizaParteDeMensaje(Part unaParte, String mensaje, HashMap<String, String> imagenes, File unidad, File attach, Mail mail, int peso_maximo_adjunto) {
 
         try {
-
             if (unaParte.isMimeType("multipart/alternative")) {
                 Multipart mp = (Multipart) unaParte.getContent();
                 for (int i = 0; i < mp.getCount(); i++) {
@@ -328,11 +325,9 @@ public class Utilidades {
 
                 if (unaParte.isMimeType("text/*")) {
                     i += 1;
-                    //   System.out.println(i + " : " + unaParte.getContent().toString());
                     mensaje = mensaje + unaParte.getContent().toString();
                 } else {
                     if (unaParte.isMimeType("image/*")) {
-                        //  System.out.println("DETECT  " + unaParte.getDescription() + " -- " + unaParte.getDataHandler() + " __ " + unaParte.getContentType());
                         try {
                             System.out.println(unidad.getAbsolutePath() + "/" + unaParte.getFileName());
                             boolean depurar = false;
@@ -366,9 +361,9 @@ public class Utilidades {
                                 if (contentid != null) {
                                     contentid = contentid.replace("<", "");
                                     contentid = contentid.replace(">", "");
-                                    imagenes.put("cid:" + contentid, coremailservicio.getURL_IN() + mail.getIdcorreo()+ "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
+                                    imagenes.put("cid:" + contentid, coremailservicio.getRUTA_IN() + mail.getIdcorreo() + "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
                                 } else {
-                                    imagenes.put("cid:" + unaParte.getFileName() + "@", coremailservicio.getURL_IN() + mail.getIdcorreo()+ "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
+                                    imagenes.put("cid:" + unaParte.getFileName() + "@", coremailservicio.getRUTA_IN() + mail.getIdcorreo() + "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
                                 }
 
                             } catch (Exception ex) {
@@ -407,7 +402,7 @@ public class Utilidades {
         return mensaje;
     }
 
-    public  void sumarAdjuntos(File file, Mail mail, int peso_maximo_adjunto) {
+    public void sumarAdjuntos(File file, Mail mail, int peso_maximo_adjunto) {
         double limite = 0;
         limite = peso_maximo_adjunto;  //mailajustes.getMaximo_adjunto()
         try {
@@ -415,7 +410,7 @@ public class Utilidades {
             mail.setPeso_adjunto(mail.getPeso_adjunto() + peso_adjunto);
             System.out.println("PESO ADJUNTO " + peso_adjunto + "  .PESO PERMITIDO" + limite);
         } catch (Exception ex) {
-           printException(ex);
+            printException(ex);
         }
 
     }

@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.springframework.context.ApplicationContext;
 
 @Service("hiloentradaservicio")
 public class HiloEntradaServicio implements Runnable {
@@ -70,15 +69,15 @@ public class HiloEntradaServicio implements Runnable {
     public void run() {
 
         coremailservicio.cargarRutas();//carga las rutas donde se guardaran los archivos de correos.
-        while (isActivo()) {
+        while (isActivo()) {     
             try {
                 coremailservicio.llenarListaAjustesMail(); // lee las configuraciones por campaña y setea emailporcampana
-                System.out.println("[IN] CANTIDAD COLAS CON MAIL ACTIVO " + coremailservicio.getMapadeajustesmail().size()); //en este punto ya se tiene con el metodo anterior los mails por campaña
-                System.out.println("::::LEYENDO CUENTAS DE CORREO:::::::");
+                System.out.println("----------------------------------------------------------------------------------------");
+                System.out.println("LEYENDO CUENTAS DE CORREO");
+                System.out.println("COLAS CON MAIL ACTIVO " + coremailservicio.getMapadeajustesmail().size()); //en este punto ya se tiene con el metodo anterior los mails por campaña
                 for (MailAjustes mailajustes : coremailservicio.getMapadeajustesmail().values()) {
                     System.out.println("shost => " + mailajustes.getHost());
                     System.out.println("puerto => " + mailajustes.getPuerto());
-                    System.out.println("[IN] " + mailajustes.getHost() + "," + mailajustes.getUser() + "," + mailajustes.getPass() + "," + mailajustes.getStore());
                     props = ObtenerPropiedades(mailajustes.getHost(), mailajustes.getPuerto());
                     listamails = new ArrayList<>(); //solo se usa para imprimir la lista de mails.
                     try {
@@ -93,8 +92,7 @@ public class HiloEntradaServicio implements Runnable {
                         folder.open(Folder.READ_WRITE);
                         id = 0; //inicializa el id de la cola
                         listacorreosnoleidos = obtenerCorreosNoLeidos(folder, 20);//el segundo parametro indica cuantos correos debo tomar.
-                        // if (listacorreosnoleidos.size() > 0) {
-                        System.out.println("............................ MENSAJES(CORREOS NO LEIDOS) : " + listacorreosnoleidos.size());
+                        System.out.println("CORREOS NO LEIDOS : " + listacorreosnoleidos.size());
                         for (Message mensaje : listacorreosnoleidos) {
                             if (mensaje.getSubject() != null && mensaje.getSubject().equalsIgnoreCase(mailajustes.getUser())) {
                                 System.out.println("***** EL CLIENTE Y EL SERVIDOR SON EL MISMO.... IGNORANDO");
@@ -104,7 +102,8 @@ public class HiloEntradaServicio implements Runnable {
                                     Mail mail = new Mail();
                                     mail.setIdconfiguracion(mailajustes.getId());//setIdconfiguracion
                                     mail.setCola(cola);
-                                    // mail.setTipomail("entrada");//("IN");//settipo
+                                    mail.setId_cola(cola.getId_cola());
+                                    mail.setIdcorreo(id);
                                     mail.setCampana(cola.getId_campana());
                                     if (mensaje.getSubject() != null) {
                                         mail.setAsunto(mensaje.getSubject().trim());
@@ -121,20 +120,17 @@ public class HiloEntradaServicio implements Runnable {
                                         remitente = remitente.trim();
                                     }
                                     mail.setRemitente(remitente);
-
-                                    if (!utilidades.createFileHTML(mensaje, mail, true, mailajustes.getMaximo_adjunto())) {
+                                    if (!utilidades.createFileHTML(mensaje, mail, mailajustes.getMaximo_adjunto())) {
                                         System.out.println("FALLO EN EL CREATE HTML");
                                         mensaje.setFlag(Flags.Flag.SEEN, true);
                                         continue;
                                     }
-
                                     if (mail.getPeso_adjunto() > mailajustes.getMaximo_adjunto()) {
                                         FileUtils.deleteDirectory(new File(mail.getRuta()));
                                         mailautomatico.enviarEmail(mail);
                                         coremailservicio.eliminarEmailOnline(mail.getIdcorreo());
                                         continue;
                                     }
-
                                     if (remitente == null) {
                                         System.out.println("REMITENTE NO CAPTURADO");
                                         mensaje.setFlag(Flags.Flag.SEEN, true);
@@ -145,12 +141,11 @@ public class HiloEntradaServicio implements Runnable {
                                     mail.setRemitente(remitente.trim());
                                     mail.setFecha_ingreso(formato.format(new Date()));
                                     listamails.add(mail);
-                                    coremailservicio.guardarMail(mail/*, coremailservicio.anadirMails(queue)*/);
+                                    coremailservicio.guardarMail(mail);
                                     mensaje.setFlag(Flags.Flag.SEEN, true);
                                 }
                             }
                         }
-                        // }
                     } catch (Exception ex) {
                         utilidades.printException(ex);
                         ex.printStackTrace();
@@ -162,12 +157,13 @@ public class HiloEntradaServicio implements Runnable {
                     });
                     listamails.clear();
                 }
-                System.out.println("::::FIN LECTURA DE CUENTAS:::::::");
-                //    Thread.sleep(1000 * 5);
+                System.out.println("FIN LECTURA DE CUENTAS");
+                System.out.println("----------------------------------------------------------------------------------------");
+                //Thread.sleep(1000 * 5);
             } catch (Exception ex) {
                 utilidades.printException(ex);
                 ex.printStackTrace();
-            }
+            } 
         }
     }
 
