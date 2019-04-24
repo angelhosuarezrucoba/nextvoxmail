@@ -10,36 +10,36 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
-
 public class FormatoDeFechas {
     //Formartos de fecha
-    
-    public final SimpleDateFormat FORMATO_FECHA_HORA= new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    public final SimpleDateFormat FORMATO_FECHA_HORA_T= new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-    public final SimpleDateFormat FORMATO_FECHA_HORA_SIN_SEGUNDOS= new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
-    public final SimpleDateFormat FORMATO_FECHA_HORA_SIN_SEGUNDOS_NI_T= new SimpleDateFormat("yyyy-MM-dd HH:mm");
-    public final SimpleDateFormat FORMATO_FECHA= new SimpleDateFormat("yyyy-MM-dd");
+
+    public final SimpleDateFormat FORMATO_FECHA_HORA = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    public final SimpleDateFormat FORMATO_FECHA_HORA_T = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+    public final SimpleDateFormat FORMATO_FECHA_HORA_SIN_SEGUNDOS = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
+    public final SimpleDateFormat FORMATO_FECHA_HORA_SIN_SEGUNDOS_NI_T = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+    public final SimpleDateFormat FORMATO_FECHA = new SimpleDateFormat("yyyy-MM-dd");
     public final SimpleDateFormat FORMATO_HORA = new SimpleDateFormat("HH:mm:ss");
 
-     /**
+    /**
      * Transforma un tipo Date a String
+     *
      * @param fecha cualquier cadena de fecha
      * @param formatoinicial cualquier formato
      * @param formatofinal cualquier formato
-     * @return una cadena de texto en el formato que desees
-     * de yyyy-mm-dd a yyyy-mm-dd hh:mm:ss
+     * @return una cadena de texto en el formato que desees de yyyy-mm-dd a
+     * yyyy-mm-dd hh:mm:ss
      */
-     public String cambiarFormatoFechas(String fecha ,SimpleDateFormat formatoinicial,SimpleDateFormat formatofinal){
-         String fechafinal="";
-         
-         try {
-             fechafinal= formatofinal.format(formatoinicial.parse(fecha));
-         } catch (ParseException ex) {
-             System.out.println("error en el metodo : cambiarFormatoFechas");
-         }
-         return fechafinal;
-    } 
-     
+    public String cambiarFormatoFechas(String fecha, SimpleDateFormat formatoinicial, SimpleDateFormat formatofinal) {
+        String fechafinal = "";
+
+        try {
+            fechafinal = formatofinal.format(formatoinicial.parse(fecha));
+        } catch (ParseException ex) {
+            System.out.println("error en el metodo : cambiarFormatoFechas");
+        }
+        return fechafinal;
+    }
+
     /**
      * Transforma un tipo Date a String
      *
@@ -48,29 +48,37 @@ public class FormatoDeFechas {
      * @return una cadena de texto en el formato que deseees , yyyy-mm-dd
      * hh:mm:ss
      */
-     public String convertirFechaString(Date date,SimpleDateFormat dateFormat){
+    public String convertirFechaString(Date date, SimpleDateFormat dateFormat) {
         return dateFormat.format(date);
     }
-    
-     public Date convertirFechaDate(String date,SimpleDateFormat dateFormat) throws ParseException{
+
+    public Date convertirFechaDate(String date, SimpleDateFormat dateFormat) throws ParseException {
         return dateFormat.parse(date);
     }
-     
+
     /**
      * Calculan el numero de dias que hay entre ambas fechas
-     * 
+     *
      * @param fechafinal
      * @param fechainicial
      * @return dias cantida de dias de diferencia entre la fecha inicial y final
      */
-     public int restadefechas(String fechafinal, String fechainicial) throws ParseException {
+    public int restadefechas(String fechafinal, String fechainicial) throws ParseException {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         Date fechaInicial = dateFormat.parse(fechainicial);
         Date fechaFinal = dateFormat.parse(fechafinal);
         int dias = (int) ((fechaFinal.getTime() - fechaInicial.getTime()) / 86400000);
         return dias;
-    } 
-     
+    }
+
+    public int restaDeFechasEnSegundos(String fechafinal, String fechainicial) throws ParseException {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date fechaInicial = dateFormat.parse(fechainicial);
+        Date fechaFinal = dateFormat.parse(fechafinal);
+        int segundos = (int) ((fechaFinal.getTime() - fechaInicial.getTime()) / 1000);      
+        return segundos;
+    }
+
     public String restadehoras(String horafinal, String horainicial) throws ParseException {
         SimpleDateFormat dateFormat = new SimpleDateFormat("H:m:s");
 
@@ -93,8 +101,8 @@ public class FormatoDeFechas {
                 H = Integer.toString(horas);
             }
             diferencia = diferencia - (horas * 3600);
-        }else{
-            H="00";
+        } else {
+            H = "00";
         }
         if (diferencia > 60) {
             minutos = (int) Math.floor(diferencia / 60);
@@ -104,8 +112,8 @@ public class FormatoDeFechas {
                 m = Integer.toString(minutos);
             }
             diferencia = diferencia - (minutos * 60);
-        }else{
-            m="00";
+        } else {
+            m = "00";
         }
         if (diferencia < 10) {
             s = "0" + Integer.toString(diferencia);
@@ -115,10 +123,9 @@ public class FormatoDeFechas {
 
         return H + ":" + m + ":" + s;
     }
-    
-    
+
     public String sumadehoras(String horafinal, String horainicial) throws ParseException {
-        
+
         String[] tiempo1 = horafinal.split(":");
         String[] tiempo2 = horainicial.split(":");
         float[] total = new float[3];
@@ -173,7 +180,7 @@ public class FormatoDeFechas {
         }
 
         return Hora + ":" + minuto + ":" + segundos;
-        
+
     }
 
     /**
@@ -183,15 +190,15 @@ public class FormatoDeFechas {
      * @param dias numero de dias a incrementar
      * @return fechaComoCadena la fecha con los dias aumentados
      */
-    public String sumaDeFechas(Date fecha, int dias){
+    public String sumaDeFechas(Date fecha, int dias) {
         Calendar calendar = Calendar.getInstance();
-	calendar.setTime(fecha); 
-	calendar.add(Calendar.DAY_OF_YEAR, dias);  
+        calendar.setTime(fecha);
+        calendar.add(Calendar.DAY_OF_YEAR, dias);
         String fechaComoCadena = FORMATO_FECHA.format(calendar.getTime());
-        return fechaComoCadena; 
+        return fechaComoCadena;
     }
-     
-        public Date ultimodiames() {
+
+    public Date ultimodiames() {
 
         Date diaActual = new Date();
         int mes = this.obtenerMes(diaActual);
@@ -272,5 +279,5 @@ public class FormatoDeFechas {
             return Integer.parseInt(dateFormat.format(fecactual));
         }
     }
-    
+
 }

@@ -32,6 +32,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
+import com.netvox.mail.entidadesfront.Adjunto;
 
 @Service("utilidades")
 public class Utilidades {
@@ -165,7 +166,7 @@ public class Utilidades {
                         }
                     }
                 } else {
-                    List<String> listadeadjuntos = new ArrayList<>(); //esta lista es la que incluire en mongo       
+                    List<Adjunto> listadeadjuntos = new ArrayList<>(); //esta lista es la que incluire en mongo       
                     MongoOperations mongoops = clientemongoservicio.clienteMongo();
                     for (int i = 0; i < numPart; i++) {
                         Part part = multipart.getBodyPart(i);
@@ -232,8 +233,10 @@ public class Utilidades {
                             System.out.println("NOMBRE ADJUNTO " + aux);
                             MimeBodyPart mbp = (MimeBodyPart) part;
                             String rutadeadjunto = attach.getAbsolutePath() + "/" + aux;
-                            mbp.saveFile(attach.getAbsolutePath() + "/" + aux);
-                            listadeadjuntos.add(rutadeadjunto);
+                            mbp.saveFile(attach.getAbsolutePath() + "/" + aux);                            
+                        
+                            
+                            listadeadjuntos.add(new Adjunto(aux,mbp.getSize(),rutadeadjunto));
                             sumarAdjuntos(new File(attach.getAbsolutePath() + "/" + aux), mail, peso_maximo_adjunto);
                         } else if ((disposition != null) && (disposition.equalsIgnoreCase(Part.INLINE))) {
                             analizaParteDeMensaje(part, cuerpoMensaje, imagenes, unidad, attach, mail, peso_maximo_adjunto);
@@ -242,14 +245,11 @@ public class Utilidades {
                     mongoops.updateFirst(new Query(Criteria.where("idcorreo").is(id)), new Update().set("listadeadjuntos", listadeadjuntos), Mail.class);
                 }
 
-                System.err.println("CUERPO");
-                System.err.println(cuerpoMensaje);
-
                 for (String key : imagenes.keySet()) {
                     cuerpoMensaje = cuerpoMensaje.replace(key, imagenes.get(key));
                 }
 
-                System.err.println("CUERPO222\n");
+                System.err.println("CUERPO\n");
                 System.err.println(cuerpoMensaje);
 
                 //CREACION HTML
@@ -262,7 +262,7 @@ public class Utilidades {
                 mail.setApellido(index_nombre_apellido.get("[Apellido*] :"));
             }
 
-            mail.setTexto(texto);
+            mail.setMensaje(texto);
             created = true;
         } catch (IOException | MessagingException ex) {
             ex.printStackTrace();

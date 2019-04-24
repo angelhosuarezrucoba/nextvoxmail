@@ -5,6 +5,7 @@
  */
 package com.netvox.mail.entidades;
 
+import com.netvox.mail.entidadesfront.Adjunto;
 import java.util.List;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -17,7 +18,7 @@ public class Mail {
     private String asunto;//subject;  
      private Cola cola;
     private int usuario;
-    private String texto;
+    private String mensaje;
     private int id_cola;
     private String tipomail;//tipo de entrada o salida;
     private int campana;
@@ -29,7 +30,7 @@ public class Mail {
     private int idconfiguracion;
     private int estado;
     private String fecha_ingreso;
-    private List<String> listadeadjuntos;
+    private List<Adjunto> listadeadjuntos;
     
 
     public Mail(int idcorreo, int estado, String tipomail, String fecha_ingreso, int idconfiguracion, int id_cola) {
@@ -45,11 +46,11 @@ public class Mail {
 
     }
 
-
     @Override
     public String toString() {
-        return "Mail{" + "idcorreo=" + idcorreo + ", remitente=" + remitente + ", destino=" + destino + ", asunto=" + asunto + ", cola=" + cola + ", usuario=" + usuario + ", texto=" + texto + ", id_cola=" + id_cola + ", tipomail=" + tipomail + ", campana=" + campana + ", nombre=" + nombre + ", apellido=" + apellido + ", nombre_campana=" + nombre_campana + ", peso_adjunto=" + peso_adjunto + ", ruta=" + ruta + ", idconfiguracion=" + idconfiguracion + ", estado=" + estado + ", fecha_ingreso=" + fecha_ingreso + '}';
+        return "Mail{" + "idcorreo=" + idcorreo + ", remitente=" + remitente + ", destino=" + destino + ", asunto=" + asunto + ", cola=" + cola + ", usuario=" + usuario + ", mensaje=" + mensaje + ", id_cola=" + id_cola + ", tipomail=" + tipomail + ", campana=" + campana + ", nombre=" + nombre + ", apellido=" + apellido + ", nombre_campana=" + nombre_campana + ", peso_adjunto=" + peso_adjunto + ", ruta=" + ruta + ", idconfiguracion=" + idconfiguracion + ", estado=" + estado + ", fecha_ingreso=" + fecha_ingreso + ", listadeadjuntos=" + listadeadjuntos + '}';
     }
+
 
     public String getRemitente() {
         return remitente;
@@ -83,13 +84,7 @@ public class Mail {
         this.usuario = usuario;
     }
 
-    public String getTexto() {
-        return texto;
-    }
 
-    public void setTexto(String texto) {
-        this.texto = texto;
-    }
 
     public int getId_cola() {
         return id_cola;
@@ -195,12 +190,22 @@ public class Mail {
         this.idcorreo = idcorreo;
     }
 
- 
-    public List<String> getListadeadjuntos() {
+    public List<Adjunto> getListadeadjuntos() {
         return listadeadjuntos;
     }
 
-    public void setListadeadjuntos(List<String> listadeadjuntos) {
+    public void setListadeadjuntos(List<Adjunto> listadeadjuntos) {
         this.listadeadjuntos = listadeadjuntos;
     }
+
+    public String getMensaje() {
+        return mensaje;
+    }
+
+    public void setMensaje(String mensaje) {
+        this.mensaje = mensaje;
+    }
+
+ 
+
 }

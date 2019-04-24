@@ -5,48 +5,47 @@
  */
 package com.netvox.mail.entidades;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Usuario {
 
     private int id;
     private int pendientes;
     private int atendidos;
-    private int cola_asign;
-    private int campana_asing;
+    private int cola;
+    private int campana;
     private int acumulados;
     private String nombre;
-    private LinkedList<Usuario> list_user_queue;
-    private LinkedList<Mail> mails;
-    private LinkedList<Chat> chats;
+    private List<Mail> mails;
+    private List<Chat> chats;
 
-    public Usuario(int id, int pendientes, int cola_asign, int campana_asing) {
+    public Usuario(int id, int pendientes, int cola, int campana) {
         this.id = id;
         this.pendientes = pendientes;
-        this.cola_asign = cola_asign;
-        this.campana_asing = campana_asing;
-        this.list_user_queue = new LinkedList<Usuario>();
-        this.mails = new LinkedList<Mail>();
-        //this.list_user_queue.add(this);
+        this.cola = cola;
+        this.campana = campana;
+        this.mails = new ArrayList<>();
+
     }
 
-    public Usuario(int id, int pendientes, int cola_asign, String nombre, int campana_asing) {
+    public Usuario(int id, int pendientes, int cola, String nombre, int campana,int acumulados) {
         this.id = id;
         this.pendientes = pendientes;
-        this.cola_asign = cola_asign;
-        this.list_user_queue = new LinkedList<Usuario>();
-        this.mails = new LinkedList<Mail>();
+        this.cola = cola;
+        this.mails = new ArrayList<>();
         this.nombre = nombre;
-        this.campana_asing = campana_asing;
-        //this.list_user_queue.add(this);
+        this.campana = campana;
+        this.acumulados=acumulados;
+
     }
 
     public Usuario() {
         this.id = 0;
         this.pendientes = 0;
         this.atendidos = 0;
-        this.mails = new LinkedList<Mail>();
-        this.chats = new LinkedList<Chat>();
+        this.mails = new ArrayList<>();
+        this.chats = new ArrayList<>();
     }
 
     public String getNombre() {
@@ -65,20 +64,13 @@ public class Usuario {
         this.acumulados = acumulados;
     }
 
-    public LinkedList<Usuario> getList_user_queue() {
-        return list_user_queue;
+
+    public int getCola() {
+        return cola;
     }
 
-    public void setList_user_queue(Usuario users) {
-        this.list_user_queue.add(users);
-    }
-
-    public int getCola_asign() {
-        return cola_asign;
-    }
-
-    public void setCola_asign(int cola_asign) {
-        this.cola_asign = cola_asign;
+    public void setCola(int cola) {
+        this.cola = cola;
     }
 
     /**
@@ -112,28 +104,28 @@ public class Usuario {
     /**
      * @return the mails
      */
-    public LinkedList<Mail> getMails() {
+    public List<Mail> getMails() {
         return mails;
     }
 
     /**
      * @param mails the mails to set
      */
-    public void setMails(LinkedList<Mail> mails) {
+    public void setMails(List<Mail> mails) {
         this.mails = mails;
     }
 
     /**
      * @return the chats
      */
-    public LinkedList<Chat> getChats() {
+    public List<Chat> getChats() {
         return chats;
     }
 
     /**
      * @param chats the chats to set
      */
-    public void setChats(LinkedList<Chat> chats) {
+    public void setChats(List<Chat> chats) {
         this.chats = chats;
     }
 
@@ -151,12 +143,13 @@ public class Usuario {
         this.atendidos = atendidos;
     }
 
-    public int getCampana_asing() {
-        return campana_asing;
+    public int getCampana() {
+        return campana;
     }
 
-    public void setCampana_asing(int campana_asing) {
-        this.campana_asing = campana_asing;
+    public void setCampana(int campana) {
+        this.campana = campana;
     }
+
 
 }

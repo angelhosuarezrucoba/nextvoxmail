@@ -5,8 +5,6 @@
  */
 package com.netvox.mail.entidades;
 
-import java.util.LinkedList;
-
 /**
  *
  * @author desarrollo5
@@ -17,15 +15,6 @@ public class Cola {
     private String nombre_cola;
     private String subject_cola;
     private int id_campana;
-    private LinkedList<Usuario> users_queue;
-
-    public LinkedList<Usuario> getUsers_queue() {
-        return users_queue;
-    }
-
-    public void setUsers_queue(Usuario users) {
-        this.users_queue.add(users);
-    }
 
     public Cola() {
     }
@@ -35,8 +24,6 @@ public class Cola {
         this.nombre_cola = nombre_cola;
         this.subject_cola = subject_cola;
         this.id_campana = id_campana;
-        this.users_queue = new LinkedList<Usuario>();
-        this.users_queue.add(null);
     }
 
     public Cola(int id_cola, int id_campana) {

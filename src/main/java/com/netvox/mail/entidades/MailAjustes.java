@@ -4,7 +4,8 @@
  */
 package com.netvox.mail.entidades;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -18,11 +19,11 @@ public class MailAjustes {
     private String store;
     private int puerto;
     private int maximo_adjunto;
-    private LinkedList<Cola> colas;
+    private List<Cola> colas;
     private int id;
 
     public MailAjustes(String user, String pass, String host, String store, int puerto, int maximo_adjunto,int id) {
-        this.colas = new LinkedList<Cola>();
+        this.colas = new ArrayList<>();
         this.user = user;
         this.pass = pass;
         this.store = store;
@@ -124,7 +125,7 @@ public class MailAjustes {
         this.id = id;
     }
 
-    public LinkedList<Cola> getColas() {
+    public List<Cola> getColas() {
         return colas;
     }
 }

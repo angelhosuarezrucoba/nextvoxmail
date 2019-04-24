@@ -6,7 +6,9 @@
 package com.netvox.mail.ServiciosImpl;
 
 import com.netvox.mail.entidades.Mail;
+import com.netvox.mail.entidadesfront.MailFront;
 import com.netvox.mail.servicios.ClienteMongoServicio;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -21,8 +23,20 @@ public class MailServicioImpl {
     @Qualifier("clientemongoservicio")
     ClienteMongoServicio clientemongoservicio;
 
-    public List<Mail> obtenerMails() {
+    public List<MailFront> obtenerMails() {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
-        return mongoops.find(new Query(), Mail.class);
+        List<Mail> lista = mongoops.find(new Query(), Mail.class);
+        List<MailFront> listafront = new ArrayList<>();
+        lista.forEach((t) -> {
+            MailFront mailfront = new MailFront();
+            mailfront.setId(t.getIdcorreo());
+            mailfront.setEstado(t.getEstado());
+            mailfront.setRemitente(t.getRemitente());
+            mailfront.setAsunto(t.getAsunto());
+            mailfront.setFecha_ingreso(t.getFecha_ingreso());
+            mailfront.setAdjuntos(t.getListadeadjuntos());
+            listafront.add(mailfront);
+        });
+        return listafront;
     }
 }
