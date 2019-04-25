@@ -9,17 +9,16 @@ package com.netvox.mail.entidadesfront;
  *
  * @author desarrollo5
  */
-public class Peticion {
+public class RespuestaLogin {
     
-    private String identificador;
+    private String evento;
 
- 
-
-    public String getIdentificador() {
-        return identificador;
+    public String getEvento() {
+        return evento;
     }
 
-    public void setIdentificador(String identificador) {
-        this.identificador = identificador;
+    public void setEvento(String evento) {
+        this.evento = evento;
     }
+    
 }

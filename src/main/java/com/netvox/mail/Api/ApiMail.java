@@ -6,36 +6,34 @@
 package com.netvox.mail.Api;
 
 import com.netvox.mail.ServiciosImpl.MailServicioImpl;
-import com.netvox.mail.entidadesfront.MailFront;
-import com.netvox.mail.entidadesfront.Peticion;
+import com.netvox.mail.configuraciones.WebSocket;
+import com.netvox.mail.entidadesfront.MensajeFront;
+
 import java.text.SimpleDateFormat;
-import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/apis")
-@CrossOrigin(origins = "*", methods= {RequestMethod.GET,RequestMethod.POST})
+@CrossOrigin(origins = "*", methods = {RequestMethod.GET, RequestMethod.POST})
 public class ApiMail {
 
     SimpleDateFormat formato = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     @Autowired
-    @Qualifier("mailservicio")
-    MailServicioImpl mailservicio;
-    
-    @PostMapping("/lista")
-    public List<MailFront> obtenerMails(@RequestBody Peticion peticion) {
-        System.out.println(peticion.getIdentificador());
-        return mailservicio.obtenerMails();
+    @Qualifier("websocket")
+    WebSocket websocket;
+
+    @GetMapping("/prueba")
+    public void prueba() {
+        MensajeFront mensaje = new MensajeFront();
+        mensaje.setEvento("666");
+        websocket.enviarMensajeParaUnUsuario(mensaje, 17);
     }
-    
-   
 
 }

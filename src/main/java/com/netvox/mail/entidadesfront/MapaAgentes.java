@@ -8,18 +8,16 @@ package com.netvox.mail.entidadesfront;
 import java.util.HashMap;
 import java.util.List;
 
-public class Mapa {
+public class MapaAgentes {
 
-    private static HashMap<Integer, List<String>> mapa = new HashMap<>();
+    private static HashMap<Integer, List<Agente>> mapadeagentes = new HashMap<>();
 
-    public static HashMap<Integer, List<String>> getMapa() {
-        return mapa;
+    public static HashMap<Integer, List<Agente>> getMapa() {
+        return mapadeagentes;
     }
 
-    public static void setMapa(HashMap<Integer, List<String>> aMapa) {
-        mapa = aMapa;
+    public static void setMapa(HashMap<Integer, List<Agente>> aMapa) {
+        mapadeagentes = aMapa;
     }
-
-  
 
 }

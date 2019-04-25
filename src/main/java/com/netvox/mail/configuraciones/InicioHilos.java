@@ -22,7 +22,7 @@ public class InicioHilos {
     @PostConstruct
     public void init() {
       //  coremailservicio.ejecutarHiloEntrada();
-      //  coremailservicio.ejecutarHiloAsignacion();
+       // coremailservicio.ejecutarHiloAsignacion();
     }
 
 }

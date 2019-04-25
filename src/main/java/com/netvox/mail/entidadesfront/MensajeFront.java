@@ -1,20 +1,15 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package com.netvox.mail.entidadesfront;
 
-/**
- *
- * @author desarrollo5
- */
-public class Mensaje {
+import java.util.List;
+
+
+public class MensajeFront {
 
     private int idagente;
     private int campana;
-    private String evento; // esto es el login
-
+    private String evento; // esto es lo que nos dice que accion es la que se va a realizar
+    private List<Integer> colas;
     
     
     public int getCampana() {
@@ -40,6 +35,16 @@ public class Mensaje {
     public void setIdagente(int idagente) {
         this.idagente = idagente;
     }
+
+    public List<Integer> getColas() {
+        return colas;
+    }
+
+    public void setColas(List<Integer> colas) {
+        this.colas = colas;
+    }
+
+    
     
 
 }

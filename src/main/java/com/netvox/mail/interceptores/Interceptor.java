@@ -5,32 +5,29 @@
  */
 package com.netvox.mail.interceptores;
 
-import com.netvox.mail.entidadesfront.Mapa;
 import java.util.Map;
-import javax.servlet.http.HttpSession;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
-import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.web.socket.WebSocketHandler;
-import org.springframework.web.socket.server.HandshakeInterceptor;
+import org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor;
+import org.springframework.web.util.UriTemplate;
 
 /**
  *
  * @author desarrollo5
  */
-public class Interceptor implements HandshakeInterceptor {
+public class Interceptor extends HttpSessionHandshakeInterceptor {
+
+    private static final UriTemplate URI_TEMPLATE = new UriTemplate("/mail/{idagente}");
 
     @Override
-    public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
-        HttpSession session = ((ServletServerHttpRequest) request).getServletRequest().getSession();
-        session.setAttribute("idsesion", session.getId());
-       // System.out.println(session.getAttribute("idsesion"));
-        attributes.put("sessionId", session.getId());
-        return true;
-    }
+    public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes)
+            throws Exception {
+        Map<String, String> mapauri = URI_TEMPLATE.match(request.getURI().getPath());
 
-    @Override
-    public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Exception exception) {
+        attributes.put("idagente", mapauri.get("idagente"));
+
+        return super.beforeHandshake(request, response, wsHandler, attributes);
     }
 
 }
