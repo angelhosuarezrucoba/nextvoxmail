@@ -8,9 +8,10 @@ package com.netvox.mail.configuraciones;
 import com.netvox.mail.interceptores.Interceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
-import org.springframework.web.socket.config.annotation.AbstractWebSocketMessageBrokerConfigurer;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
+import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
+import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 
 /**
  *
@@ -18,26 +19,31 @@ import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
  */
 @Configuration
 @EnableWebSocketMessageBroker
-public class WebsocketConfiguracion extends AbstractWebSocketMessageBrokerConfigurer {
+public class WebsocketConfiguracion implements WebSocketConfigurer {
 //implements WebSocketMessageBrokerConfigurer la guia menciona esto pero ... no tenemos que configurar todo. abstrac...es un adapter
 
     
     
-    @Override
-    public void configureMessageBroker(MessageBrokerRegistry configuracion) {
-        configuracion.enableSimpleBroker("/mailcore"); // esto es el lugar donde se controla la cola de mensajes
-        configuracion.setApplicationDestinationPrefixes("/mensajes");//prefijo al que debe enviarse desde el cliente, anexado con el controlador.
-       // configuracion.setUserDestinationPrefix("/asesor");
-        /* este prefijo se agrega para generar un control sobre las etiquetas @messagemapping
-            es decir /servidor no necesariamente sera el unico metodo que reciba mensajes, entonces
-        todo se agrupa en /app/"ruta del controlador"
-         */
-    }
+//    @Override
+//    public void configureMessageBroker(MessageBrokerRegistry configuracion) {
+//        configuracion.enableSimpleBroker("/mailcore"); // esto es el lugar donde se controla la cola de mensajes
+//        configuracion.setApplicationDestinationPrefixes("/mensajes");//prefijo al que debe enviarse desde el cliente, anexado con el controlador.
+//       // configuracion.setUserDestinationPrefix("/asesor");
+//        /* este prefijo se agrega para generar un control sobre las etiquetas @messagemapping
+//            es decir /servidor no necesariamente sera el unico metodo que reciba mensajes, entonces
+//        todo se agrupa en /app/"ruta del controlador"
+//         */
+//    }
+//
+//    @Override
+//    public void registerStompEndpoints(StompEndpointRegistry registro) {
+//        registro.addEndpoint("/websocket").addInterceptors(new Interceptor()).setAllowedOrigins("*").withSockJS();
+//        /*habilita la ruta donde llegan las peticiones de sockjs si es que websocket protocol no esta habilitado*/
+//    }
 
     @Override
-    public void registerStompEndpoints(StompEndpointRegistry registro) {
-        registro.addEndpoint("/websocket").addInterceptors(new Interceptor()).setAllowedOrigins("*").withSockJS();
-        /*habilita la ruta donde llegan las peticiones de sockjs si es que websocket protocol no esta habilitado*/
+    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
 }
