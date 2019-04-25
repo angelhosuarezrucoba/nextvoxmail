@@ -159,7 +159,7 @@ public class HiloEntradaServicio implements Runnable {
                 }
                 System.out.println("FIN LECTURA DE CUENTAS");
                 System.out.println("----------------------------------------------------------------------------------------");
-                //Thread.sleep(1000 * 5);
+                Thread.sleep(1000 * 5);
             } catch (Exception ex) {
                 utilidades.printException(ex);
                 ex.printStackTrace();

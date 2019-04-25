@@ -21,8 +21,8 @@ public class InicioHilos {
     ///esto ejecuta un hilo en cuanto inicia la web.
     @PostConstruct
     public void init() {
-        coremailservicio.ejecutarHiloEntrada();
-        coremailservicio.ejecutarHiloAsignacion();
+      //  coremailservicio.ejecutarHiloEntrada();
+      //  coremailservicio.ejecutarHiloAsignacion();
     }
 
 }
