@@ -7,16 +7,17 @@ package com.netvox.mail.ServiciosImpl;
 
 import com.netvox.mail.entidades.Mail;
 import com.netvox.mail.entidadesfront.Adjunto;
-import com.netvox.mail.entidadesfront.MailConsultaInbox;
 import com.netvox.mail.entidadesfront.MailInbox;
-import com.netvox.mail.entidadesfront.MailPeticionId;
+import com.netvox.mail.entidadesfront.Mensaje;
 import com.netvox.mail.servicios.ClienteMongoServicio;
 import com.netvox.mail.servicios.MailServicio;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.domain.Sort.Order;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -30,10 +31,11 @@ public class MailServicioImpl implements MailServicio {
     ClienteMongoServicio clientemongoservicio;
 
     @Override
-    public List<MailInbox> listarCorreos(MailPeticionId mail) {
-
+    public List<MailInbox> listarCorreos(Mensaje mensaje) {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
-        List<Mail> lista = mongoops.find(new Query(Criteria.where("usuario").is(mail.getId_agente())), Mail.class);
+        List<Mail> lista = mongoops.find(
+                new Query(Criteria.where("usuario").is(mensaje.getIdagente())).with(new Sort(new Order(Direction.DESC, "idcorreo"))),
+                Mail.class);
         List<MailInbox> listamailinbox = new ArrayList<>();
         lista.forEach((t) -> {
             MailInbox mailinbox = new MailInbox();
@@ -49,16 +51,39 @@ public class MailServicioImpl implements MailServicio {
             }
             listamailinbox.add(mailinbox);
         });
-
         return listamailinbox;
     }
 
     @Override
-    public String obtenerContenidoMail(MailConsultaInbox mailconsultainbox) {
+    public String obtenerContenidoMail(MailInbox mailconsultainbox) {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
-        Query query = new Query(Criteria.where("idcorreo").is(mailconsultainbox.getId_mail()));
+        Query query = new Query(Criteria.where("idcorreo").is(mailconsultainbox.getId()));
         query.fields().include("idcorreo").include("mensaje");
         Mail mail = mongoops.findOne(query, Mail.class);
         return mail.getMensaje();
+    }
+
+    @Override
+    public List<MailInbox> listarCorreosEnCola(Mensaje mensaje) {
+        MongoOperations mongoops = clientemongoservicio.clienteMongo();
+        List<Mail> listacorreosencola = mongoops.find(
+                new Query(Criteria.where("id_cola").in(mensaje.getColas()).and("estado").is(0).and("usuario").is(0)).with(new Sort(new Order(Direction.DESC, "idcorreo"))),
+                Mail.class);
+        List<MailInbox> listamailinbox = new ArrayList<>();
+        listacorreosencola.forEach((t) -> {
+            MailInbox mailinbox = new MailInbox();
+            mailinbox.setId(t.getIdcorreo());
+            mailinbox.setEstado(t.getEstado());
+            mailinbox.setRemitente(t.getRemitente());
+            mailinbox.setAsunto(t.getAsunto());
+            mailinbox.setFecha_ingreso(t.getFecha_ingreso());
+            if (t.getListadeadjuntos() == null) {
+                t.setListadeadjuntos(new ArrayList<Adjunto>());
+            } else {
+                mailinbox.setAdjuntos(t.getListadeadjuntos());
+            }
+            listamailinbox.add(mailinbox);
+        });
+        return listamailinbox;
     }
 }

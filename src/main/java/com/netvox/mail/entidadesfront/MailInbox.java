@@ -15,14 +15,20 @@ import java.util.List;
 public class MailInbox {
 
     private int id;
+    private int idout;//imagino que es el id de salida.
     private int estado;
     private String remitente;
+    private String destino;
     private String asunto;
+    private String cc;//copia
+    private String mensaje;//mensaje de tipificacion
     private String fecha_ingreso;
     private String fecha_respuesta;
+    private int tiempo_cola;//tiempo que estuvo en una cola;
     private int tipificacion;
     private List<Adjunto> adjuntos = new ArrayList<>();
-    private String evento ;
+    private String tipo;//tipomail;
+     
     
     public int getId() {
         return id;
@@ -88,14 +94,51 @@ public class MailInbox {
         this.adjuntos = adjuntos;
     }
 
-    public String getEvento() {
-        return evento;
+    public int getIdout() {
+        return idout;
     }
 
-    public void setEvento(String evento) {
-        this.evento = evento;
+    public void setIdout(int idout) {
+        this.idout = idout;
     }
 
- 
-  
+    public String getDestino() {
+        return destino;
+    }
+
+    public void setDestino(String destino) {
+        this.destino = destino;
+    }
+
+    public String getCc() {
+        return cc;
+    }
+
+    public void setCc(String cc) {
+        this.cc = cc;
+    }
+
+    public String getMensaje() {
+        return mensaje;
+    }
+
+    public void setMensaje(String mensaje) {
+        this.mensaje = mensaje;
+    }
+
+    public int getTiempo_cola() {
+        return tiempo_cola;
+    }
+
+    public void setTiempo_cola(int tiempo_cola) {
+        this.tiempo_cola = tiempo_cola;
+    }
+
+    public String getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
+    }
 }

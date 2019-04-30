@@ -13,7 +13,7 @@ public class Resumen {
     private int campana;
     private int agente;
     private String nombre;
-    private int mailsacumulados;
+    //private int mailsacumulados;
     private int pendiente;
     private int cola;
     private int estadoagente;
@@ -21,18 +21,15 @@ public class Resumen {
     public Resumen() {
     }
 
-    public Resumen(int campana, int agente, String nombre, int acumulado_mails, int pendiente, int cola, int estadoagente) {
+    public Resumen(int campana, int agente, String nombre, int pendiente, int cola, int estadoagente) {
         this.campana = campana;
         this.agente = agente;
         this.nombre = nombre;
-        this.mailsacumulados = acumulado_mails;
         this.pendiente = pendiente;
         this.cola = cola;
         this.estadoagente = estadoagente;
     }
 
-    
-    
     public int getCampana() {
         return campana;
     }
@@ -55,14 +52,6 @@ public class Resumen {
 
     public void setNombre(String nombre) {
         this.nombre = nombre;
-    }
-
-    public int getMailsacumulados() {
-        return mailsacumulados;
-    }
-
-    public void setMailsacumulados(int mailsacumulados) {
-        this.mailsacumulados = mailsacumulados;
     }
 
     public int getPendiente() {

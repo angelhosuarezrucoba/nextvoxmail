@@ -69,7 +69,7 @@ public class HiloEntradaServicio implements Runnable {
     public void run() {
 
         coremailservicio.cargarRutas();//carga las rutas donde se guardaran los archivos de correos.
-        while (isActivo()) {     
+        while (isActivo()) {
             try {
                 coremailservicio.llenarListaAjustesMail(); // lee las configuraciones por campaña y setea emailporcampana
                 System.out.println("----------------------------------------------------------------------------------------");
@@ -140,6 +140,7 @@ public class HiloEntradaServicio implements Runnable {
                                     System.out.println("REMITENTE CAPTURADO " + remitente);
                                     mail.setRemitente(remitente.trim());
                                     mail.setFecha_ingreso(formato.format(new Date()));
+                                    mail.setDestino(mailajustes.getUser());
                                     listamails.add(mail);
                                     coremailservicio.guardarMail(mail);
                                     mensaje.setFlag(Flags.Flag.SEEN, true);
@@ -163,7 +164,7 @@ public class HiloEntradaServicio implements Runnable {
             } catch (Exception ex) {
                 utilidades.printException(ex);
                 ex.printStackTrace();
-            } 
+            }
         }
     }
 

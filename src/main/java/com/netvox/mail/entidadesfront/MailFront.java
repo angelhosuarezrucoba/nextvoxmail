@@ -5,11 +5,20 @@
  */
 package com.netvox.mail.entidadesfront;
 
+/**
+ *
+ * @author desarrollo5
+ */
+public class MailFront {
 
-public class MailPeticionId {
     private int id;
-    private int id_agente;
-    
+    private String correo;
+
+    public MailFront(int id, String correo) {
+        this.id = id;
+        this.correo = correo;
+    }
+
     public int getId() {
         return id;
     }
@@ -18,14 +27,11 @@ public class MailPeticionId {
         this.id = id;
     }
 
-    public int getId_agente() {
-        return id_agente;
+    public String getCorreo() {
+        return correo;
     }
 
-    public void setId_agente(int id_agente) {
-        this.id_agente = id_agente;
+    public void setCorreo(String correo) {
+        this.correo = correo;
     }
-    
-    
-    
 }

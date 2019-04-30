@@ -15,7 +15,6 @@ public class Usuario {
     private int atendidos;
     private int cola;
     private int campana;
-    private int acumulados;
     private String nombre;
     private List<Mail> mails;
     private List<Chat> chats;
@@ -29,14 +28,14 @@ public class Usuario {
 
     }
 
-    public Usuario(int id, int pendientes, int cola, String nombre, int campana,int acumulados) {
+    public Usuario(int id, int pendientes, int cola, String nombre, int campana) {
         this.id = id;
         this.pendientes = pendientes;
         this.cola = cola;
         this.mails = new ArrayList<>();
         this.nombre = nombre;
         this.campana = campana;
-        this.acumulados=acumulados;
+    
 
     }
 
@@ -56,13 +55,7 @@ public class Usuario {
         this.nombre = nombre;
     }
 
-    public int getAcumulados() {
-        return acumulados;
-    }
 
-    public void setAcumulados(int acumulados) {
-        this.acumulados = acumulados;
-    }
 
 
     public int getCola() {

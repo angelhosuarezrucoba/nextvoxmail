@@ -45,9 +45,8 @@ public class HiloAsignacionServicio implements Runnable {
                                 if (listadeusuariosporcola.containsKey(idcola)) {//tiene que ver , porque como se trae //todos los conectados sin verificar que colas existen
                                     List<Usuario> listausuarios = listadeusuariosporcola.get(idcola);
                                     Usuario usuarioasignado = obtenerUsuario(listausuarios, mailconfiguracion.getMaximo_pendiente(), mail.getId_cola());
-                                    if (usuarioasignado != null) {
-                                        usuarioasignado.getMails().add(mail);
-                                        coremailservicio.asignarMailAgente(usuarioasignado);
+                                    if (usuarioasignado != null) {                                   
+                                        coremailservicio.asignarMailAgente(usuarioasignado,mail);
                                         System.out.println("El usuario asignado es : "+ usuarioasignado.getNombre() +" id: "+ usuarioasignado.getId() + " , tiene  " + usuarioasignado.getPendientes() + " mails pendientes ");
                                     }else{
                                         System.out.println("No hay usuarios disponibles");

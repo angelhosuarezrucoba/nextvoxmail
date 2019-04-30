@@ -7,17 +7,13 @@ package com.netvox.mail.Api;
 
 import com.netvox.mail.ServiciosImpl.CoreMailServicioImpl;
 import com.netvox.mail.configuraciones.WebSocket;
-import com.netvox.mail.entidadesfront.MailConsultaInbox;
 import com.netvox.mail.entidadesfront.MailSalida;
 import com.netvox.mail.entidadesfront.MailInbox;
-import com.netvox.mail.entidadesfront.MailPeticionId;
+import com.netvox.mail.entidadesfront.Mensaje;
 import com.netvox.mail.servicios.MailServicio;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.List;
-import org.apache.catalina.connector.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -47,7 +43,7 @@ public class ApiMail {
     CoreMailServicioImpl coremailservicio;
 
     @PostMapping("/crearcorreo")
-    public MailPeticionId crearcorreo(@RequestBody MailSalida mail) {
+    public MailInbox crearcorreo(@RequestBody MailSalida mail) {
         MailSalida nuevomail = null;
         if (mail.getTipificacion() == -1) {
 //            generados = correosDaos.setMailScratch(agent_id, campana, cola, destino, titulo, remitente, copia);
@@ -72,19 +68,23 @@ public class ApiMail {
             }
         }
 
-        MailPeticionId respuestamail = new MailPeticionId();
+        MailInbox respuestamail = new MailInbox();
         respuestamail.setId(nuevomail.getId());
         return respuestamail;
     }
 
     @PostMapping("/listarcorreo")
-    public List<MailInbox> listarCorreos(@RequestBody MailPeticionId mail) {;
-        return mailservicio.listarCorreos(mail);
+    public List<MailInbox> listarCorreos(@RequestBody Mensaje mensaje) {;
+        return mailservicio.listarCorreos(mensaje);
     }
 
     @PostMapping("/abrircorreo")
-    public String abrirCorreo(@RequestBody MailConsultaInbox mailconsultainbox) {
+    public String abrirCorreo(@RequestBody MailInbox mailconsultainbox) {
         return mailservicio.obtenerContenidoMail(mailconsultainbox);
     }
 
+    @PostMapping("/listarcorreoencola")
+    public List<MailInbox> listarcorreoencola(@RequestBody Mensaje mensaje) {;
+        return mailservicio.listarCorreosEnCola(mensaje);
+    }
 }

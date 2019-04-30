@@ -22,6 +22,7 @@ public class MailAjustes {
     private List<Cola> colas;
     private int id;
 
+
     public MailAjustes(String user, String pass, String host, String store, int puerto, int maximo_adjunto,int id) {
         this.colas = new ArrayList<>();
         this.user = user;
@@ -31,6 +32,7 @@ public class MailAjustes {
         this.puerto = puerto;
         this.maximo_adjunto = maximo_adjunto;
         this.id = id;
+
     }
 
     /**
@@ -128,4 +130,6 @@ public class MailAjustes {
     public List<Cola> getColas() {
         return colas;
     }
+
+
 }

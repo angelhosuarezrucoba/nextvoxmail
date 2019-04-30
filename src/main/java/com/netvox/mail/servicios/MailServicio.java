@@ -5,9 +5,9 @@
  */
 package com.netvox.mail.servicios;
 
-import com.netvox.mail.entidadesfront.MailConsultaInbox;
+
 import com.netvox.mail.entidadesfront.MailInbox;
-import com.netvox.mail.entidadesfront.MailPeticionId;
+import com.netvox.mail.entidadesfront.Mensaje;
 import java.util.List;
 
 /**
@@ -16,7 +16,9 @@ import java.util.List;
  */
 public interface MailServicio {
     
-    public abstract List<MailInbox> listarCorreos(MailPeticionId mail);
+    public abstract List<MailInbox> listarCorreos(Mensaje mensaje);
 
-    public String obtenerContenidoMail(MailConsultaInbox mailconsultainbox);
+    public String obtenerContenidoMail(MailInbox mailconsultainbox);
+
+    public List<MailInbox> listarCorreosEnCola(Mensaje mensaje);
 }
