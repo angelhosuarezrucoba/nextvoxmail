@@ -20,7 +20,6 @@ public class Agente {
 
     public Agente(int idagente,WebSocketSession sesion) {
         this.idagente = idagente;
-        this.cola = cola;
         this.sesion = sesion;
 
     }

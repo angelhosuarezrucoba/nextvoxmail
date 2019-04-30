@@ -5,15 +5,24 @@
  */
 package com.netvox.mail.Api;
 
-import com.netvox.mail.ServiciosImpl.MailServicioImpl;
+import com.netvox.mail.ServiciosImpl.CoreMailServicioImpl;
 import com.netvox.mail.configuraciones.WebSocket;
-import com.netvox.mail.entidadesfront.MensajeFront;
-
+import com.netvox.mail.entidadesfront.MailConsultaInbox;
+import com.netvox.mail.entidadesfront.MailSalida;
+import com.netvox.mail.entidadesfront.MailInbox;
+import com.netvox.mail.entidadesfront.MailPeticionId;
+import com.netvox.mail.servicios.MailServicio;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
+import java.util.List;
+import org.apache.catalina.connector.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,11 +38,53 @@ public class ApiMail {
     @Qualifier("websocket")
     WebSocket websocket;
 
-    @GetMapping("/prueba")
-    public void prueba() {
-        MensajeFront mensaje = new MensajeFront();
-        mensaje.setEvento("666");
-        websocket.enviarMensajeParaUnUsuario(mensaje, 17);
+    @Autowired
+    @Qualifier("mailservicio")
+    MailServicio mailservicio;
+
+    @Autowired
+    @Qualifier("coremailservicio")
+    CoreMailServicioImpl coremailservicio;
+
+    @PostMapping("/crearcorreo")
+    public MailPeticionId crearcorreo(@RequestBody MailSalida mail) {
+        MailSalida nuevomail = null;
+        if (mail.getTipificacion() == -1) {
+//            generados = correosDaos.setMailScratch(agent_id, campana, cola, destino, titulo, remitente, copia);
+//            idrespuesta = generados[1];          
+            nuevomail = coremailservicio.generarNuevoCorreo(mail);
+            System.out.println("entre a -1 ");
+        } else {
+//            idrespuesta = correosDaos.getNewMailId(agent_id, campana, mail, tipo, titulo, destino,
+//                    copia, tipificacion, mensajeTipificacion, reenvio);
+            System.out.println("entre al else");
+        }
+
+        System.out.println(coremailservicio.getCARPETA_OUT());
+        String rutasalida = coremailservicio.getCARPETA_OUT() + "/" + nuevomail.getId();
+        File directorio = new File(rutasalida);
+        if (!directorio.exists()) {
+            try {
+                new File(rutasalida).mkdirs();
+                //  CopyEmbedFiles(mail, idrespuesta, tipo);
+            } catch (SecurityException se) {
+                se.printStackTrace();
+            }
+        }
+
+        MailPeticionId respuestamail = new MailPeticionId();
+        respuestamail.setId(nuevomail.getId());
+        return respuestamail;
+    }
+
+    @PostMapping("/listarcorreo")
+    public List<MailInbox> listarCorreos(@RequestBody MailPeticionId mail) {;
+        return mailservicio.listarCorreos(mail);
+    }
+
+    @PostMapping("/abrircorreo")
+    public String abrirCorreo(@RequestBody MailConsultaInbox mailconsultainbox) {
+        return mailservicio.obtenerContenidoMail(mailconsultainbox);
     }
 
 }

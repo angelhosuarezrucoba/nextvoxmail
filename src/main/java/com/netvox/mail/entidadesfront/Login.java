@@ -1,16 +1,17 @@
 
 package com.netvox.mail.entidadesfront;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
-public class MensajeFront {
+public class Login {
 
     private int idagente;
     private int campana;
     private String evento; // esto es lo que nos dice que accion es la que se va a realizar
-    private List<Integer> colas;   
-    private String agente;    
+    private List<Integer> colas = new ArrayList<>();
+    private String agente;
     
     public int getCampana() {
         return campana;

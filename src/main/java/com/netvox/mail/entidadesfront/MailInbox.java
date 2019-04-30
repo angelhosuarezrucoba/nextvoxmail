@@ -5,13 +5,14 @@
  */
 package com.netvox.mail.entidadesfront;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  *
  * @author desarrollo5
  */
-public class MailFront {
+public class MailInbox {
 
     private int id;
     private int estado;
@@ -20,8 +21,9 @@ public class MailFront {
     private String fecha_ingreso;
     private String fecha_respuesta;
     private int tipificacion;
-    private List<Adjunto> adjuntos;
-
+    private List<Adjunto> adjuntos = new ArrayList<>();
+    private String evento ;
+    
     public int getId() {
         return id;
     }
@@ -84,6 +86,14 @@ public class MailFront {
 
     public void setAdjuntos(List<Adjunto> adjuntos) {
         this.adjuntos = adjuntos;
+    }
+
+    public String getEvento() {
+        return evento;
+    }
+
+    public void setEvento(String evento) {
+        this.evento = evento;
     }
 
  

@@ -6,7 +6,9 @@
 package com.netvox.mail.configuraciones;
 
 import com.google.gson.Gson;
+import com.netvox.mail.ServiciosImpl.CoreMailServicioImpl;
 import com.netvox.mail.entidadesfront.Agente;
+import com.netvox.mail.entidadesfront.Login;
 import com.netvox.mail.entidadesfront.MapaAgentes;
 import com.netvox.mail.entidadesfront.MensajeFront;
 import com.netvox.mail.entidadesfront.RespuestaLogin;
@@ -14,6 +16,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -23,16 +27,19 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 @Service("websocket")
 public class WebSocket extends TextWebSocketHandler {
 
+    @Autowired
+    @Qualifier("coremailservicio")
+    CoreMailServicioImpl coremailservicio;
+
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        Gson gson = new Gson();
-        MensajeFront mensajedelfront = gson.fromJson(message.getPayload(), MensajeFront.class);
+        MensajeFront mensajedelfront = new Gson().fromJson(message.getPayload(), MensajeFront.class);
+        System.out.println(message.getPayload());
         switch (mensajedelfront.getEvento()) {
             case "LOGIN":
-                RespuestaLogin mensaje = new RespuestaLogin();
-                mensaje.setEvento("LOGINRESPONSE");
-                enviarMensajeParaUnUsuario(mensaje,mensajedelfront.getIdagente());
-                System.out.println("es es el evento de login");
+                Login mensajelogin = new Gson().fromJson(message.getPayload(), Login.class);
+                RespuestaLogin mensaje = coremailservicio.obtenerRespuestaDeLogin(mensajelogin);                
+                enviarMensajeParaUnUsuario(mensaje, mensajedelfront.getIdagente());
                 break;
             case "perrochango":
                 System.out.println("este es el perrochango");
@@ -40,7 +47,6 @@ public class WebSocket extends TextWebSocketHandler {
             default:
                 break;
         }
-// enviarMensajeParaUnUsuario(mensajedelfront, obtenerAgente(session).getIdagente());
     }
 
     @Override
@@ -60,17 +66,25 @@ public class WebSocket extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status)
             throws Exception { // remueve la sesion de la lista de sesiones que tiene un agente
+        System.out.println("cerr lasesion " + session.getId());
         List<Agente> lista = MapaAgentes.getMapa().values().stream()
                 .filter((listadeagentes) -> {
                     return listadeagentes.stream().filter((agente) -> {
                         return agente.getSesion().getId().equalsIgnoreCase(session.getId());
                     }).collect(Collectors.toList()).size() > 0;
-                }).collect(Collectors.toList()).get(0);
-
-        lista.remove(lista.stream().filter((agente) -> {
+                }).collect(Collectors.toList()).get(0);        
+        
+        
+        List<Agente> listaidagente = new ArrayList<>();
+        listaidagente.add(lista.stream().filter((agente) -> {
             return agente.getSesion().getId().equalsIgnoreCase(session.getId());
-        }).collect(Collectors.toList()).get(0));
-
+        }).collect(Collectors.toList()).get(0));        
+        
+        lista.remove(listaidagente.get(0));
+        
+        if(lista.isEmpty()){
+            MapaAgentes.getMapa().remove(listaidagente.get(0).getIdagente());
+        }
     }
 
     public void enviarMensajeGlobal(MensajeFront mensaje) {
@@ -88,12 +102,13 @@ public class WebSocket extends TextWebSocketHandler {
     }
 
     public void enviarMensajeParaUnUsuario(Object mensaje, int idagente) {
+
         MapaAgentes.getMapa().get(idagente).forEach((sesion) -> {
             if (sesion.getSesion().isOpen()) {
                 try {
                     sesion.getSesion().sendMessage(new TextMessage(new Gson().toJson(mensaje)));
                 } catch (IOException ex) {
-                    ex.printStackTrace();
+                    //ex.printStackTrace();
                 }
             }
         });

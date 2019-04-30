@@ -5,12 +5,19 @@
  */
 package com.netvox.mail.ServiciosImpl;
 
+import com.netvox.mail.configuraciones.WebSocket;
 import com.netvox.mail.entidades.Cola;
 import com.netvox.mail.entidades.Rutas;
 import com.netvox.mail.entidades.Mail;
 import com.netvox.mail.entidades.MailAjustes;
 import com.netvox.mail.entidades.Resumen;
 import com.netvox.mail.entidades.Usuario;
+import com.netvox.mail.entidadesfront.Adjunto;
+import com.netvox.mail.entidadesfront.ListaCorreos;
+import com.netvox.mail.entidadesfront.Login;
+import com.netvox.mail.entidadesfront.MailInbox;
+import com.netvox.mail.entidadesfront.MailSalida;
+import com.netvox.mail.entidadesfront.RespuestaLogin;
 import com.netvox.mail.servicios.ClienteMongoServicio;
 import com.netvox.mail.utilidades.FormatoDeFechas;
 import java.sql.CallableStatement;
@@ -28,12 +35,11 @@ import org.springframework.stereotype.Service;
 import com.netvox.mail.utilidades.Utilidades;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -41,6 +47,14 @@ import org.springframework.data.mongodb.core.query.Update;
 
 @Service("coremailservicio")
 public class CoreMailServicioImpl {
+
+    public static List<Resumen> getListaresumen() {
+        return listaresumen;
+    }
+
+    public static void setListaresumen(List<Resumen> aListaresumen) {
+        listaresumen = aListaresumen;
+    }
 
     @Autowired
     @Qualifier("clientemysqlservicio")
@@ -67,16 +81,16 @@ public class CoreMailServicioImpl {
     @Qualifier("utilidades")
     Utilidades utilidades;
 
-    private static volatile HashMap<String, MailAjustes> mapadeajustesmail;
+    @Autowired
+    @Qualifier("websocket")
+    WebSocket websocket;
 
+    private static volatile HashMap<String, MailAjustes> mapadeajustesmail;
+    private static List<Resumen> listaresumen = new ArrayList<>();
     private FormatoDeFechas formato = new FormatoDeFechas();
     private final int SERVICIO_MAIL = 2;
     private static String RUTA_IN;
     private static String RUTA_OUT;
-
-    public CoreMailServicioImpl() {
-
-    }
 
     public void cargarRutas() {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
@@ -87,6 +101,9 @@ public class CoreMailServicioImpl {
 
 //id 36 cambiar a mongo despues
     public void llenarListaAjustesMail() {
+
+        MongoOperations mongoops = clientemongoservicio.clienteMongo();
+
         setMapadeajustesmail(new HashMap<>());
         Connection conexion = clientemysqlservicio.obtenerConexion();
         ResultSet resultado = null;
@@ -295,6 +312,20 @@ public class CoreMailServicioImpl {
         return cantidad;
     }
 
+    public int obtenerCantidadPendientesPorCola(int idUsuario, int idCampana, int idcola) {
+        int cantidad = 0;
+        MongoOperations mongoops;
+        try {
+            mongoops = clientemongoservicio.clienteMongo();
+            cantidad = (int) mongoops.count(
+                    new Query(Criteria.where("usuario").is(idUsuario).
+                            and("campana").is(idCampana).and("estado").is(1).and("id_cola").is(idcola)), Mail.class);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return cantidad;
+    }
+
     public List<Mail> listarMailsEnCola() {
         List<Mail> listado = new ArrayList<>();
         MongoOperations mongoops;
@@ -311,17 +342,15 @@ public class CoreMailServicioImpl {
         return listado;
     }
 
-    public HashMap<Integer, List<Usuario>> obtenerListaDeUsuariosPorCola() {
+    public HashMap<Integer, List<Usuario>> obtenerListaDeUsuariosPorCola() { // este metodo recurre a la memoria.
         HashMap<Integer, List<Usuario>> usuariosporcola = new HashMap<>();
         List<Resumen> listadodeusuarios = new ArrayList<>();
-        MongoOperations mongoops;
         try {
-            mongoops = clientemongoservicio.clienteMongo();
-            listadodeusuarios = mongoops.findAll(Resumen.class);
+            listadodeusuarios = getListaresumen();
             listadodeusuarios.forEach((resumen) -> {
                 Usuario usuario = new Usuario(resumen.getAgente(),
                         resumen.getPendiente(), resumen.getCola(),
-                        resumen.getNombre(), resumen.getCampana(),resumen.getAcumulado_mails());
+                        resumen.getNombre(), resumen.getCampana(), resumen.getMailsacumulados());
 
                 if (!usuariosporcola.containsKey(resumen.getCola())) {
                     List<Usuario> lista = new ArrayList<>();
@@ -337,6 +366,31 @@ public class CoreMailServicioImpl {
         return usuariosporcola;
     }
 
+//    public HashMap<Integer, List<Usuario>> obtenerListaDeUsuariosPorCola() {
+//        HashMap<Integer, List<Usuario>> usuariosporcola = new HashMap<>();
+//        List<Resumen> listadodeusuarios = new ArrayList<>();
+//        MongoOperations mongoops;
+//        try {
+//            mongoops = clientemongoservicio.clienteMongo();
+//            listadodeusuarios = mongoops.findAll(Resumen.class);
+//            listadodeusuarios.forEach((resumen) -> {
+//                Usuario usuario = new Usuario(resumen.getAgente(),
+//                        resumen.getPendiente(), resumen.getCola(),
+//                        resumen.getNombre(), resumen.getCampana(), resumen.getMailsacumulados());
+//
+//                if (!usuariosporcola.containsKey(resumen.getCola())) {
+//                    List<Usuario> lista = new ArrayList<>();
+//                    lista.add(usuario);
+//                    usuariosporcola.put(resumen.getCola(), lista);
+//                } else {
+//                    usuariosporcola.get(resumen.getCola()).add(usuario);
+//                }
+//            });
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//        return usuariosporcola;
+//    }
     public void asignarMailAgente(Usuario usuario) {
         /* 1 disponible 2 atendiendo 4 pausa 5 timbrando*/
         Connection conexion;
@@ -348,8 +402,16 @@ public class CoreMailServicioImpl {
                 mongoops = clientemongoservicio.clienteMongo();
                 mongoops.updateFirst(new Query(
                         Criteria.where("campana").is(usuario.getCampana()).and("agente").is(usuario.getId())),
-                        new Update().set("estadoagente", 2).set("pendiente", usuario.getPendientes() + 1).set("acumulado_mails", usuario.getAcumulados() + 1),
+                        new Update().set("estadoagente", 2).set("pendiente", usuario.getPendientes() + 1).set("mailsacumulados", usuario.getAcumulados() + 1),
                         Resumen.class);
+
+                getListaresumen().stream().filter(
+                        (agente) -> agente.getCampana() == usuario.getCampana()
+                        && agente.getAgente() == usuario.getId()).forEach((agente) -> {
+                            agente.setEstadoagente(2);
+                            agente.setPendiente(usuario.getPendientes() + 1);
+                            agente.setMailsacumulados(usuario.getAcumulados() + 1);
+                        });
 
                 for (Mail mail : usuario.getMails()) {
                     mongoops.updateFirst(new Query(
@@ -362,19 +424,22 @@ public class CoreMailServicioImpl {
                                     .set("nombre", usuario.getNombre())
                                     .set("fechainiciogestion", formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA)),
                             Mail.class);
-//                    query = "insert into servicio_conversacion set "
-//                            + "idagente = " + usuario.getId() + ", "
-//                            + "idcampana = " + mail.getCola().getId_campana() + ", "
-//                            + "fec_ini_conver = now(), "
-//                            + "servicio = 2, "
-//                            + "idconversacion = " + mail.getIdcorreo();
-//                    statement.execute(query);
-//
-//                    query = "delete from servicios_cola_online "
-//                            + " where id = " + mail.getIdcorreo()
-//                            + " and campana = " + mail.getCola().getId_campana()
-//                            + " and servicio = 2";
-//                    statement.execute(query);
+
+                    MailInbox mailinbox = new MailInbox();
+                    mailinbox.setId(mail.getIdcorreo());
+                    mailinbox.setEstado(1);
+                    mailinbox.setRemitente(mail.getRemitente());
+                    mailinbox.setAsunto(mail.getAsunto());
+                    mailinbox.setFecha_ingreso(mail.getFecha_ingreso());
+                    if (mail.getListadeadjuntos() == null) {
+                        mailinbox.setAdjuntos(new ArrayList<Adjunto>());
+                    } else {
+                        mailinbox.setAdjuntos(mail.getListadeadjuntos());
+                    }
+                    
+                    mailinbox.setEvento("CORREOASIGNADO");
+                    websocket.enviarMensajeParaUnUsuario(mailinbox, usuario.getId());
+
                     procedimientoalmacenado = conexion.prepareCall("call sp_actualiza_resumen_servicio_en_cola(?,?,?)");
                     procedimientoalmacenado.setInt(1, mail.getCampana());
                     procedimientoalmacenado.setInt(2, SERVICIO_MAIL);
@@ -394,6 +459,78 @@ public class CoreMailServicioImpl {
         }
     }
 
+       public RespuestaLogin obtenerRespuestaDeLogin(Login loginmensaje) {
+        RespuestaLogin respuestalogin = new RespuestaLogin();
+        Connection conexion = clientemysqlservicio.obtenerConexion();
+        List<ListaCorreos> correos = new ArrayList<>();
+        MongoOperations mongoops;
+        try {
+
+            Statement statement = conexion.createStatement();
+            ResultSet resultset = statement.executeQuery("select queue,usuario from email_configuracion");
+
+            while (resultset.next()) {
+                correos.add(new ListaCorreos(resultset.getInt(1), resultset.getString(2)));
+            }
+
+            correos = correos.stream().filter((cola) -> loginmensaje.getColas().contains(cola.getId())).collect(Collectors.toList());
+
+            statement.close();
+            resultset.close();
+            conexion.close();
+
+            mongoops = clientemongoservicio.clienteMongo();
+            int mailspendiente = 0;
+            if (!getListaresumen().stream().anyMatch((Resumen resumen) -> {
+                return resumen.getAgente() == loginmensaje.getIdagente();
+            })) {
+                loginmensaje.getColas().forEach((cola) -> {
+                    int mailspendienteporcola = obtenerCantidadPendientesPorCola(loginmensaje.getIdagente(), loginmensaje.getCampana(), cola);
+                    getListaresumen().add(
+                            new Resumen(loginmensaje.getCampana(), loginmensaje.getIdagente(), loginmensaje.getAgente(), 0, mailspendienteporcola, cola, 1));
+                });
+                mongoops.insertAll(getListaresumen().stream().filter((resumen) -> {
+                    return resumen.getAgente() == loginmensaje.getIdagente();
+                }).collect(Collectors.toList()));
+            }
+            mailspendiente = getListaresumen().stream().filter((resumen) -> resumen.getAgente() == loginmensaje.getIdagente()).mapToInt(resumen -> resumen.getPendiente()).sum();
+            respuestalogin.setAcumulado_mail(mailspendiente);// se le puso por nombre acumulado mail solo para coordinar con el front, esto es la suma de mails pendiente.
+            respuestalogin.setEstado_mail(mailspendiente == 0 ? 1 : 2);//disponible si tiene 0 pendientes,2 si tiene pendientes,es decir atendiendo
+            respuestalogin.setCantidad_cola_mail(
+                    getListaresumen().stream().filter((resumen) -> loginmensaje.getColas().contains(resumen.getCola())).mapToInt((resumen) -> resumen.getPendiente()).sum());
+            respuestalogin.setEvento("LOGINRESPONSE");
+            respuestalogin.setListacorreos(correos);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return respuestalogin;
+    }
+
+    public MailSalida generarNuevoCorreo(MailSalida mailsalida) {
+
+        Mail mail = new Mail();
+        int nuevoid;
+        MongoOperations mongoops;
+        try {
+            mongoops = clientemongoservicio.clienteMongo();
+            Query query = new Query().with(new Sort(Direction.DESC, "$natural"));
+            query.fields().include("idcorreo");
+            Mail ultimomail = mongoops.findOne(query, Mail.class);
+
+            if (ultimomail == null) {
+                mailsalida.setId(1);
+            } else {
+                mailsalida.setId(ultimomail.getIdcorreo() + 1);
+            }
+            mongoops.insert(mailsalida);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return mailsalida;
+    }
+    
+    
     public void ejecutarHiloEntrada() {
         taskExecutor.submit(hiloentradaservicio);
     }
@@ -425,4 +562,6 @@ public class CoreMailServicioImpl {
     public static void setMapadeajustesmail(HashMap<String, MailAjustes> mapadeajustesmail) {
         CoreMailServicioImpl.mapadeajustesmail = mapadeajustesmail;
     }
+
+ 
 }

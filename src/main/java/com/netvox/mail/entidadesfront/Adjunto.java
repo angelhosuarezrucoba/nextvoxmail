@@ -21,6 +21,9 @@ public class Adjunto {
         this.file_url = file_url;
     }
 
+    public Adjunto() {
+    }
+
     public String getFile_name() {
         return file_name;
     }

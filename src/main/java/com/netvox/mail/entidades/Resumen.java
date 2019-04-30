@@ -5,19 +5,34 @@
  */
 package com.netvox.mail.entidades;
 
-/**
- *
- * @author desarrollo5
- */
+import org.springframework.data.mongodb.core.mapping.Document;
+
+@Document(collection = "resumen")
 public class Resumen {
 
     private int campana;
     private int agente;
     private String nombre;
-    private int acumulado_mails;
+    private int mailsacumulados;
     private int pendiente;
     private int cola;
+    private int estadoagente;
 
+    public Resumen() {
+    }
+
+    public Resumen(int campana, int agente, String nombre, int acumulado_mails, int pendiente, int cola, int estadoagente) {
+        this.campana = campana;
+        this.agente = agente;
+        this.nombre = nombre;
+        this.mailsacumulados = acumulado_mails;
+        this.pendiente = pendiente;
+        this.cola = cola;
+        this.estadoagente = estadoagente;
+    }
+
+    
+    
     public int getCampana() {
         return campana;
     }
@@ -42,12 +57,12 @@ public class Resumen {
         this.nombre = nombre;
     }
 
-    public int getAcumulado_mails() {
-        return acumulado_mails;
+    public int getMailsacumulados() {
+        return mailsacumulados;
     }
 
-    public void setAcumulado_mails(int acumulado_mails) {
-        this.acumulado_mails = acumulado_mails;
+    public void setMailsacumulados(int mailsacumulados) {
+        this.mailsacumulados = mailsacumulados;
     }
 
     public int getPendiente() {
@@ -64,5 +79,13 @@ public class Resumen {
 
     public void setCola(int cola) {
         this.cola = cola;
+    }
+
+    public int getEstadoagente() {
+        return estadoagente;
+    }
+
+    public void setEstadoagente(int estadoagente) {
+        this.estadoagente = estadoagente;
     }
 }

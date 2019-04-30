@@ -16,7 +16,7 @@ public class Mail {
     private String remitente;
     private String destino;
     private String asunto;//subject;  
-     private Cola cola;
+    private Cola cola;
     private int usuario;
     private String mensaje;
     private int id_cola;
@@ -31,7 +31,7 @@ public class Mail {
     private int estado;
     private String fecha_ingreso;
     private List<Adjunto> listadeadjuntos;
-    
+    private String copia;
 
     public Mail(int idcorreo, int estado, String tipomail, String fecha_ingreso, int idconfiguracion, int id_cola) {
         this.idcorreo = idcorreo;
@@ -50,7 +50,6 @@ public class Mail {
     public String toString() {
         return "Mail{" + "idcorreo=" + idcorreo + ", remitente=" + remitente + ", destino=" + destino + ", asunto=" + asunto + ", cola=" + cola + ", usuario=" + usuario + ", mensaje=" + mensaje + ", id_cola=" + id_cola + ", tipomail=" + tipomail + ", campana=" + campana + ", nombre=" + nombre + ", apellido=" + apellido + ", nombre_campana=" + nombre_campana + ", peso_adjunto=" + peso_adjunto + ", ruta=" + ruta + ", idconfiguracion=" + idconfiguracion + ", estado=" + estado + ", fecha_ingreso=" + fecha_ingreso + ", listadeadjuntos=" + listadeadjuntos + '}';
     }
-
 
     public String getRemitente() {
         return remitente;
@@ -83,8 +82,6 @@ public class Mail {
     public void setUsuario(int usuario) {
         this.usuario = usuario;
     }
-
-
 
     public int getId_cola() {
         return id_cola;
@@ -206,6 +203,12 @@ public class Mail {
         this.mensaje = mensaje;
     }
 
- 
+    public String getCopia() {
+        return copia;
+    }
+
+    public void setCopia(String copia) {
+        this.copia = copia;
+    }
 
 }
