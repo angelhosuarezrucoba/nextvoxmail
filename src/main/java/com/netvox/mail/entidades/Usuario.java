@@ -13,25 +13,25 @@ public class Usuario {
     private int id;
     private int pendientes;
     private int atendidos;
-    private int cola;
+    private List<Integer> listacolas;
     private int campana;
     private String nombre;
     private List<Mail> mails;
     private List<Chat> chats;
 
-    public Usuario(int id, int pendientes, int cola, int campana) {
+    public Usuario(int id, int pendientes, List<Integer> listacolas, int campana) {
         this.id = id;
         this.pendientes = pendientes;
-        this.cola = cola;
+        this.listacolas = listacolas;
         this.campana = campana;
         this.mails = new ArrayList<>();
 
     }
 
-    public Usuario(int id, int pendientes, int cola, String nombre, int campana) {
+    public Usuario(int id, int pendientes,List<Integer> listacolas, String nombre, int campana) {
         this.id = id;
         this.pendientes = pendientes;
-        this.cola = cola;
+        this.listacolas = listacolas;
         this.mails = new ArrayList<>();
         this.nombre = nombre;
         this.campana = campana;
@@ -56,19 +56,6 @@ public class Usuario {
     }
 
 
-
-
-    public int getCola() {
-        return cola;
-    }
-
-    public void setCola(int cola) {
-        this.cola = cola;
-    }
-
-    /**
-     * @return the id
-     */
     public int getId() {
         return id;
     }
@@ -142,6 +129,14 @@ public class Usuario {
 
     public void setCampana(int campana) {
         this.campana = campana;
+    }
+
+    public List<Integer> getListacolas() {
+        return listacolas;
+    }
+
+    public void setListacolas(List<Integer> listacolas) {
+        this.listacolas = listacolas;
     }
 
 

@@ -6,10 +6,12 @@
 package com.netvox.mail.ServiciosImpl;
 
 import com.netvox.mail.entidades.Mail;
+import com.netvox.mail.entidades.Resumen;
 import com.netvox.mail.entidades.Usuario;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -35,24 +37,11 @@ public class HiloAsignacionServicio implements Runnable {
                 List<Mail> mails = coremailservicio.listarMailsEnCola();//las colas representan el correo que se agrega a la campaña , si hay 2 => son dos colas.
                 if (!mails.isEmpty()) {
                     System.out.println("mensajes sin asignar : " + mails.size());
-                    mailsporcola = obtenerMailsPorCola(mails);
-                    mailsporcola.forEach((idcola, lista) -> {
-                        System.out.println("Id cola: " + idcola + ", cantidad de mails: " + lista.size());
-                        if (!lista.isEmpty()) {
-                            HashMap<Integer, List<Usuario>> listadeusuariosporcola = coremailservicio.obtenerListaDeUsuariosPorCola();//toma la coleccion resumen
-                            lista.forEach((mail) -> {
-                                MailConfiguracion mailconfiguracion = coremailservicio.ObtenerMailConfiguracion(mail.getIdconfiguracion());
-                                if (listadeusuariosporcola.containsKey(idcola)) {//tiene que ver , porque como se trae //todos los conectados sin verificar que colas existen
-                                    List<Usuario> listausuarios = listadeusuariosporcola.get(idcola);
-                                    Usuario usuarioasignado = obtenerUsuario(listausuarios, mailconfiguracion.getMaximo_pendiente(), mail.getId_cola());
-                                    if (usuarioasignado != null) {                                   
-                                        coremailservicio.asignarMailAgente(usuarioasignado,mail);
-                                        System.out.println("El usuario asignado es : "+ usuarioasignado.getNombre() +" id: "+ usuarioasignado.getId() + " , tiene  " + usuarioasignado.getPendientes() + " mails pendientes ");
-                                    }else{
-                                        System.out.println("No hay usuarios disponibles");
-                                    }
-                                }
-                            });
+                    mails.forEach((mail) -> {
+                        MailConfiguracion mailconfiguracion = coremailservicio.ObtenerMailConfiguracion(mail.getIdconfiguracion());
+                        Resumen usuarioresumen = obtenerUsuarioDelResumen(coremailservicio.getListaresumen(), mailconfiguracion.getMaximo_pendiente(), mail.getId_cola());
+                        if (usuarioresumen != null) {
+                            coremailservicio.asignarMailAgente(usuarioresumen, mail);
                         }
                     });
                 } else {
@@ -66,40 +55,22 @@ public class HiloAsignacionServicio implements Runnable {
         }
     }
 
-    public Usuario obtenerUsuario(List<Usuario> listausuarios, int maximopendiente, int cola) {
-        Usuario elegido = null;
+    public Resumen obtenerUsuarioDelResumen(List<Resumen> listaresumen, int maximopendiente, int cola) {
+        Resumen resumenelegido = null;
         int menor = 1000000;
-        if (listausuarios.size() > 0) {
+        List<Resumen> listaporcola = listaresumen.stream().filter((resumen) -> resumen.getListacolas().contains(cola)).collect(Collectors.toList());
+        if (listaporcola.size() > 0) {
             System.out.println("******ELIGIENDO A USUARIOS*********");
             System.out.println("NOMBRE\t PENDIENTES\t MAXPENDIENTES \tCOLA");
-            for (Usuario candidato : listausuarios) {
-                candidato.setPendientes(coremailservicio.obtenerCantidadPendientesActual(candidato.getId(), candidato.getCampana()));
-                System.out.println(candidato.getNombre() + "\t " + candidato.getPendientes() + "\t " + maximopendiente + "\t" + candidato.getCola());
-                if (candidato.getPendientes() < menor && maximopendiente > candidato.getPendientes()) {
-                    elegido = candidato;
-                    menor = candidato.getPendientes();
+            for (Resumen candidato : listaporcola) {
+                System.out.println(candidato.getNombre() + "\t " + candidato.getPendiente() + "\t " + maximopendiente + "\t" + candidato.getListacolas());
+                if (candidato.getPendiente() < menor && maximopendiente > candidato.getPendiente()) {
+                    resumenelegido = candidato;
+                    menor = candidato.getPendiente();
                 }
             }
         }
-        return elegido;
-    }
-
-    public HashMap<Integer, List<Mail>> obtenerMailsPorCola(List<Mail> mails) {
-        HashMap<Integer, List<Mail>> listamailsporcola = new HashMap<>();
-        try {
-            mails.forEach((mail) -> {
-                if (listamailsporcola.containsKey(mail.getId_cola())) {
-                    listamailsporcola.get(mail.getId_cola()).add(mail);
-                } else {
-                    List<Mail> lista = new ArrayList<>();
-                    lista.add(mail);
-                    listamailsporcola.put(mail.getId_cola(), lista);
-                }
-            });
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return listamailsporcola;
+        return resumenelegido;
     }
 
     public boolean isActivo() {

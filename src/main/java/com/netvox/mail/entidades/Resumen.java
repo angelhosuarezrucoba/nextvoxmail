@@ -5,6 +5,7 @@
  */
 package com.netvox.mail.entidades;
 
+import java.util.List;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "resumen")
@@ -15,18 +16,18 @@ public class Resumen {
     private String nombre;
     //private int mailsacumulados;
     private int pendiente;
-    private int cola;
+    private List<Integer> listacolas;
     private int estadoagente;
 
     public Resumen() {
     }
 
-    public Resumen(int campana, int agente, String nombre, int pendiente, int cola, int estadoagente) {
+    public Resumen(int campana, int agente, String nombre, int pendiente, List<Integer> listacolas, int estadoagente) {
         this.campana = campana;
         this.agente = agente;
         this.nombre = nombre;
         this.pendiente = pendiente;
-        this.cola = cola;
+        this.listacolas = listacolas;
         this.estadoagente = estadoagente;
     }
 
@@ -62,13 +63,7 @@ public class Resumen {
         this.pendiente = pendiente;
     }
 
-    public int getCola() {
-        return cola;
-    }
-
-    public void setCola(int cola) {
-        this.cola = cola;
-    }
+ 
 
     public int getEstadoagente() {
         return estadoagente;
@@ -76,5 +71,13 @@ public class Resumen {
 
     public void setEstadoagente(int estadoagente) {
         this.estadoagente = estadoagente;
+    }
+
+    public List<Integer> getListacolas() {
+        return listacolas;
+    }
+
+    public void setListacolas(List<Integer> listacolas) {
+        this.listacolas = listacolas;
     }
 }

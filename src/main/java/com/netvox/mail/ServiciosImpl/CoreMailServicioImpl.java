@@ -11,7 +11,6 @@ import com.netvox.mail.entidades.Rutas;
 import com.netvox.mail.entidades.Mail;
 import com.netvox.mail.entidades.MailAjustes;
 import com.netvox.mail.entidades.Resumen;
-import com.netvox.mail.entidades.Usuario;
 import com.netvox.mail.entidadesfront.Adjunto;
 import com.netvox.mail.entidadesfront.MailFront;
 import com.netvox.mail.entidadesfront.MailInbox;
@@ -302,28 +301,14 @@ public class CoreMailServicioImpl {
         }
     }
 
-    public int obtenerCantidadPendientesActual(int idUsuario, int idCampana) {
+    public int obtenerCantidadPendientesPorCola(int idUsuario, int idCampana, List<Integer> listacolas) {
         int cantidad = 0;
         MongoOperations mongoops;
         try {
             mongoops = clientemongoservicio.clienteMongo();
             cantidad = (int) mongoops.count(
                     new Query(Criteria.where("usuario").is(idUsuario).
-                            and("campana").is(idCampana).and("estado").is(1)), Mail.class);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return cantidad;
-    }
-
-    public int obtenerCantidadPendientesPorCola(int idUsuario, int idCampana, int idcola) {
-        int cantidad = 0;
-        MongoOperations mongoops;
-        try {
-            mongoops = clientemongoservicio.clienteMongo();
-            cantidad = (int) mongoops.count(
-                    new Query(Criteria.where("usuario").is(idUsuario).
-                            and("campana").is(idCampana).and("estado").is(1).and("id_cola").is(idcola)), Mail.class);
+                            and("campana").is(idCampana).and("estado").is(1).and("id_cola").in(listacolas)), Mail.class);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -359,31 +344,7 @@ public class CoreMailServicioImpl {
         return listado;
     }
 
-    public HashMap<Integer, List<Usuario>> obtenerListaDeUsuariosPorCola() { // este metodo recurre a la memoria.
-        HashMap<Integer, List<Usuario>> usuariosporcola = new HashMap<>();
-        List<Resumen> listadodeusuarios = new ArrayList<>();
-        try {
-            listadodeusuarios = getListaresumen();
-            listadodeusuarios.forEach((resumen) -> {
-                Usuario usuario = new Usuario(resumen.getAgente(),
-                        resumen.getPendiente(), resumen.getCola(),
-                        resumen.getNombre(), resumen.getCampana());
-
-                if (!usuariosporcola.containsKey(resumen.getCola())) {
-                    List<Usuario> lista = new ArrayList<>();
-                    lista.add(usuario);
-                    usuariosporcola.put(resumen.getCola(), lista);
-                } else {
-                    usuariosporcola.get(resumen.getCola()).add(usuario);
-                }
-            });
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return usuariosporcola;
-    }
-
-    public void asignarMailAgente(Usuario usuario, Mail mail) {
+    public void asignarMailAgente(Resumen usuarioresumen, Mail mail) {
         /* 1 disponible 2 atendiendo 4 pausa 5 timbrando*/
         Connection conexion;
         CallableStatement procedimientoalmacenado = null;
@@ -392,15 +353,15 @@ public class CoreMailServicioImpl {
             conexion = clientemysqlservicio.obtenerConexion();
             mongoops = clientemongoservicio.clienteMongo();
             mongoops.updateFirst(new Query(
-                    Criteria.where("campana").is(usuario.getCampana()).and("agente").is(usuario.getId())),
-                    new Update().set("estadoagente", 2).set("pendiente", usuario.getPendientes() + 1),
+                    Criteria.where("campana").is(usuarioresumen.getCampana()).and("agente").is(usuarioresumen.getAgente())),
+                    new Update().set("estadoagente", 2).set("pendiente", usuarioresumen.getPendiente() + 1),
                     Resumen.class);
 
             getListaresumen().stream().filter(
-                    (agente) -> agente.getCampana() == usuario.getCampana()
-                    && agente.getAgente() == usuario.getId()).forEach((agente) -> {
+                    (agente) -> agente.getCampana() == usuarioresumen.getCampana()
+                    && agente.getAgente() == usuarioresumen.getAgente()).forEach((agente) -> {
                         agente.setEstadoagente(2);
-                        agente.setPendiente(usuario.getPendientes() + 1);                    
+                        agente.setPendiente(usuarioresumen.getPendiente() + 1);
                     });
             mongoops.updateFirst(new Query(
                     Criteria.where("idcorreo").is(mail.getIdcorreo())),
@@ -408,8 +369,8 @@ public class CoreMailServicioImpl {
                             .set("estado", 1)
                             .set("tiempoencola", formato.restaDeFechasEnSegundos(
                                     formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA), mail.getFecha_ingreso()))
-                            .set("usuario", usuario.getId())
-                            .set("nombre", usuario.getNombre())
+                            .set("usuario", usuarioresumen.getAgente())
+                            .set("nombre", usuarioresumen.getNombre())
                             .set("fechainiciogestion", formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA)),
                     Mail.class);
             Mensaje mensaje = new Mensaje();
@@ -428,8 +389,7 @@ public class CoreMailServicioImpl {
 
             mensaje.setEvento("CORREOASIGNADO");
             mensaje.setNew_mail(mailinbox);
-            websocket.enviarMensajeParaUnUsuario(mensaje, usuario.getId());
-            System.out.println("acabo de mandar por el socket");
+            websocket.enviarMensajeParaUnUsuario(mensaje, usuarioresumen.getAgente()); 
 
             procedimientoalmacenado = conexion.prepareCall("call sp_actualiza_resumen_servicio_en_cola(?,?,?)");
             procedimientoalmacenado.setInt(1, mail.getCampana());
@@ -450,6 +410,7 @@ public class CoreMailServicioImpl {
         Connection conexion = clientemysqlservicio.obtenerConexion();
         List<MailFront> correos = new ArrayList<>();
         MongoOperations mongoops;
+        int mailspendiente = 0;
         try {
             Statement statement = conexion.createStatement();
             ResultSet resultset = statement.executeQuery("select queue,usuario from email_configuracion");
@@ -461,27 +422,16 @@ public class CoreMailServicioImpl {
             resultset.close();
             conexion.close();
             mongoops = clientemongoservicio.clienteMongo();
-            int mailspendiente = 0;
+
             if (!getListaresumen().stream().anyMatch((Resumen resumen) -> {
                 return resumen.getAgente() == mensaje.getIdagente();
             })) {
-                mensaje.getColas().forEach((cola) -> {
-                    int mailspendienteporcola = obtenerCantidadPendientesPorCola(mensaje.getIdagente(), mensaje.getCampana(), cola);
-                    getListaresumen().add(
-                            new Resumen(mensaje.getCampana(), mensaje.getIdagente(), mensaje.getAgente(), mailspendienteporcola, cola, 1));//primero habria que revisar todas sus colasp ara ver su estado
-                });
-                
-                
-                
-                if (getListaresumen().stream().mapToInt((resumen) -> resumen.getPendiente()).sum() > 0) {
-                    getListaresumen().stream().filter(resumen -> resumen.getAgente() == mensaje.getIdagente()).findFirst().get().setEstadoagente(2);
-                }
-                mongoops.insertAll(getListaresumen().stream().filter((resumen) -> {
-                    return resumen.getAgente() == mensaje.getIdagente();
-                }).collect(Collectors.toList()));
+                int mailspendienteporcola = obtenerCantidadPendientesPorCola(mensaje.getIdagente(), mensaje.getCampana(), mensaje.getColas());
+                Resumen resumen = new Resumen(mensaje.getCampana(), mensaje.getIdagente(), mensaje.getAgente(), mailspendienteporcola, mensaje.getColas(), mailspendienteporcola == 0 ? 1 : 2);
+                getListaresumen().add(resumen);
+                mongoops.insert(resumen);
             }
-            
-            mailspendiente = getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).mapToInt(resumen -> resumen.getPendiente()).sum();
+            mailspendiente = getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).findFirst().get().getPendiente(); // es la misma variable que mailspendienteporcola pero aqui lo uso para memoria porque si no siempre consultaria a la bd , de este modo solo se consulta la bd una vez con cada login
             mensaje.setAcumulado_mail(mailspendiente);// se le puso por nombre acumulado mail solo para coordinar con el front, esto es la suma de mails pendiente.
             mensaje.setEstado_mail(mailspendiente == 0 ? 1 : 2);//disponible si tiene 0 pendientes,2 si tiene pendientes,es decir atendiendo
             mensaje.setCantidad_cola_mail(obtenerCantidadNoAsignadosPorColas(mensaje.getColas())); // todos los mails que estan sin asignar dependiendo de la cola
