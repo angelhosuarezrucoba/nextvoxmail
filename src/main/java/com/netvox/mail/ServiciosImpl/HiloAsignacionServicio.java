@@ -7,8 +7,6 @@ package com.netvox.mail.ServiciosImpl;
 
 import com.netvox.mail.entidades.Mail;
 import com.netvox.mail.entidades.Resumen;
-import com.netvox.mail.entidades.Usuario;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -42,12 +40,16 @@ public class HiloAsignacionServicio implements Runnable {
                         Resumen usuarioresumen = obtenerUsuarioDelResumen(coremailservicio.getListaresumen(), mailconfiguracion.getMaximo_pendiente(), mail.getId_cola());
                         if (usuarioresumen != null) {
                             coremailservicio.asignarMailAgente(usuarioresumen, mail);
+                            System.out.println("se asigno al agente : " + usuarioresumen.getNombre() + " id: " + usuarioresumen.getAgente());
+                        } else {
+                            System.out.println("No se pudo asignar a un Agente");
                         }
                     });
                 } else {
                     System.out.println("Sin mensajes por asignar");
                 }
                 System.out.println("Fin Hilo asignacion");
+                System.out.println("----------------------------------------------------------------------------------------");
                 Thread.sleep(5000);
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -58,8 +60,9 @@ public class HiloAsignacionServicio implements Runnable {
     public Resumen obtenerUsuarioDelResumen(List<Resumen> listaresumen, int maximopendiente, int cola) {
         Resumen resumenelegido = null;
         int menor = 1000000;
-        List<Resumen> listaporcola = listaresumen.stream().filter((resumen) -> resumen.getListacolas().contains(cola)).collect(Collectors.toList());
+        List<Resumen> listaporcola = listaresumen.stream().filter((resumen) -> resumen.getEstadoagente() != 4 && resumen.getListacolas().contains(cola)).collect(Collectors.toList());
         if (listaporcola.size() > 0) {
+            System.out.println("----------------------------------------------------------------------------------------");
             System.out.println("******ELIGIENDO A USUARIOS*********");
             System.out.println("NOMBRE\t PENDIENTES\t MAXPENDIENTES \tCOLA");
             for (Resumen candidato : listaporcola) {
@@ -68,6 +71,7 @@ public class HiloAsignacionServicio implements Runnable {
                     resumenelegido = candidato;
                     menor = candidato.getPendiente();
                 }
+                System.out.println("----------------------------------------------------------------------------------------");
             }
         }
         return resumenelegido;

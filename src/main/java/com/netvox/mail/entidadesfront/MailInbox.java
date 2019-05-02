@@ -28,6 +28,7 @@ public class MailInbox {
     private int tipificacion;
     private List<Adjunto> adjuntos = new ArrayList<>();
     private String tipo;//tipomail;
+    private String descripcion_tipificacion;
      
     
     public int getId() {
@@ -140,5 +141,13 @@ public class MailInbox {
 
     public void setTipo(String tipo) {
         this.tipo = tipo;
+    }
+
+    public String getDescripcion_tipificacion() {
+        return descripcion_tipificacion;
+    }
+
+    public void setDescripcion_tipificacion(String descripcion_tipificacion) {
+        this.descripcion_tipificacion = descripcion_tipificacion;
     }
 }

@@ -9,8 +9,8 @@ import com.netvox.mail.entidades.Cola;
 import com.netvox.mail.entidades.Mail;
 import com.netvox.mail.entidades.MailAjustes;
 import com.netvox.mail.servicios.ClienteMongoServicio;
+import com.netvox.mail.utilidades.FormatoDeFechas;
 import java.io.File;
-import java.text.SimpleDateFormat;
 import java.util.Properties;
 import javax.mail.Address;
 import javax.mail.Authenticator;
@@ -55,7 +55,7 @@ public class HiloEntradaServicio implements Runnable {
     @Qualifier("utilidades")
     Utilidades utilidades;
 
-    private SimpleDateFormat formato = new SimpleDateFormat("yyyy-MM-dd");
+    private FormatoDeFechas formato = new FormatoDeFechas();
     private Store store = null;
     private Folder folder = null;
     private List<Mail> listamails;
@@ -139,11 +139,12 @@ public class HiloEntradaServicio implements Runnable {
                                     remitente = remitente.replace("\n", "");
                                     System.out.println("REMITENTE CAPTURADO " + remitente);
                                     mail.setRemitente(remitente.trim());
-                                    mail.setFecha_ingreso(formato.format(new Date()));
+                                    mail.setFecha_ingreso(formato.convertirFechaString(new Date(),formato.FORMATO_FECHA_HORA_SLASH));//esto solo le facilita al front el manejo de fecha
                                     mail.setDestino(mailajustes.getUser());
                                     listamails.add(mail);
                                     coremailservicio.guardarMail(mail);
                                     mensaje.setFlag(Flags.Flag.SEEN, true);
+                                    coremailservicio.notificarCorreoNuevoEnCola(mail);
                                 }
                             }
                         }

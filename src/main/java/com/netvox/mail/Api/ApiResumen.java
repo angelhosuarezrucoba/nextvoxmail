@@ -10,6 +10,7 @@ import com.netvox.mail.entidadesfront.MailSalida;
 import com.netvox.mail.entidadesfront.MailInbox;
 import com.netvox.mail.entidadesfront.Mensaje;
 import com.netvox.mail.servicios.MailServicio;
+import com.netvox.mail.servicios.ResumenServicio;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/apis")
 @CrossOrigin(origins = "*", methods = {RequestMethod.GET, RequestMethod.POST})
-public class ApiMail {
+public class ApiResumen {
 
     SimpleDateFormat formato = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
@@ -33,33 +34,12 @@ public class ApiMail {
     WebSocket websocket;
 
     @Autowired
-    @Qualifier("mailservicio")
-    MailServicio mailservicio;
+    @Qualifier("resumenservicio")
+    ResumenServicio resumenservicio;
 
-    @PostMapping("/crearcorreo")
-    public MailInbox crearcorreo(@RequestBody MailSalida mailsalida) {
-        return mailservicio.crearCorreo(mailsalida);
+
+    @PostMapping("/pausar")
+    public void pausar(@RequestBody Mensaje mensaje) {
+        resumenservicio.pausar(mensaje);
     }
-
-    @PostMapping("/listarcorreo")
-    public List<MailInbox> listarCorreos(@RequestBody Mensaje mensaje) {;
-        return mailservicio.listarCorreos(mensaje);
-    }
-
-    @PostMapping("/abrircorreo")
-    public String abrirCorreo(@RequestBody MailInbox mailconsultainbox) {
-        return mailservicio.obtenerContenidoMail(mailconsultainbox);
-    }
-
-    @PostMapping("/listarcorreoencola")
-    public List<MailInbox> listarcorreoencola(@RequestBody Mensaje mensaje) {;
-        return mailservicio.listarCorreosEnCola(mensaje);
-    }
-
-    @PostMapping("/asignarcorreo")
-    public void asignarcorreo(@RequestBody Mensaje mensaje) {
-        mailservicio.autoAsignarse(mensaje);
-    }
-
- 
 }

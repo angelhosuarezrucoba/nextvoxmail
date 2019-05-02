@@ -7,6 +7,7 @@ package com.netvox.mail.servicios;
 
 
 import com.netvox.mail.entidadesfront.MailInbox;
+import com.netvox.mail.entidadesfront.MailSalida;
 import com.netvox.mail.entidadesfront.Mensaje;
 import java.util.List;
 
@@ -21,4 +22,11 @@ public interface MailServicio {
     public String obtenerContenidoMail(MailInbox mailconsultainbox);
 
     public List<MailInbox> listarCorreosEnCola(Mensaje mensaje);
+    
+    public void autoAsignarse(Mensaje mensaje);
+    
+    public MailInbox crearCorreo(MailSalida mailsalida);
+
+
+    
 }

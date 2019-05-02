@@ -18,6 +18,7 @@ public class Resumen {
     private int pendiente;
     private List<Integer> listacolas;
     private int estadoagente;
+    
 
     public Resumen() {
     }

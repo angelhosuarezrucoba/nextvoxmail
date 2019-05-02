@@ -157,6 +157,7 @@ public class CoreMailServicioImpl {
         }
     }
 
+    //este metodo debe cambiarse se hizo solo por seguir la idea del viejo hilo de entrada
     public int obtenerNuevoId(String tipomail, int idconfiguracion, int idcola) {//  mongo, tipomail es entrada o salida
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
         int nuevoid = 0;
@@ -176,6 +177,7 @@ public class CoreMailServicioImpl {
         return nuevoid;
     }
 
+    //este metodo debe combinarse con el de obtener configuracion mail . no deberian ser 2 , solo siguio el modelo viejo
     public MailConfiguracion ObtenerMailConfiguracion(int idconfiguracion) {
         MailConfiguracion mailconfiguracion = new MailConfiguracion();
         Connection conexion = null;
@@ -231,6 +233,7 @@ public class CoreMailServicioImpl {
         return mailconfiguracion;
     }
 
+    //esto se debe revalidar , 
     public boolean eliminarEmailOnline(int idemail) {
         Connection conexion = null;
         boolean elimino = false;
@@ -258,8 +261,7 @@ public class CoreMailServicioImpl {
         CallableStatement procedimientoalmacenado;
         MongoOperations mongoops = null;
         try {
-
-            //convertir mongo
+            //seguimos dependiendo del sql . eso debe ser eliminado
             conexion = clientemysqlservicio.obtenerConexion();
             preparedstatement = conexion.prepareStatement("select campana.nombre from campana where campana.id=?");
             preparedstatement.setInt(1, mail.getCola().getId_campana());
@@ -279,7 +281,7 @@ public class CoreMailServicioImpl {
                             .set("mensaje", mail.getMensaje())
                             .set("destino", mail.getDestino()),
                     Mail.class);
-
+//todo esto sigue sin tener sentido para el uso del mail
             procedimientoalmacenado = conexion.prepareCall("call sp_actualiza_resumen_servicio_en_cola(?,?,?)");
             procedimientoalmacenado.setInt(1, mail.getCola().getId_campana());
             procedimientoalmacenado.setInt(2, SERVICIO_MAIL);
@@ -301,6 +303,30 @@ public class CoreMailServicioImpl {
         }
     }
 
+    //este metodo debe combinarse con el metodo de asignar. ya que tiene una parte del contenido de este metodo
+    public void notificarCorreoNuevoEnCola(Mail mail) {
+        getListaresumen().stream().filter((resumen) -> resumen.getListacolas().contains(mail.getId_cola()))
+                .forEach((resumen) -> {
+                    Mensaje mensaje = new Mensaje();
+                    MailInbox mailinbox = new MailInbox();
+                    mailinbox.setId(mail.getIdcorreo());
+                    mailinbox.setEstado(0);
+                    mailinbox.setRemitente(mail.getRemitente());
+                    mailinbox.setDestino(mail.getDestino());
+                    mailinbox.setAsunto(mail.getAsunto());
+                    mailinbox.setFecha_ingreso(mail.getFecha_ingreso());
+                    if (mail.getListadeadjuntos() == null) {
+                        mailinbox.setAdjuntos(new ArrayList<Adjunto>());
+                    } else {
+                        mailinbox.setAdjuntos(mail.getListadeadjuntos());
+                    }
+                    mensaje.setEvento("CORREOCOLA");
+                    mensaje.setNew_mail(mailinbox);
+                    websocket.enviarMensajeParaUnUsuario(mensaje, resumen.getAgente());
+                });
+    }
+
+    //hay que moverlo a memoria en algun momento y solo grabar en bd cuando sea necesario y no volver a consultarle a la bd
     public int obtenerCantidadPendientesPorCola(int idUsuario, int idCampana, List<Integer> listacolas) {
         int cantidad = 0;
         MongoOperations mongoops;
@@ -315,6 +341,7 @@ public class CoreMailServicioImpl {
         return cantidad;
     }
 
+//hay que moverlo a memoria en algun momento y solo grabar en bd cuando sea necesario y no volver a consultarle a la bd
     public int obtenerCantidadNoAsignadosPorColas(List<Integer> listacolas) {
         int cantidad = 0;
         MongoOperations mongoops;
@@ -327,6 +354,7 @@ public class CoreMailServicioImpl {
         }
         return cantidad;
     }
+//hay que moverlo a memoria en algun momento y solo grabar en bd cuando sea necesario y no volver a consultarle a la bd
 
     public List<Mail> listarMailsEnCola() {
         List<Mail> listado = new ArrayList<>();
@@ -387,10 +415,16 @@ public class CoreMailServicioImpl {
                 mailinbox.setAdjuntos(mail.getListadeadjuntos());
             }
 
+            getListaresumen().stream().filter((resumen) -> resumen.getListacolas().contains(mail.getId_cola())) // aqui le envio al resto
+                    .forEach((resumen) -> {
+                        mensaje.setEvento("CORREOASIGNADO");
+                        websocket.enviarMensajeParaUnUsuario(mensaje, resumen.getAgente());
+                    });
+
             mensaje.setEvento("CORREOASIGNADO");
             mensaje.setNew_mail(mailinbox);
-            websocket.enviarMensajeParaUnUsuario(mensaje, usuarioresumen.getAgente()); 
-
+            websocket.enviarMensajeParaUnUsuario(mensaje, usuarioresumen.getAgente());//aqui envio el mensaje a un usuario asignado
+            //esto debe borrarse no me sirve.
             procedimientoalmacenado = conexion.prepareCall("call sp_actualiza_resumen_servicio_en_cola(?,?,?)");
             procedimientoalmacenado.setInt(1, mail.getCampana());
             procedimientoalmacenado.setInt(2, SERVICIO_MAIL);
@@ -409,9 +443,10 @@ public class CoreMailServicioImpl {
     public Mensaje obtenerRespuestaDeLogin(Mensaje mensaje) {
         Connection conexion = clientemysqlservicio.obtenerConexion();
         List<MailFront> correos = new ArrayList<>();
-        MongoOperations mongoops;
-        int mailspendiente = 0;
+        boolean pausa = false;
         try {
+            MongoOperations mongoops;
+            int mailspendiente = 0;
             Statement statement = conexion.createStatement();
             ResultSet resultset = statement.executeQuery("select queue,usuario from email_configuracion");
             while (resultset.next()) {
@@ -423,17 +458,21 @@ public class CoreMailServicioImpl {
             conexion.close();
             mongoops = clientemongoservicio.clienteMongo();
 
+            if (mensaje.getEstado_mail() == 4) { // esto es la validacion para la pausa
+                pausa = true;
+            }
+
             if (!getListaresumen().stream().anyMatch((Resumen resumen) -> {
                 return resumen.getAgente() == mensaje.getIdagente();
             })) {
                 int mailspendienteporcola = obtenerCantidadPendientesPorCola(mensaje.getIdagente(), mensaje.getCampana(), mensaje.getColas());
-                Resumen resumen = new Resumen(mensaje.getCampana(), mensaje.getIdagente(), mensaje.getAgente(), mailspendienteporcola, mensaje.getColas(), mailspendienteporcola == 0 ? 1 : 2);
+                Resumen resumen = new Resumen(mensaje.getCampana(), mensaje.getIdagente(), mensaje.getAgente(), mailspendienteporcola, mensaje.getColas(), pausa ? 4 : (mailspendienteporcola == 0) ? 1 : 2);
                 getListaresumen().add(resumen);
                 mongoops.insert(resumen);
             }
             mailspendiente = getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).findFirst().get().getPendiente(); // es la misma variable que mailspendienteporcola pero aqui lo uso para memoria porque si no siempre consultaria a la bd , de este modo solo se consulta la bd una vez con cada login
             mensaje.setAcumulado_mail(mailspendiente);// se le puso por nombre acumulado mail solo para coordinar con el front, esto es la suma de mails pendiente.
-            mensaje.setEstado_mail(mailspendiente == 0 ? 1 : 2);//disponible si tiene 0 pendientes,2 si tiene pendientes,es decir atendiendo
+            mensaje.setEstado_mail(pausa ? 4 : (mailspendiente == 0) ? 1 : 2);//disponible si tiene 0 pendientes,2 si tiene pendientes,es decir atendiendo
             mensaje.setCantidad_cola_mail(obtenerCantidadNoAsignadosPorColas(mensaje.getColas())); // todos los mails que estan sin asignar dependiendo de la cola
             mensaje.setEvento("LOGINRESPONSE");
             mensaje.setListacorreos(correos);
@@ -445,30 +484,6 @@ public class CoreMailServicioImpl {
 
     public void borrarListaResumen(int idagente) {
         getListaresumen().removeIf((resumen) -> resumen.getAgente() == idagente);
-    }
-
-    public MailSalida generarNuevoCorreo(MailSalida mailsalida) {
-
-        Mail mail = new Mail();
-        int nuevoid;
-        MongoOperations mongoops;
-        try {
-            mongoops = clientemongoservicio.clienteMongo();
-            Query query = new Query().with(new Sort(Direction.DESC, "$natural"));
-            query.fields().include("idcorreo");
-            Mail ultimomail = mongoops.findOne(query, Mail.class);
-
-            if (ultimomail == null) {
-                mailsalida.setId(1);
-            } else {
-                mailsalida.setId(ultimomail.getIdcorreo() + 1);
-            }
-            mongoops.insert(mailsalida);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return mailsalida;
     }
 
     public void ejecutarHiloEntrada() {
