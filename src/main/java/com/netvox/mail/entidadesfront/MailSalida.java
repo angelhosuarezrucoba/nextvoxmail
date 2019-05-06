@@ -5,6 +5,8 @@
  */
 package com.netvox.mail.entidadesfront;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -46,9 +48,30 @@ public class MailSalida {
 
     @Field(value = "campana")
     private int id_campana;
-    
+
     @Field(value = "nombre_campana")
     private String nombre_campana;
+
+    @Field(value = "estado")
+    private int estado;
+
+    @Field(value = "fecha_ingreso")
+    private String fecha_ingreso;
+
+    @Field(value = "fechainiciogestion")
+    private String fechainiciogestion;
+
+    @Field(value = "descripcion_tipificacion")
+    private String descripcion_tipificacion = "nuevo";//si no consigue un valor en base le pondra este por defecto
+
+    @Field(value = "listadeadjuntos")
+    private List<Adjunto> listadeadjuntos = new ArrayList<>();
+
+    @Field(value = "idhilo")
+    private int idhilo;//
+
+    @Field(value = "hilocerrado")
+    private boolean hilocerrado;
 
     public int getId() {
         return id;
@@ -152,5 +175,61 @@ public class MailSalida {
 
     public void setNombre_campana(String nombre_campana) {
         this.nombre_campana = nombre_campana;
+    }
+
+    public int getEstado() {
+        return estado;
+    }
+
+    public void setEstado(int estado) {
+        this.estado = estado;
+    }
+
+    public String getFecha_ingreso() {
+        return fecha_ingreso;
+    }
+
+    public void setFecha_ingreso(String fecha_ingreso) {
+        this.fecha_ingreso = fecha_ingreso;
+    }
+
+    public String getDescripcion_tipificacion() {
+        return descripcion_tipificacion;
+    }
+
+    public void setDescripcion_tipificacion(String descripcion_tipificacion) {
+        this.descripcion_tipificacion = descripcion_tipificacion;
+    }
+
+    public List<Adjunto> getListadeadjuntos() {
+        return listadeadjuntos;
+    }
+
+    public void setListadeadjuntos(List<Adjunto> listadeadjuntos) {
+        this.listadeadjuntos = listadeadjuntos;
+    }
+
+    public int getIdhilo() {
+        return idhilo;
+    }
+
+    public void setIdhilo(int idhilo) {
+        this.idhilo = idhilo;
+    }
+
+    public boolean isHilocerrado() {
+        return hilocerrado;
+    }
+
+    public void setHilocerrado(boolean hilocerrado) {
+        this.hilocerrado = hilocerrado;
+    }
+
+    public String getFechainiciogestion() {
+        return fechainiciogestion;
+    }
+
+    public void setFechainiciogestion(String fechainiciogestion) {
+        this.fechainiciogestion = fechainiciogestion;
     }
 }

@@ -68,7 +68,7 @@ public class HiloEntradaServicio implements Runnable {
     @Override
     public void run() {
 
-        coremailservicio.cargarRutas();//carga las rutas donde se guardaran los archivos de correos.
+        //carga las rutas donde se guardaran los archivos de correos.
         while (isActivo()) {
             try {
                 coremailservicio.llenarListaAjustesMail(); // lee las configuraciones por campaña y setea emailporcampana
@@ -139,17 +139,17 @@ public class HiloEntradaServicio implements Runnable {
                                     remitente = remitente.replace("\n", "");
                                     System.out.println("REMITENTE CAPTURADO " + remitente);
                                     mail.setRemitente(remitente.trim());
-                                    mail.setFecha_ingreso(formato.convertirFechaString(new Date(),formato.FORMATO_FECHA_HORA_SLASH));//esto solo le facilita al front el manejo de fecha
+                                    mail.setFecha_ingreso(formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA_SLASH));//esto solo le facilita al front el manejo de fecha
                                     mail.setDestino(mailajustes.getUser());
                                     listamails.add(mail);
-                                    coremailservicio.guardarMail(mail);
+                                    Mail nuevomail = coremailservicio.guardarMail(mail);
+                                    mail.setListadeadjuntos(nuevomail.getListadeadjuntos());
                                     mensaje.setFlag(Flags.Flag.SEEN, true);
                                     coremailservicio.notificarCorreoNuevoEnCola(mail);
                                 }
                             }
                         }
                     } catch (Exception ex) {
-                        utilidades.printException(ex);
                         ex.printStackTrace();
                     } finally {
                         cerrarFolderYstore(folder, store);

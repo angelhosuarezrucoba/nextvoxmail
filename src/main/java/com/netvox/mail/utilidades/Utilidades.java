@@ -65,8 +65,8 @@ public class Utilidades {
                 unidad.delete();
             }
             unidad.mkdir();
-            File attach = new File(unidad.getAbsolutePath() + "/" + id + "/adjuntos");
-            attach.mkdirs();
+            File adjuntos = new File(unidad.getAbsolutePath() + "/" + id + "/adjuntos");
+            adjuntos.mkdirs();
             Object contenidodelmensaje = mensaje.getContent();
 
             HashMap<String, String> index_nombre_apellido = new HashMap<>();
@@ -105,7 +105,6 @@ public class Utilidades {
                     }
                 } else {
                     System.out.println("TIPO-2 *********** " + contenidodelmensaje);
-
                     System.out.println("**********PRUEBA STRING TIPO 2**************");
                     System.out.println(contenidodelmensaje.toString());
                     System.out.println("*************************************");
@@ -146,6 +145,7 @@ public class Utilidades {
                             System.out.println("CAPTURE APELLIDO : " + linea);
                         }
                     }
+                    cuerpoMensaje=texto;
                 }
             } else if (contenidodelmensaje instanceof Multipart) {
                 System.out.println("ENTRE EN EL ELSEIF COMO MULTIPART");
@@ -161,7 +161,7 @@ public class Utilidades {
                             cuerpoMensaje = part.getContent().toString();
                             texto = cuerpoMensaje;
                         } else if (part.isMimeType("multipart/*")) {
-                            cuerpoMensaje = analizaParteDeMensaje(part, cuerpoMensaje, imagenes, unidad, attach, mail, peso_maximo_adjunto);
+                            cuerpoMensaje = analizaParteDeMensaje(part, cuerpoMensaje, imagenes, unidad, adjuntos, mail, peso_maximo_adjunto);
                             texto = cuerpoMensaje;
                         }
                     }
@@ -172,7 +172,7 @@ public class Utilidades {
                         Part part = multipart.getBodyPart(i);
                         String disposition = part.getDisposition();
                         if (disposition == null) {
-                            cuerpoMensaje = analizaParteDeMensaje(part, cuerpoMensaje, imagenes, unidad, attach, mail, peso_maximo_adjunto);
+                            cuerpoMensaje = analizaParteDeMensaje(part, cuerpoMensaje, imagenes, unidad, adjuntos, mail, peso_maximo_adjunto);
                             String[] array = cuerpoMensaje.split("\\n");
                             bucle:
                             for (int x = 0; x < array.length; x++) {
@@ -232,14 +232,14 @@ public class Utilidades {
 
                             System.out.println("NOMBRE ADJUNTO " + aux);
                             MimeBodyPart mbp = (MimeBodyPart) part;
-                            String rutadeadjunto = attach.getAbsolutePath() + "/" + aux;
-                            mbp.saveFile(attach.getAbsolutePath() + "/" + aux);                            
+                            String rutadeadjunto = adjuntos.getAbsolutePath() + "/" + aux;
+                            mbp.saveFile(adjuntos.getAbsolutePath() + "/" + aux);                            
                         
                             
                             listadeadjuntos.add(new Adjunto(aux,mbp.getSize(),rutadeadjunto));
-                            sumarAdjuntos(new File(attach.getAbsolutePath() + "/" + aux), mail, peso_maximo_adjunto);
+                            sumarAdjuntos(new File(adjuntos.getAbsolutePath() + "/" + aux), mail, peso_maximo_adjunto);
                         } else if ((disposition != null) && (disposition.equalsIgnoreCase(Part.INLINE))) {
-                            analizaParteDeMensaje(part, cuerpoMensaje, imagenes, unidad, attach, mail, peso_maximo_adjunto);
+                            analizaParteDeMensaje(part, cuerpoMensaje, imagenes, unidad, adjuntos, mail, peso_maximo_adjunto);
                         }
                     }
                     mongoops.updateFirst(new Query(Criteria.where("idcorreo").is(id)), new Update().set("listadeadjuntos", listadeadjuntos), Mail.class);
@@ -262,13 +262,13 @@ public class Utilidades {
                 mail.setApellido(index_nombre_apellido.get("[Apellido*] :"));
             }
 
-            mail.setMensaje(texto);
+            mail.setMensaje(cuerpoMensaje);
             created = true;
         } catch (IOException | MessagingException ex) {
             ex.printStackTrace();
             printException(ex);
         }
-        System.out.println("CREADO=> " + created);
+        System.out.println("CREADO: " + created);
         return created;
     }
     public static int i = 0;
@@ -329,7 +329,7 @@ public class Utilidades {
                 } else {
                     if (unaParte.isMimeType("image/*")) {
                         try {
-                            System.out.println(unidad.getAbsolutePath() + "/" + unaParte.getFileName());
+                            System.out.println(unidad.getAbsolutePath() + "/" + unaParte.getFileName());//aqui es donde imprime el archivo
                             boolean depurar = false;
                             if (unaParte.getFileName() == null) {
                                 return mensaje;
@@ -349,7 +349,7 @@ public class Utilidades {
                             FileOutputStream fichero = null;
                             InputStream imagen = null;
                             try {
-                                fichero = new FileOutputStream(unidad.getAbsolutePath() + "/embed_" + unaParte.getFileName());
+                                fichero = new FileOutputStream(unidad.getAbsolutePath() + "/"+mail.getIdcorreo()+"/embed_" + unaParte.getFileName());
                                 imagen = unaParte.getInputStream();
                                 byte[] bytes = new byte[1000];
                                 int leidos = 0;
@@ -361,9 +361,9 @@ public class Utilidades {
                                 if (contentid != null) {
                                     contentid = contentid.replace("<", "");
                                     contentid = contentid.replace(">", "");
-                                    imagenes.put("cid:" + contentid, coremailservicio.getRUTA_IN() + mail.getIdcorreo() + "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
+                                    imagenes.put("cid:" + contentid, coremailservicio.getRUTA_IN()+"/" + mail.getIdcorreo() + "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
                                 } else {
-                                    imagenes.put("cid:" + unaParte.getFileName() + "@", coremailservicio.getRUTA_IN() + mail.getIdcorreo() + "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
+                                    imagenes.put("cid:" + unaParte.getFileName() + "@", coremailservicio.getRUTA_IN() + "/"+mail.getIdcorreo() + "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
                                 }
 
                             } catch (Exception ex) {

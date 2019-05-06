@@ -98,13 +98,13 @@ public class WebSocket extends TextWebSocketHandler {
             coremailservicio.borrarListaResumen(listaidagente.get(0).getIdagente());
         }
 
-        System.out.println("Al Desconectarme ");
-        MapaAgentes.getMapa().forEach((idagente, listasesiones) -> {
-            System.out.println("Id agente : " + idagente);
-            listasesiones.forEach((sesion) -> {
-                System.out.println("       sesion: " + sesion.getSesion().getId());
-            });
-        });
+//        System.out.println("Al Desconectarme ");
+//        MapaAgentes.getMapa().forEach((idagente, listasesiones) -> {
+//            System.out.println("Id agente : " + idagente);
+//            listasesiones.forEach((sesion) -> {
+//                System.out.println("       sesion: " + sesion.getSesion().getId());
+//            });
+//        });
 
     }
 

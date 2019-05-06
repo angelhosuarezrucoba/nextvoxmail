@@ -7,7 +7,6 @@ package com.netvox.mail.configuraciones;
 
 import com.netvox.mail.ServiciosImpl.HiloAsignacionServicio;
 import com.netvox.mail.ServiciosImpl.HiloEntradaServicio;
-import com.netvox.mail.servicios.ResumenServicio;
 import java.util.concurrent.ThreadPoolExecutor;
 import javax.servlet.ServletContextEvent;
 import org.springframework.beans.factory.annotation.Autowired;

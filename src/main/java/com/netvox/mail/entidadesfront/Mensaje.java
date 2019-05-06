@@ -14,6 +14,8 @@ public class Mensaje {
     private int cantidad_cola_mail;
     private MailInbox new_mail;
     private List<MailFront> listacorreos;
+    private int peso_maximo_adjunto;
+    private int idcorreoasignado;//con esto le aviso al front que correo fue asignado para que el lo descuente.
 
     public String getEvento() {
         return evento;
@@ -93,6 +95,22 @@ public class Mensaje {
 
     public void setListacorreos(List<MailFront> listacorreos) {
         this.listacorreos = listacorreos;
+    }
+
+    public int getPeso_maximo_adjunto() {
+        return peso_maximo_adjunto;
+    }
+
+    public void setPeso_maximo_adjunto(int peso_maximo_adjunto) {
+        this.peso_maximo_adjunto = peso_maximo_adjunto;
+    }
+
+    public int getIdcorreoasignado() {
+        return idcorreoasignado;
+    }
+
+    public void setIdcorreoasignado(int idcorreoasignado) {
+        this.idcorreoasignado = idcorreoasignado;
     }
 
   

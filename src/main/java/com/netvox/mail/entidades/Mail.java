@@ -6,6 +6,7 @@
 package com.netvox.mail.entidades;
 
 import com.netvox.mail.entidadesfront.Adjunto;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -30,8 +31,10 @@ public class Mail {
     private int idconfiguracion;
     private int estado;
     private String fecha_ingreso;
-    private List<Adjunto> listadeadjuntos;
+    private List<Adjunto> listadeadjuntos = new ArrayList<>();
     private String copia;
+    private int idhilo;
+    private boolean hilocerrado;
 
     public Mail(int idcorreo, int estado, String tipomail, String fecha_ingreso, int idconfiguracion, int id_cola) {
         this.idcorreo = idcorreo;
@@ -40,6 +43,7 @@ public class Mail {
         this.fecha_ingreso = fecha_ingreso;
         this.idconfiguracion = idconfiguracion;
         this.id_cola = id_cola;
+        this.listadeadjuntos = new ArrayList<>();
     }
 
     public Mail() {
@@ -209,6 +213,22 @@ public class Mail {
 
     public void setCopia(String copia) {
         this.copia = copia;
+    }
+
+    public int getIdhilo() {
+        return idhilo;
+    }
+
+    public void setIdhilo(int idhilo) {
+        this.idhilo = idhilo;
+    }
+
+    public boolean isHilocerrado() {
+        return hilocerrado;
+    }
+
+    public void setHilocerrado(boolean hilocerrado) {
+        this.hilocerrado = hilocerrado;
     }
 
 }

@@ -29,6 +29,8 @@ public class MailInbox {
     private List<Adjunto> adjuntos = new ArrayList<>();
     private String tipo;//tipomail;
     private String descripcion_tipificacion;
+    private int idhilo;
+    private boolean hilocerrado;
      
     
     public int getId() {
@@ -149,5 +151,21 @@ public class MailInbox {
 
     public void setDescripcion_tipificacion(String descripcion_tipificacion) {
         this.descripcion_tipificacion = descripcion_tipificacion;
+    }
+
+    public int getIdhilo() {
+        return idhilo;
+    }
+
+    public void setIdhilo(int idhilo) {
+        this.idhilo = idhilo;
+    }
+
+    public boolean isHilocerrado() {
+        return hilocerrado;
+    }
+
+    public void setHilocerrado(boolean hilocerrado) {
+        this.hilocerrado = hilocerrado;
     }
 }

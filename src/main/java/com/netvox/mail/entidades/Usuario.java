@@ -17,7 +17,7 @@ public class Usuario {
     private int campana;
     private String nombre;
     private List<Mail> mails;
-    private List<Chat> chats;
+
 
     public Usuario(int id, int pendientes, List<Integer> listacolas, int campana) {
         this.id = id;
@@ -44,7 +44,6 @@ public class Usuario {
         this.pendientes = 0;
         this.atendidos = 0;
         this.mails = new ArrayList<>();
-        this.chats = new ArrayList<>();
     }
 
     public String getNombre() {
@@ -95,23 +94,7 @@ public class Usuario {
         this.mails = mails;
     }
 
-    /**
-     * @return the chats
-     */
-    public List<Chat> getChats() {
-        return chats;
-    }
 
-    /**
-     * @param chats the chats to set
-     */
-    public void setChats(List<Chat> chats) {
-        this.chats = chats;
-    }
-
-    /**
-     * @return the atendidos
-     */
     public int getAtendidos() {
         return atendidos;
     }

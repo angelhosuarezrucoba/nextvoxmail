@@ -9,7 +9,9 @@ package com.netvox.mail.servicios;
 import com.netvox.mail.entidadesfront.MailInbox;
 import com.netvox.mail.entidadesfront.MailSalida;
 import com.netvox.mail.entidadesfront.Mensaje;
+import com.netvox.mail.entidadesfront.Tipificacion;
 import java.util.List;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  *
@@ -26,6 +28,14 @@ public interface MailServicio {
     public void autoAsignarse(Mensaje mensaje);
     
     public MailInbox crearCorreo(MailSalida mailsalida);
+
+    public void adjuntarcorreo(MultipartFile archivo,int idagente);
+
+    public void enviarcorreo(MailSalida mailsalida);
+
+    public void tipificarCorreo(MailSalida mailsalida);
+
+    public  List<Tipificacion> listarTipificaciones();
 
 
     

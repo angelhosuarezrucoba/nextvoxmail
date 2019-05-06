@@ -55,14 +55,13 @@ public class ResumenServicioImpl implements ResumenServicio {
         Resumen usuarioresumen = coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).findFirst().get();
         try {
             if (usuarioresumen.getEstadoagente() == 4) {
-                coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).findFirst().get().setEstadoagente(usuarioresumen.getPendiente() == 0 ? 1 : 2);
+                coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).collect(Collectors.toList()).get(0).setEstadoagente(usuarioresumen.getPendiente() == 0 ? 1 : 2);
                  System.out.println("El agente "+ usuarioresumen.getNombre() + " salio de la pausa");
             } else {
-                coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).findFirst().get().setEstadoagente(4);
+                coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).collect(Collectors.toList()).get(0).setEstadoagente(4);
                  System.out.println("El agente "+ usuarioresumen.getNombre() + " entro en pausa");
-            }
-           
-            mongoops.updateFirst(new Query(Criteria.where("agente")), new Update().set("estadoagente", coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).findFirst().get().getEstadoagente()), Resumen.class);
+            }           
+            mongoops.updateFirst(new Query(Criteria.where("agente").is(usuarioresumen.getAgente())), new Update().set("estadoagente", coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).findFirst().get().getEstadoagente()), Resumen.class);
         } catch (Exception e) {
             e.printStackTrace();
         }
