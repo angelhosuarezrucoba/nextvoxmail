@@ -25,7 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
 @CrossOrigin(origins = "*", methods = {RequestMethod.GET, RequestMethod.POST})
 public class ApiSupervisor {
 
-
     @Autowired
     @Qualifier("websocket")
     WebSocket websocket;
@@ -39,15 +38,16 @@ public class ApiSupervisor {
 //        return mailservicio.crearCorreo(mailsalida);
 //    }
 //
-    @PostMapping("/listarcorreosupervisor")
+    @PostMapping("/listarcorreospendientes")
     public List<MailSalida> listarCorreos(@RequestBody FiltroIndividual filtro) {
-        return mailservicio.listarCorreosSupervisor(filtro);
+        return mailservicio.listarCorreosPendientes(filtro);
     }
 
-//    @PostMapping("/abrircorreosupervisor")
-//    public String abrirCorreo(@RequestBody String id) {
-//        return mailservicio.obtenerContenidoMail(mailconsultainbox);
-//    }
+    @PostMapping("/listarcorreosinvalidos")
+    public List<MailSalida> listarCorreoInvalidos(@RequestBody FiltroIndividual filtro) {
+        return mailservicio.listarCorreoInvalidos(filtro);
+    }
+
 //    @PostMapping("/listarcorreoencola")
 //    public List<MailInbox> listarCorreoEnCola(@RequestBody Mensaje mensaje) {;
 //        return mailservicio.listarCorreosEnCola(mensaje);

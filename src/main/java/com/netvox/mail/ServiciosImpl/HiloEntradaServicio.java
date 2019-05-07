@@ -67,8 +67,6 @@ public class HiloEntradaServicio implements Runnable {
 
     @Override
     public void run() {
-
-        //carga las rutas donde se guardaran los archivos de correos.
         while (isActivo()) {
             try {
                 coremailservicio.llenarListaAjustesMail(); // lee las configuraciones por campaña y setea emailporcampana

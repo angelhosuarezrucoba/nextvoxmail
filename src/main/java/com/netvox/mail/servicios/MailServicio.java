@@ -38,7 +38,9 @@ public interface MailServicio {
 
     public  List<Tipificacion> listarTipificaciones();
 
-    public List<MailSalida> listarCorreosSupervisor(FiltroIndividual filtro);
+    public List<MailSalida> listarCorreosPendientes(FiltroIndividual filtro);
+
+    public List<MailSalida> listarCorreoInvalidos(FiltroIndividual filtro);
 
 
     

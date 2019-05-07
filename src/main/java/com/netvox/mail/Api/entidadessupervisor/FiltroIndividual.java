@@ -8,7 +8,8 @@ public class FiltroIndividual {
     private String fecha_inicio;
     private String fecha_fin;
     private List<Integer> listadecolas = new ArrayList<>();
-    private int tipo;
+    private List<Integer> listadeagentes = new ArrayList<>();
+    
 
     public String getFecha_inicio() {
         return fecha_inicio;
@@ -34,13 +35,13 @@ public class FiltroIndividual {
         this.listadecolas = listadecolas;
     }
 
-    
-    public int getTipo() {
-        return tipo;
+    public List<Integer> getListadeagentes() {
+        return listadeagentes;
     }
 
-    public void setTipo(int tipo) {
-        this.tipo = tipo;
+    public void setListadeagentes(List<Integer> listadeagentes) {
+        this.listadeagentes = listadeagentes;
     }
+
     
 }

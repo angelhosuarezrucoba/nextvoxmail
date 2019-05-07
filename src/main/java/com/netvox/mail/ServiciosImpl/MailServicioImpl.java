@@ -140,7 +140,7 @@ public class MailServicioImpl implements MailServicio {
     }
 
     @Override
-    public void autoAsignarse(Mensaje mensaje) {
+    public void autoAsignarse(Mensaje mensaje) {//deberia enviar un 500 si es que no se puede, y garantizar el query con estado 1
         Connection conexion;
         CallableStatement procedimientoalmacenado = null;
         MongoOperations mongoops;
@@ -524,14 +524,37 @@ public class MailServicioImpl implements MailServicio {
     }
 
     @Override
-    public List<MailSalida> listarCorreosSupervisor(FiltroIndividual filtro) {
+    public List<MailSalida> listarCorreosPendientes(FiltroIndividual filtro) {
         MongoOperations mongoops;
         List<MailSalida> lista = null;
         try {
             mongoops = clientemongoservicio.clienteMongo();
-            lista = mongoops.find(new Query(new Criteria().andOperator(
-                    Criteria.where("fecha_ingreso").gte(filtro.getFecha_inicio()),
-                    Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin()))), MailSalida.class);
+            lista = mongoops.find(
+                    //                    new Query(new Criteria().andOperator(
+                    //                            Criteria.where("fecha_ingreso").gte(filtro.getFecha_inicio()),
+                    //                            Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin()))),
+                    new Query(Criteria.where("estado").is(1).and("usuario").in(filtro.getListadeagentes())
+                            .and("id_cola").in(filtro.getListadecolas())),
+                    MailSalida.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return lista;
+    }
+
+    @Override
+    public List<MailSalida> listarCorreoInvalidos(FiltroIndividual filtro) {
+        MongoOperations mongoops;
+        List<MailSalida> lista = null;
+        try {
+            mongoops = clientemongoservicio.clienteMongo();
+            lista = mongoops.find(
+                    //                    new Query(new Criteria().andOperator(
+                    //                            Criteria.where("fecha_ingreso").gte(filtro.getFecha_inicio()),
+                    //                            Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin()))),
+                    new Query(Criteria.where("estado").is(1).and("usuario").in(filtro.getListadeagentes())
+                            .and("id_cola").in(filtro.getListadecolas()).and("tipificacion").is(7)),//7 es spam
+                    MailSalida.class);
         } catch (Exception e) {
             e.printStackTrace();
         }
