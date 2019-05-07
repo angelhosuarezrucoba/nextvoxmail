@@ -80,9 +80,6 @@ public class MailServicioImpl implements MailServicio {
     CoreMailServicioImpl coremailservicio;
 
     private FormatoDeFechas formato = new FormatoDeFechas();
-    private BodyPart bodypartmensaje;
-    private MimeBodyPart mimebodypart;
-    private DataSource filedatasource;
 
     @Override
     public List<MailInbox> listarCorreos(Mensaje mensaje) {
@@ -150,31 +147,22 @@ public class MailServicioImpl implements MailServicio {
         try {
             conexion = clientemysqlservicio.obtenerConexion();
             mongoops = clientemongoservicio.clienteMongo();
-            mongoops.updateFirst(new Query( //aumento los pendientes en la coleccion resumen
-                    Criteria.where("agente").is(usuarioresumen.getAgente())),
-                    new Update().set("estadoagente", 2).set("pendiente", usuarioresumen.getPendiente() + 1),
-                    Resumen.class);
-
-            getListaresumen().stream().filter( //aqui hago lo mismo pero en memoria
-                    (agente) -> agente.getAgente() == usuarioresumen.getAgente()).forEach((agente) -> {
+            mongoops.updateFirst(new Query(Criteria.where("agente").is(usuarioresumen.getAgente())), new Update().//aumento los pendientes en la coleccion resumen
+                    set("estadoagente", 2).set("pendiente", usuarioresumen.getPendiente() + 1), Resumen.class);
+            getListaresumen().stream().filter((agente) -> agente.getAgente() == usuarioresumen.getAgente()).//aqui hago lo mismo pero en memoria
+                    forEach((agente) -> {
                         agente.setEstadoagente(2);
                         agente.setPendiente(usuarioresumen.getPendiente() + 1);
                     });
-            //obtengo esto para tener la fecha de ingreso
-            Mail mail = mongoops.findOne(new Query(Criteria.where("idcorreo").is(/*mailinbox.getId()*/mensaje.getIdcorreoasignado())), Mail.class);
-            mongoops.updateFirst(new Query(
-                    Criteria.where("idcorreo").is(mail.getIdcorreo())),
-                    new Update()
-                            .set("estado", 1)
-                            .set("tiempoencola", formato.restaDeFechasEnSegundos(
-                                    formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA), mail.getFecha_ingreso()))
-                            .set("usuario", usuarioresumen.getAgente())
-                            .set("nombre", usuarioresumen.getNombre())
-                            .set("fechainiciogestion", formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA)),
-                    Mail.class);
+            Mail mail = mongoops.findOne(new Query(Criteria.where("idcorreo").is(mensaje.getIdcorreoasignado())), Mail.class);  //obtengo esto para tener la fecha de ingreso
+            mongoops.updateFirst(new Query(Criteria.where("idcorreo").is(mail.getIdcorreo())), new Update()
+                    .set("estado", 1)
+                    .set("tiempoencola", formato.restaDeFechasEnSegundos(formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA), mail.getFecha_ingreso()))
+                    .set("usuario", usuarioresumen.getAgente())
+                    .set("nombre", usuarioresumen.getNombre())
+                    .set("fechainiciogestion", formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA)), Mail.class);
             getListaresumen().stream().filter((resumen) -> resumen.getListacolas().contains(mail.getId_cola())) // aqui le envio al resto
                     .forEach((resumen) -> {
-                        System.out.println("estoy en el autoasignarse , el agente es :" + resumen.getAgente());
                         if (usuarioresumen.getAgente() != resumen.getAgente()) {
                             mensaje.setEvento("CORREOASIGNADO");
                             websocket.enviarMensajeParaUnUsuario(mensaje, resumen.getAgente());
@@ -191,6 +179,7 @@ public class MailServicioImpl implements MailServicio {
             ex.printStackTrace();
         }
     }
+
     @Override
     public MailInbox crearCorreo(MailSalida mailsalida) {
         System.out.println("ESTOY ENTRANDO A CREARCORREO");
@@ -299,111 +288,103 @@ public class MailServicioImpl implements MailServicio {
         prepararMensaje(nuevomail);
     }
 
-    public void agregarCuerpoDelMensaje(){
-        
-    }
-    
-    
-    public void prepararMensaje(MailSalida mailsalida) {
+    public MimeMultipart agregarCuerpoDelMensaje(Object mensaje) {
+        MimeMultipart multipart = new MimeMultipart("related");// mensaje en general.          
+        BodyPart bodypartmensaje = new MimeBodyPart();
         try {
-            //cuerpo mensaje
-            MimeMultipart multipart = new MimeMultipart("related");// mensaje en general.
-            bodypartmensaje = new MimeBodyPart();
-            bodypartmensaje.setContent(mailsalida.getMensaje(), "text/html; charset=\"UTF-8\"");
+            bodypartmensaje.setContent(mensaje, "text/html; charset=\"UTF-8\"");
             multipart.addBodyPart(bodypartmensaje);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
+        return multipart;
+    }
 
-            //embebidos
-            String rutaembebidos = coremailservicio.getRUTA_OUT() + "/" + mailsalida.getId();
-            File directorioembebidos = new File(rutaembebidos);
-            System.out.println("ruta embebidos " + directorioembebidos.getAbsolutePath());
-
-            for (File archivo : directorioembebidos.listFiles()) {
-                if (!archivo.isDirectory() && !archivo.getName().equalsIgnoreCase(mailsalida.getId() + ".txt")) {
-                    try {
-                        MimeBodyPart mimebodypartembebido = new MimeBodyPart();
-                        mimebodypartembebido.setHeader("Content-ID", "<" + archivo.getName() + ">");
-                        mimebodypartembebido.setDisposition(MimeBodyPart.INLINE);
-                        mimebodypartembebido.attachFile(archivo);
-                        multipart.addBodyPart(mimebodypartembebido);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+    public MimeMultipart agregarEmbebidosAlMensaje(MimeMultipart multipart, int idcorreo) {
+        String rutaembebidos = coremailservicio.getRUTA_OUT() + "/" + idcorreo;  //embebidos
+        File directorioembebidos = new File(rutaembebidos);
+        for (File archivo : directorioembebidos.listFiles()) {
+            if (!archivo.isDirectory() && !archivo.getName().equalsIgnoreCase(idcorreo + ".txt")) {
+                try {
+                    MimeBodyPart mimebodypartembebido = new MimeBodyPart();
+                    mimebodypartembebido.setHeader("Content-ID", "<" + archivo.getName() + ">");
+                    mimebodypartembebido.setDisposition(MimeBodyPart.INLINE);
+                    mimebodypartembebido.attachFile(archivo);
+                    multipart.addBodyPart(mimebodypartembebido);
+                } catch (IOException | MessagingException e) {
+                    e.printStackTrace();
                 }
             }
+        }
+        return multipart;
+    }
 
-            //archivos adjuntos     
-            System.out.println("Estoy antes de la ruta y el idcorreo es " + mailsalida.getId());
-            String ruta = coremailservicio.getRUTA_OUT() + "/" + mailsalida.getId() + "/adjuntos";
-            File adjuntos = new File(ruta);
-            System.out.println(adjuntos.getAbsolutePath());
-            System.out.println(adjuntos.isDirectory());
-            if (adjuntos.listFiles() != null) {
-                for (File archivo : adjuntos.listFiles()) {
-                    try {
-                        mimebodypart = new MimeBodyPart();
-                        filedatasource = new FileDataSource(archivo);
-                        mimebodypart.setDataHandler(new DataHandler(filedatasource));
-                        mimebodypart.setFileName(archivo.getName());
-                        multipart.addBodyPart(mimebodypart);
-                        System.out.println("archivo adjunto : " + archivo.getName());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+    public MimeMultipart agregarAdjuntosAlMensaje(MimeMultipart multipart, int idcorreo) {
+        String ruta = coremailservicio.getRUTA_OUT() + "/" + idcorreo + "/adjuntos";
+        File adjuntos = new File(ruta);
+        if (adjuntos.listFiles() != null) {
+            for (File archivo : adjuntos.listFiles()) {
+                try {
+                    MimeBodyPart mimebodypart = new MimeBodyPart();
+                    DataSource filedatasource = new FileDataSource(archivo);
+                    mimebodypart.setDataHandler(new DataHandler(filedatasource));
+                    mimebodypart.setFileName(archivo.getName());
+                    multipart.addBodyPart(mimebodypart);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-            } else {
-                System.out.println("adjuntoslistfiles es nulo");
             }
-            MailConfiguracion mailconfiguracion = null;
-            try {
-                Connection conexion = clientemysqlservicio.obtenerConexion();
-                ResultSet resultset = conexion.createStatement().executeQuery("select * from email_configuracion where usuario='" + mailsalida.getRemitente() + "'");
-                while (resultset.next()) {
-                    mailconfiguracion = new MailConfiguracion();
-                    mailconfiguracion.setSmtp(resultset.getString("smtp"));
-                    mailconfiguracion.setUsuario(resultset.getString("usuario"));
-                    mailconfiguracion.setPass(resultset.getString("pass"));
-                    mailconfiguracion.setPuertosalida(resultset.getInt("puerto_salida"));
+        }
+        return multipart;
+    }
+
+    public MailConfiguracion obtenerConfiguracionMail(String remitente) {
+        MailConfiguracion mailconfiguracion = new MailConfiguracion();
+        try {
+            Connection conexion = clientemysqlservicio.obtenerConexion();
+            ResultSet resultset = conexion.createStatement().executeQuery("select * from email_configuracion where usuario='" + remitente + "'");
+            while (resultset.next()) {
+                mailconfiguracion.setSmtp(resultset.getString("smtp"));
+                mailconfiguracion.setUsuario(resultset.getString("usuario"));
+                mailconfiguracion.setPass(resultset.getString("pass"));
+                mailconfiguracion.setPuertosalida(resultset.getInt("puerto_salida"));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return mailconfiguracion;
+    }
+
+    public MimeMessage agregarDestinatariosEnCopia(MimeMessage mimemensaje, String copia) {
+        if (!copia.equals("")) {
+            String listadedestinosencopia[] = copia.split(";");
+            for (String destinoencopia : listadedestinosencopia) {
+                try {
+                    mimemensaje.addRecipient(Message.RecipientType.CC, new InternetAddress(destinoencopia));
+                } catch (Exception ex) {
+                    ex.printStackTrace();
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
             }
+        }
+        return mimemensaje;
+    }
 
-            Properties props = new Properties();
-            props.setProperty("mail.transport.protocol", "smtp");
-            props.setProperty("mail.host", mailconfiguracion.getSmtp());
-            props.setProperty("mail.user", mailconfiguracion.getUsuario());
-            props.setProperty("mail.smtp.port", mailconfiguracion.getPuertosalida() + "");
-            props.setProperty("mail.smtp.starttls.enable", "true");
-            props.setProperty("mail.password", mailconfiguracion.getPass());
-            props.setProperty("mail.smtp.auth", "true");
+    public void prepararMensaje(MailSalida mailsalida) {
 
-            try {
-                Session sesion = obtenerSesion(props, mailconfiguracion.getUsuario(), mailconfiguracion.getPass());
-                MimeMessage mimemensaje = new MimeMessage(sesion);
-                mimemensaje.setSubject(mailsalida.getTitulo());
-                mimemensaje.setContent(multipart);
-                mimemensaje.setFrom(new InternetAddress(mailsalida.getRemitente()));
-                mimemensaje.addRecipient(Message.RecipientType.TO, new InternetAddress(mailsalida.getDestino()));
-                if (!mailsalida.getCopia().equals("")) {
-                    System.out.println("entre a la copia");
-                    String listadedestinosencopia[] = mailsalida.getCopia().split(";");
-                    System.out.println("hay " + listadedestinosencopia.length + " en copia");
-                    for (String destinoencopia : listadedestinosencopia) {
-                        try {
-                            mimemensaje.addRecipient(Message.RecipientType.CC, new InternetAddress(destinoencopia));
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
-                        }
-                    }
-                }
-
-                Transport.send(mimemensaje);
-                System.out.println("******* SE ENVIO EMAIL ***********");
-                //editar el mensaje de salida (hay quever primero que se hace 
-
-            } catch (MessagingException ex) {
-                ex.printStackTrace();
-            }
+        MimeMultipart multipart = agregarCuerpoDelMensaje(mailsalida.getMensaje());//cuerpo mensaje
+        multipart = agregarEmbebidosAlMensaje(multipart, mailsalida.getId());//archivos embebidos
+        multipart = agregarAdjuntosAlMensaje(multipart, mailsalida.getId());//archivos adjuntos
+        MailConfiguracion mailconfiguracion = obtenerConfiguracionMail(mailsalida.getRemitente());
+        try {
+            Session sesion = obtenerSesion(mailconfiguracion);
+            MimeMessage mimemensaje = new MimeMessage(sesion);
+            mimemensaje.setSubject(mailsalida.getTitulo());
+            mimemensaje.setContent(multipart);
+            mimemensaje.setFrom(new InternetAddress(mailsalida.getRemitente()));
+            mimemensaje.addRecipient(Message.RecipientType.TO, new InternetAddress(mailsalida.getDestino()));
+            mimemensaje = agregarDestinatariosEnCopia(mimemensaje, mailsalida.getCopia());
+            Transport.send(mimemensaje);
+            System.out.println("Se envio correctamente el mail");
         } catch (MessagingException ex) {
             ex.printStackTrace();
         }
@@ -458,11 +439,21 @@ public class MailServicioImpl implements MailServicio {
         return nombre_final;
     }
 
-    public Session obtenerSesion(Properties props, String usuario, String clave) {
+    public Session obtenerSesion(MailConfiguracion mailconfiguracion) {
+
+        Properties props = new Properties();
+        props.setProperty("mail.transport.protocol", "smtp");
+        props.setProperty("mail.host", mailconfiguracion.getSmtp());
+        props.setProperty("mail.user", mailconfiguracion.getUsuario());
+        props.setProperty("mail.smtp.port", mailconfiguracion.getPuertosalida() + "");
+        props.setProperty("mail.smtp.starttls.enable", "true");
+        props.setProperty("mail.password", mailconfiguracion.getPass());
+        props.setProperty("mail.smtp.auth", "true");
+
         return Session.getInstance(props, new Authenticator() {
             @Override
             protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(usuario, clave);
+                return new PasswordAuthentication(mailconfiguracion.getUsuario(), mailconfiguracion.getPass());
             }
         });
     }
