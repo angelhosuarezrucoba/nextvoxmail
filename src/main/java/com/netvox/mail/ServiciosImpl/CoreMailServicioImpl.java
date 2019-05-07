@@ -275,7 +275,10 @@ public class CoreMailServicioImpl {
                     .set("nombre_cola", mail.getCola().getNombre_cola())
                     .set("mensaje", mail.getMensaje())
                     .set("destino", mail.getDestino())
+                    .set("tipificacion",0)
+                    .set("descripcion_tipificacion","nuevo")
                     .set("hilocerrado", false);
+                    
 
             if (hilomail.size() > 0) {
                 update.set("idhilo", hilomail.get(0).getIdhilo());
@@ -393,7 +396,7 @@ public class CoreMailServicioImpl {
             mongoops.updateFirst(new Query(
                     Criteria.where("idcorreo").is(mail.getIdcorreo())),
                     new Update()
-                            .set("estado", 1)
+                            .set("estado", 1)                                                       
                             .set("tiempoencola", formato.restaDeFechasEnSegundos(
                                     formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA), mail.getFecha_ingreso()))
                             .set("usuario", usuarioresumen.getAgente())

@@ -143,29 +143,27 @@ public class MailServicioImpl implements MailServicio {
 
     @Override
     public void autoAsignarse(Mensaje mensaje) {
-        /* 1 disponible 2 atendiendo 4 pausa 5 timbrando*/
         Connection conexion;
         CallableStatement procedimientoalmacenado = null;
         MongoOperations mongoops;
         Resumen usuarioresumen = getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).findFirst().get();
-        MailInbox mailinbox = mensaje.getNew_mail();
         try {
             conexion = clientemysqlservicio.obtenerConexion();
             mongoops = clientemongoservicio.clienteMongo();
-            mongoops.updateFirst(new Query(
+            mongoops.updateFirst(new Query( //aumento los pendientes en la coleccion resumen
                     Criteria.where("agente").is(usuarioresumen.getAgente())),
                     new Update().set("estadoagente", 2).set("pendiente", usuarioresumen.getPendiente() + 1),
                     Resumen.class);
 
-            getListaresumen().stream().filter(
+            getListaresumen().stream().filter( //aqui hago lo mismo pero en memoria
                     (agente) -> agente.getAgente() == usuarioresumen.getAgente()).forEach((agente) -> {
                         agente.setEstadoagente(2);
                         agente.setPendiente(usuarioresumen.getPendiente() + 1);
                     });
-
-            Mail mail = mongoops.findOne(new Query(Criteria.where("idcorreo").is(mailinbox.getId())), Mail.class);
+            //obtengo esto para tener la fecha de ingreso
+            Mail mail = mongoops.findOne(new Query(Criteria.where("idcorreo").is(/*mailinbox.getId()*/mensaje.getIdcorreoasignado())), Mail.class);
             mongoops.updateFirst(new Query(
-                    Criteria.where("idcorreo").is(mailinbox.getId())),
+                    Criteria.where("idcorreo").is(mail.getIdcorreo())),
                     new Update()
                             .set("estado", 1)
                             .set("tiempoencola", formato.restaDeFechasEnSegundos(
@@ -174,27 +172,14 @@ public class MailServicioImpl implements MailServicio {
                             .set("nombre", usuarioresumen.getNombre())
                             .set("fechainiciogestion", formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA)),
                     Mail.class);
-            mailinbox.setEstado(1);
-            mailinbox.setRemitente(mail.getRemitente());
-            mailinbox.setDestino(mail.getDestino());
-            mailinbox.setAsunto(mail.getAsunto());
-            mailinbox.setFecha_ingreso(mail.getFecha_ingreso());
-            if (mail.getListadeadjuntos() == null) {
-                mailinbox.setAdjuntos(new ArrayList<Adjunto>());
-            } else {
-                mailinbox.setAdjuntos(mail.getListadeadjuntos());
-            }
-
             getListaresumen().stream().filter((resumen) -> resumen.getListacolas().contains(mail.getId_cola())) // aqui le envio al resto
                     .forEach((resumen) -> {
-                        mensaje.setEvento("CORREOASIGNADO");
-                        websocket.enviarMensajeParaUnUsuario(mensaje, resumen.getAgente());
+                        System.out.println("estoy en el autoasignarse , el agente es :" + resumen.getAgente());
+                        if (usuarioresumen.getAgente() != resumen.getAgente()) {
+                            mensaje.setEvento("CORREOASIGNADO");
+                            websocket.enviarMensajeParaUnUsuario(mensaje, resumen.getAgente());
+                        }
                     });
-
-            mensaje.setEvento("CORREOASIGNADO");
-            mensaje.setNew_mail(mailinbox);
-            websocket.enviarMensajeParaUnUsuario(mensaje, usuarioresumen.getAgente());//aqui envio el mensaje a un usuario asignado
-
             procedimientoalmacenado = conexion.prepareCall("call sp_actualiza_resumen_servicio_en_cola(?,?,?)");
             procedimientoalmacenado.setInt(1, mail.getCampana());
             procedimientoalmacenado.setInt(2, 2);
@@ -202,13 +187,10 @@ public class MailServicioImpl implements MailServicio {
             procedimientoalmacenado.execute();
             procedimientoalmacenado.close();
             conexion.close();
-        } catch (SQLException ex) {
+        } catch (SQLException | ParseException ex) {
             ex.printStackTrace();
-        } catch (ParseException e) {
-            e.printStackTrace();
         }
     }
-
     @Override
     public MailInbox crearCorreo(MailSalida mailsalida) {
         System.out.println("ESTOY ENTRANDO A CREARCORREO");
@@ -219,13 +201,9 @@ public class MailServicioImpl implements MailServicio {
             case -1://correo nuevo
                 nuevomail = generarNuevoCorreo(mailsalida);
                 break;
-//            case 1: //spam
-//                break;
             case 2: //standby
                 nuevomail = generarCorreo(mailsalida);
                 break;
-//            case 7://informaritvo
-//                break;
             default:
                 if (mailsalida.getReenvio() != 1) { //esto es para que no cierre el hilo en el caso de un reenvio
                     mailsalida.setHilocerrado(true);
@@ -237,7 +215,6 @@ public class MailServicioImpl implements MailServicio {
         System.out.println("este esel directorio en el crearcorreo " + coremailservicio.getRUTA_OUT() + "/" + nuevomail.getId());
         directorio = new File(coremailservicio.getRUTA_OUT() + "/" + nuevomail.getId());
         directorio.mkdir();
-        // CopyEmbedFiles(mail, idrespuesta, tipo); no se necesitaria , deberia poder yo ubicarlos simplemente.
         respuestamail = new MailInbox();
         respuestamail.setId(nuevomail.getId());
         return respuestamail;
@@ -322,6 +299,11 @@ public class MailServicioImpl implements MailServicio {
         prepararMensaje(nuevomail);
     }
 
+    public void agregarCuerpoDelMensaje(){
+        
+    }
+    
+    
     public void prepararMensaje(MailSalida mailsalida) {
         try {
             //cuerpo mensaje
@@ -520,6 +502,7 @@ public class MailServicioImpl implements MailServicio {
         MongoOperations mongoops;
         try {
             mongoops = clientemongoservicio.clienteMongo();
+            System.out.println("estoy en el generarcorreo y la tipificacion es " + mailsalida.getTipificacion());
             mongoops.updateFirst(new Query(
                     Criteria.where("idcorreo").is(mailsalida.getId())),
                     new Update().set("descripcion_tipificacion", mailsalida.getDescripcion_tipificacion()).set("tipificacion", mailsalida.getTipificacion()), MailSalida.class);
