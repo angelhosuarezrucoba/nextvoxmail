@@ -15,7 +15,6 @@ import java.util.List;
 public class MailInbox {
 
     private int id;
-    private int idout;//imagino que es el id de salida.
     private int estado;
     private String remitente;
     private String destino;
@@ -97,15 +96,7 @@ public class MailInbox {
         this.adjuntos = adjuntos;
     }
 
-    public int getIdout() {
-        return idout;
-    }
-
-    public void setIdout(int idout) {
-        this.idout = idout;
-    }
-
-    public String getDestino() {
+      public String getDestino() {
         return destino;
     }
 

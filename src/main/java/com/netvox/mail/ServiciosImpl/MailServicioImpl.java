@@ -5,6 +5,7 @@
  */
 package com.netvox.mail.ServiciosImpl;
 
+import com.netvox.mail.Api.entidadessupervisor.FiltroIndividual;
 import static com.netvox.mail.ServiciosImpl.CoreMailServicioImpl.getListaresumen;
 import com.netvox.mail.configuraciones.WebSocket;
 import com.netvox.mail.entidades.Mail;
@@ -520,5 +521,20 @@ public class MailServicioImpl implements MailServicio {
             System.out.println("entre al error de generarcorreo");
         }
         return mailsalida;
+    }
+
+    @Override
+    public List<MailSalida> listarCorreosSupervisor(FiltroIndividual filtro) {
+        MongoOperations mongoops;
+        List<MailSalida> lista = null;
+        try {
+            mongoops = clientemongoservicio.clienteMongo();
+            lista = mongoops.find(new Query(new Criteria().andOperator(
+                    Criteria.where("fecha_ingreso").gte(filtro.getFecha_inicio()),
+                    Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin()))), MailSalida.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return lista;
     }
 }

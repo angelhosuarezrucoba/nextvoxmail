@@ -79,6 +79,10 @@ public class CoreMailServicioImpl {
     @Qualifier("resumenservicio")
     ResumenServicio resumenservicio;
 
+    @Autowired
+    @Qualifier("logconexionesservicio")
+    LogConexionesServicio logconexionesservicio;
+
     private static volatile HashMap<String, MailAjustes> mapadeajustesmail;
     private static Configuraciones configuraciones;
     private static List<Resumen> listaresumen = new ArrayList<>();
@@ -262,7 +266,7 @@ public class CoreMailServicioImpl {
             mongoops = clientemongoservicio.clienteMongo();
             List<Mail> hilomail = mongoops.find(
                     new Query(Criteria.where("remitente").is(mail.getRemitente()).
-                            and("destino").is(mail.getDestino()).                           
+                            and("destino").is(mail.getDestino()).
                             and("hilocerrado").is(false)), Mail.class);
 
             Update update = new Update();
@@ -275,10 +279,9 @@ public class CoreMailServicioImpl {
                     .set("nombre_cola", mail.getCola().getNombre_cola())
                     .set("mensaje", mail.getMensaje())
                     .set("destino", mail.getDestino())
-                    .set("tipificacion",0)
-                    .set("descripcion_tipificacion","nuevo")
+                    .set("tipificacion", 0)
+                    .set("descripcion_tipificacion", "nuevo")
                     .set("hilocerrado", false);
-                    
 
             if (hilomail.size() > 0) {
                 update.set("idhilo", hilomail.get(0).getIdhilo());
@@ -396,7 +399,7 @@ public class CoreMailServicioImpl {
             mongoops.updateFirst(new Query(
                     Criteria.where("idcorreo").is(mail.getIdcorreo())),
                     new Update()
-                            .set("estado", 1)                                                       
+                            .set("estado", 1)
                             .set("tiempoencola", formato.restaDeFechasEnSegundos(
                                     formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA), mail.getFecha_ingreso()))
                             .set("usuario", usuarioresumen.getAgente())
@@ -469,6 +472,7 @@ public class CoreMailServicioImpl {
                 Resumen resumen = new Resumen(mensaje.getCampana(), mensaje.getIdagente(), mensaje.getAgente(), mailspendienteporcola, mensaje.getColas(), pausa ? 4 : (mailspendienteporcola == 0) ? 1 : 2);
                 getListaresumen().add(resumen);
                 mongoops.insert(resumen);
+                logconexionesservicio.grabarConexion(resumen);
             }
 
             mailspendiente = getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).findFirst().get().getPendiente(); // es la misma variable que mailspendienteporcola pero aqui lo uso para memoria porque si no siempre consultaria a la bd , de este modo solo se consulta la bd una vez con cada login
@@ -545,4 +549,5 @@ public class CoreMailServicioImpl {
     public static void setConfiguraciones(Configuraciones aConfiguraciones) {
         configuraciones = aConfiguraciones;
     }
+
 }

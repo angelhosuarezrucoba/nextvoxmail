@@ -6,6 +6,7 @@
 package com.netvox.mail.servicios;
 
 
+import com.netvox.mail.Api.entidadessupervisor.FiltroIndividual;
 import com.netvox.mail.entidadesfront.MailInbox;
 import com.netvox.mail.entidadesfront.MailSalida;
 import com.netvox.mail.entidadesfront.Mensaje;
@@ -36,6 +37,8 @@ public interface MailServicio {
     public void tipificarCorreo(MailSalida mailsalida);
 
     public  List<Tipificacion> listarTipificaciones();
+
+    public List<MailSalida> listarCorreosSupervisor(FiltroIndividual filtro);
 
 
     

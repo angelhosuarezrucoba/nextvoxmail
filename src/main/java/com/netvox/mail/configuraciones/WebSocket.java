@@ -7,6 +7,7 @@ package com.netvox.mail.configuraciones;
 
 import com.google.gson.Gson;
 import com.netvox.mail.ServiciosImpl.CoreMailServicioImpl;
+import com.netvox.mail.ServiciosImpl.LogConexionesServicio;
 import com.netvox.mail.entidadesfront.Agente;
 import com.netvox.mail.entidadesfront.MapaAgentes;
 import com.netvox.mail.entidadesfront.Mensaje;
@@ -34,6 +35,10 @@ public class WebSocket extends TextWebSocketHandler {
     @Qualifier("coremailservicio")
     CoreMailServicioImpl coremailservicio;
 
+    @Autowired
+    @Qualifier("logconexionesservicio")
+    LogConexionesServicio logconexionesservcio;
+
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         Mensaje mensaje = new Gson().fromJson(message.getPayload(), Mensaje.class);
@@ -41,9 +46,6 @@ public class WebSocket extends TextWebSocketHandler {
         switch (mensaje.getEvento()) {
             case "LOGIN":
                 enviarMensajeParaUnUsuario(coremailservicio.obtenerRespuestaDeLogin(mensaje), mensaje.getIdagente());
-                break;
-            case "perrochango":
-                System.out.println("este es el perrochango");
                 break;
             default:
                 break;
@@ -96,30 +98,9 @@ public class WebSocket extends TextWebSocketHandler {
             MapaAgentes.getMapa().remove(listaidagente.get(0).getIdagente());
             resumenservicio.borrarResumen(listaidagente.get(0).getIdagente());
             coremailservicio.borrarListaResumen(listaidagente.get(0).getIdagente());
+            logconexionesservcio.grabarDesconexion(listaidagente.get(0).getIdagente());
         }
 
-//        System.out.println("Al Desconectarme ");
-//        MapaAgentes.getMapa().forEach((idagente, listasesiones) -> {
-//            System.out.println("Id agente : " + idagente);
-//            listasesiones.forEach((sesion) -> {
-//                System.out.println("       sesion: " + sesion.getSesion().getId());
-//            });
-//        });
-
-    }
-
-    public void enviarMensajeGlobal(Mensaje mensaje) {
-        MapaAgentes.getMapa().values().forEach((listasesiones) -> {
-            listasesiones.forEach((Agente agente) -> {
-                if (agente.getSesion().isOpen()) {
-                    try {
-                        agente.getSesion().sendMessage(new TextMessage(new Gson().toJson(mensaje)));
-                    } catch (IOException ex) {
-                        ex.printStackTrace();
-                    }
-                }
-            });
-        });
     }
 
     public void enviarMensajeParaUnUsuario(Object mensaje, int idagente) {
@@ -129,22 +110,10 @@ public class WebSocket extends TextWebSocketHandler {
                 try {
                     sesion.getSesion().sendMessage(new TextMessage(new Gson().toJson(mensaje)));
                 } catch (IOException ex) {
-                    //ex.printStackTrace();
+                    ex.printStackTrace();
                 }
             }
         });
     }
 
-    public Agente obtenerAgente(WebSocketSession sesion) {
-        List<Agente> lista = MapaAgentes.getMapa().values().stream()
-                .filter((listadeagentes) -> {
-                    return listadeagentes.stream().filter((agente) -> {
-                        return agente.getSesion().getId().equalsIgnoreCase(sesion.getId());
-                    }).collect(Collectors.toList()).size() > 0;
-                }).collect(Collectors.toList()).get(0);
-
-        return lista.stream().filter((agente) -> {
-            return agente.getSesion().getId().equalsIgnoreCase(sesion.getId());
-        }).collect(Collectors.toList()).get(0);
-    }
 }

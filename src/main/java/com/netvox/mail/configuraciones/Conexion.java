@@ -63,7 +63,6 @@ public class Conexion {
         basicDataSource.setPassword(clavemysql);
         basicDataSource.setUrl("jdbc:mysql://" + ipmysql + "/" + bdmysql);
         basicDataSource.setMaxActive(10);
-        //basicDataSource.setMaxOpenPreparedStatements(10);
         return basicDataSource;
     }
 
