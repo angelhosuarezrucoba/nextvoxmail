@@ -73,6 +73,53 @@ public class MailSalida {
     @Field(value = "hilocerrado")
     private boolean hilocerrado;
 
+    @Field(value = "tiempoencola")
+    private int tiempoencola;
+    
+    @Field(value = "nombre")
+    private String nombre;//nombre del agente
+
+    //////////variables para el reporte
+    private String hora;
+    private String estadoatencion;
+    private String validacion;
+    private String tiempo_cola;
+    private String tiempoatencion;
+
+    ///////////////////////////////////
+    public int getTiempoencola() {
+        return tiempoencola;
+    }
+
+    public void setTiempoencola(int tiempoencola) {
+        this.tiempoencola = tiempoencola;
+    }
+
+    public String getEstadoatencion() {
+        return estadoatencion;
+    }
+
+    public void setEstadoatencion(String estadoatencion) {
+        this.estadoatencion = estadoatencion;
+    }
+
+    public String getValidacion() {
+        return validacion;
+    }
+
+    public void setValidacion(String validacion) {
+        this.validacion = validacion;
+    }
+
+    public String getTiempo_cola() {
+        return tiempo_cola;
+    }
+
+    public void setTiempo_cola(String tiempo_cola) {
+        this.tiempo_cola = tiempo_cola;
+        
+    }
+
     public int getId() {
         return id;
     }
@@ -231,5 +278,29 @@ public class MailSalida {
 
     public void setFechainiciogestion(String fechainiciogestion) {
         this.fechainiciogestion = fechainiciogestion;
+    }
+
+    public String getHora() {
+        return hora;
+    }
+
+    public void setHora(String hora) {
+        this.hora = hora;
+    }
+
+    public String getTiempoatencion() {
+        return tiempoatencion;
+    }
+
+    public void setTiempoatencion(String tiempoatencion) {
+        this.tiempoatencion = tiempoatencion;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
     }
 }

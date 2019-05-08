@@ -5,6 +5,7 @@
  */
 package com.netvox.mail.ServiciosImpl;
 
+import com.netvox.mail.Api.entidadessupervisor.Pausa;
 import com.netvox.mail.configuraciones.WebSocket;
 import com.netvox.mail.entidades.Cola;
 import com.netvox.mail.entidades.Configuraciones;
@@ -83,10 +84,13 @@ public class CoreMailServicioImpl {
     @Qualifier("logconexionesservicio")
     LogConexionesServicio logconexionesservicio;
 
+    @Autowired
+    @Qualifier("formatodefechas")
+    FormatoDeFechas formatodefechas;
+
     private static volatile HashMap<String, MailAjustes> mapadeajustesmail;
     private static Configuraciones configuraciones;
     private static List<Resumen> listaresumen = new ArrayList<>();
-    private FormatoDeFechas formato = new FormatoDeFechas();
     private final int SERVICIO_MAIL = 2;
     private static String RUTA_IN;
     private static String RUTA_OUT;
@@ -159,10 +163,10 @@ public class CoreMailServicioImpl {
             Mail mail = mongoops.findOne(new Query().with(new Sort(Direction.DESC, "$natural")), Mail.class);
             if (mail == null) {
                 nuevoid = 1;
-                mongoops.insert(new Mail(1, 0, tipomail, formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA), idconfiguracion, idcola));
+                mongoops.insert(new Mail(1, 0, tipomail, formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA), idconfiguracion, idcola));
             } else {
                 nuevoid = mail.getIdcorreo() + 1;
-                mongoops.insert(new Mail(nuevoid, 0, tipomail, formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA), idconfiguracion, idcola));
+                mongoops.insert(new Mail(nuevoid, 0, tipomail, formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA), idconfiguracion, idcola));
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -400,11 +404,10 @@ public class CoreMailServicioImpl {
                     Criteria.where("idcorreo").is(mail.getIdcorreo())),
                     new Update()
                             .set("estado", 1)
-                            .set("tiempoencola", formato.restaDeFechasEnSegundos(
-                                    formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA), mail.getFecha_ingreso()))
+                            .set("tiempoencola", formatodefechas.restaDeFechasEnSegundos(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA), mail.getFecha_ingreso()))
                             .set("usuario", usuarioresumen.getAgente())
                             .set("nombre", usuarioresumen.getNombre())
-                            .set("fechainiciogestion", formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA)),
+                            .set("fechainiciogestion", formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)),
                     Mail.class);
             Mensaje mensaje = new Mensaje();
             MailInbox mailinbox = new MailInbox();
@@ -461,9 +464,9 @@ public class CoreMailServicioImpl {
             conexion.close();
             mongoops = clientemongoservicio.clienteMongo();
 
-            if (mensaje.getEstado_mail() == 4) { // esto es la validacion para la pausa
+            if (mensaje.getEstado_mail() == 4) { // esto es la validacion para la pausa                
                 pausa = true;
-            }
+            } 
 
             if (!getListaresumen().stream().anyMatch((Resumen resumen) -> {
                 return resumen.getAgente() == mensaje.getIdagente();
@@ -482,6 +485,7 @@ public class CoreMailServicioImpl {
             mensaje.setEvento("LOGINRESPONSE");
             mensaje.setListacorreos(correos);
             mensaje.setPeso_maximo_adjunto(getConfiguraciones().getPeso_maximo_adjunto());
+
         } catch (Exception e) {
             e.printStackTrace();
         }

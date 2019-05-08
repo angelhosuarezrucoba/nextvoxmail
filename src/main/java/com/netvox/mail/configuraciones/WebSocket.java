@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -39,6 +40,8 @@ public class WebSocket extends TextWebSocketHandler {
     @Qualifier("logconexionesservicio")
     LogConexionesServicio logconexionesservcio;
 
+    RestTemplate resttemplate = new RestTemplate();
+
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         Mensaje mensaje = new Gson().fromJson(message.getPayload(), Mensaje.class);
@@ -46,6 +49,9 @@ public class WebSocket extends TextWebSocketHandler {
         switch (mensaje.getEvento()) {
             case "LOGIN":
                 enviarMensajeParaUnUsuario(coremailservicio.obtenerRespuestaDeLogin(mensaje), mensaje.getIdagente());
+                break;
+            case "LOGOUT":
+               // resttemplate.postForLocation("http://localhost:8084/mail/apis/pausar", mensaje);
                 break;
             default:
                 break;
@@ -96,8 +102,8 @@ public class WebSocket extends TextWebSocketHandler {
 
         if (lista.isEmpty()) {
             MapaAgentes.getMapa().remove(listaidagente.get(0).getIdagente());
-            resumenservicio.borrarResumen(listaidagente.get(0).getIdagente());
-            coremailservicio.borrarListaResumen(listaidagente.get(0).getIdagente());
+            resumenservicio.borrarResumenBaseDatos(listaidagente.get(0).getIdagente());            
+            coremailservicio.borrarListaResumen(listaidagente.get(0).getIdagente());//en memoria
             logconexionesservcio.grabarDesconexion(listaidagente.get(0).getIdagente());
         }
 

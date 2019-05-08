@@ -9,11 +9,13 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import org.springframework.stereotype.Service;
 
+@Service("formatodefechas")
 public class FormatoDeFechas {
     //Formartos de fecha
 
-    public final SimpleDateFormat FORMATO_FECHA_HORA = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");    
+    public final SimpleDateFormat FORMATO_FECHA_HORA = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     public final SimpleDateFormat FORMATO_FECHA_HORA_SLASH = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     public final SimpleDateFormat FORMATO_FECHA_HORA_T = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
     public final SimpleDateFormat FORMATO_FECHA_HORA_SIN_SEGUNDOS = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
@@ -58,13 +60,14 @@ public class FormatoDeFechas {
     }
 
     /**
-     * Calculan el numero de dias que hay entre ambas fechas
+     * Calcula el numero de dias que hay entre dos fechas
      *
      * @param fechafinal
      * @param fechainicial
-     * @return dias cantida de dias de diferencia entre la fecha inicial y final
+     * @return devuelve la cantidad de dias de diferencia entre la fecha final e
+     * inicial
      */
-    public int restadefechas(String fechafinal, String fechainicial) throws ParseException {
+    public int restaDeFechasEnDias(String fechafinal, String fechainicial) throws ParseException {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         Date fechaInicial = dateFormat.parse(fechainicial);
         Date fechaFinal = dateFormat.parse(fechafinal);
@@ -72,14 +75,108 @@ public class FormatoDeFechas {
         return dias;
     }
 
+    /**
+     * Calcula el numero de segundos que hay entre dos fechas
+     *
+     * @param fechafinal
+     * @param fechainicial
+     * @return devuelve la cantidad de dias de diferencia entre la fecha final e
+     * inicial
+     */
     public int restaDeFechasEnSegundos(String fechafinal, String fechainicial) throws ParseException {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         Date fechaInicial = dateFormat.parse(fechainicial);
         Date fechaFinal = dateFormat.parse(fechafinal);
-        int segundos = (int) ((fechaFinal.getTime() - fechaInicial.getTime()) / 1000);      
+        int segundos = (int) ((fechaFinal.getTime() - fechaInicial.getTime()) / 1000);
         return segundos;
     }
 
+    /**
+     * Calcula la fecha y horas dado los segundos
+     *
+     * @param segundos
+     * @return devuelve los dias y horas en el siguiente formato x dias HH:mm:ss
+     *
+     */
+    public String convertirSegundosAFecha(int segundos) throws ParseException {
+        SimpleDateFormat formato = new SimpleDateFormat("HH:mm:ss");
+        String dia;
+        String hora;
+        String minuto;
+        String segundo;
+
+        int dias = segundos / 86400;
+        segundos = segundos % 86400;
+        int horas = segundos / 3600;
+        segundos = segundos % 3600;
+        int minutos = segundos / 60;
+        segundos = segundos % 60;
+
+        if (dias == 0) {
+            dia = "";
+        } else {
+            dia = dias + " dias ";
+        }
+        if (horas < 10) {
+            hora = "0" + horas;
+        } else {
+            hora = horas + "";
+        }
+        if (minutos < 10) {
+            minuto = "0" + minutos;
+        } else {
+            minuto = minutos + "";
+        }
+        if (segundos < 10) {
+            segundo = "0" + segundos;
+        } else {
+            segundo = segundos + "";
+        }
+        String fecha = dia + hora + ":" + minuto + ":" + segundo;
+
+        return fecha;
+    }
+
+    public String convertirSegundosAFechaNormal(int segundos) throws ParseException {
+        SimpleDateFormat formato = new SimpleDateFormat("HH:mm:ss");
+
+        String hora;
+        String minuto;
+        String segundo;
+
+        int horas = segundos / 3600;
+        segundos = segundos % 3600;
+        int minutos = segundos / 60;
+        segundos = segundos % 60;
+
+        if (horas < 10) {
+            hora = "0" + horas;
+        } else {
+            hora = horas + "";
+        }
+        if (minutos < 10) {
+            minuto = "0" + minutos;
+        } else {
+            minuto = minutos + "";
+        }
+        if (segundos < 10) {
+            segundo = "0" + segundos;
+        } else {
+            segundo = segundos + "";
+        }
+        String fecha = hora + ":" + minuto + ":" + segundo;
+
+        return fecha;
+    }
+
+    /**
+     * Calcula las horas entre dos horas pueden ser fechas yyyy-MM-dd HH:mm:ss
+     *
+     * @param horafinal
+     * @param horainicial
+     * @return devuelve las horas en el siguiente formato H:m:s
+     *
+     */
     public String restadehoras(String horafinal, String horainicial) throws ParseException {
         SimpleDateFormat dateFormat = new SimpleDateFormat("H:m:s");
 

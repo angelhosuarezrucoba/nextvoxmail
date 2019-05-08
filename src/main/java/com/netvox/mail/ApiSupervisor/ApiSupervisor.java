@@ -6,6 +6,8 @@
 package com.netvox.mail.ApiSupervisor;
 
 import com.netvox.mail.Api.entidadessupervisor.FiltroIndividual;
+import com.netvox.mail.Api.entidadessupervisor.Pausa;
+import com.netvox.mail.Api.entidadessupervisor.ReporteGrupalPorDias;
 import com.netvox.mail.configuraciones.WebSocket;
 import com.netvox.mail.entidadesfront.MailSalida;
 import com.netvox.mail.servicios.MailServicio;
@@ -33,14 +35,10 @@ public class ApiSupervisor {
     @Qualifier("mailservicio")
     MailServicio mailservicio;
 
-//    @PostMapping("/crearcorreo")
-//    public MailInbox crearcorreo(@RequestBody MailSalida mailsalida) {
-//        return mailservicio.crearCorreo(mailsalida);
-//    }
-//
+
     @PostMapping("/listarcorreospendientes")
-    public List<MailSalida> listarCorreos(@RequestBody FiltroIndividual filtro) {
-        return mailservicio.listarCorreosPendientes(filtro);
+    public List<MailSalida> listarCorreosPendientes(@RequestBody FiltroIndividual filtro) {
+         return mailservicio.listarCorreosPendientes(filtro);
     }
 
     @PostMapping("/listarcorreosinvalidos")
@@ -48,21 +46,21 @@ public class ApiSupervisor {
         return mailservicio.listarCorreoInvalidos(filtro);
     }
 
-//    @PostMapping("/listarcorreoencola")
-//    public List<MailInbox> listarCorreoEnCola(@RequestBody Mensaje mensaje) {;
-//        return mailservicio.listarCorreosEnCola(mensaje);
-//    }
-//
-//    @PostMapping("/asignarcorreo")
-//    public void asignarCorreo(@RequestBody Mensaje mensaje) {
-//        mailservicio.autoAsignarse(mensaje);
-//    }
-//
-//    @PostMapping("/adjuntararchivo")
-//    public void adjuntarArchivo(@RequestParam("archivo") MultipartFile archivo, @RequestHeader int idcorreo) {
-//        mailservicio.adjuntarcorreo(archivo, idcorreo);
-//    }
-//
+    @PostMapping("/listarcorreos")
+    public List<MailSalida> listarCorreos(@RequestBody FiltroIndividual filtro) {
+        return mailservicio.listarCorreos(filtro);
+    }
+
+    @PostMapping("/detalletiemposenpausa")
+    public List<Pausa> detalleTiemposeEnPausa(@RequestBody FiltroIndividual filtro) {
+        return mailservicio.detalleTiemposeEnPausa(filtro);
+    }
+
+      @PostMapping("/detallegrupaldecorreospordias")
+    public List<ReporteGrupalPorDias> detalleGrupalDeCorreosPorDias(@RequestBody FiltroIndividual filtro) {
+        return mailservicio.detalleGrupalDeCorreosPorDias(filtro);
+    }
+
 //    @PostMapping("/enviarcorreo")
 //    public void enviarCorreo(@RequestBody MailSalida mailsalida) {
 //        mailservicio.enviarcorreo(mailsalida);

@@ -43,5 +43,10 @@ public class FiltroIndividual {
         this.listadeagentes = listadeagentes;
     }
 
+    @Override
+    public String toString() {
+        return "FiltroIndividual{" + "fecha_inicio=" + fecha_inicio + ", fecha_fin=" + fecha_fin + ", listadecolas=" + listadecolas + ", listadeagentes=" + listadeagentes + '}';
+    }
+
     
 }

@@ -4,7 +4,7 @@ import com.netvox.mail.entidadesfront.Mensaje;
 
 public interface ResumenServicio {
 
-    public abstract void borrarResumen(int idagente);
+    public abstract void borrarResumenBaseDatos(int idagente);
 
     public abstract void borrarResumenTotal();
 

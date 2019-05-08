@@ -6,6 +6,8 @@
 package com.netvox.mail.ServiciosImpl;
 
 import com.netvox.mail.Api.entidadessupervisor.FiltroIndividual;
+import com.netvox.mail.Api.entidadessupervisor.Pausa;
+import com.netvox.mail.Api.entidadessupervisor.ReporteGrupalPorDias;
 import static com.netvox.mail.ServiciosImpl.CoreMailServicioImpl.getListaresumen;
 import com.netvox.mail.configuraciones.WebSocket;
 import com.netvox.mail.entidades.Mail;
@@ -33,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
 import javax.activation.FileDataSource;
@@ -55,6 +58,8 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.domain.Sort.Order;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoOperations;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -80,7 +85,9 @@ public class MailServicioImpl implements MailServicio {
     @Qualifier("coremailservicio")
     CoreMailServicioImpl coremailservicio;
 
-    private FormatoDeFechas formato = new FormatoDeFechas();
+    @Autowired
+    @Qualifier("formatodefechas")
+    FormatoDeFechas formatodefechas;
 
     @Override
     public List<MailInbox> listarCorreos(Mensaje mensaje) {
@@ -158,10 +165,10 @@ public class MailServicioImpl implements MailServicio {
             Mail mail = mongoops.findOne(new Query(Criteria.where("idcorreo").is(mensaje.getIdcorreoasignado())), Mail.class);  //obtengo esto para tener la fecha de ingreso
             mongoops.updateFirst(new Query(Criteria.where("idcorreo").is(mail.getIdcorreo())), new Update()
                     .set("estado", 1)
-                    .set("tiempoencola", formato.restaDeFechasEnSegundos(formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA), mail.getFecha_ingreso()))
+                    .set("tiempoencola", formatodefechas.restaDeFechasEnSegundos(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA), mail.getFecha_ingreso()))
                     .set("usuario", usuarioresumen.getAgente())
                     .set("nombre", usuarioresumen.getNombre())
-                    .set("fechainiciogestion", formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA)), Mail.class);
+                    .set("fechainiciogestion", formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)), Mail.class);
             getListaresumen().stream().filter((resumen) -> resumen.getListacolas().contains(mail.getId_cola())) // aqui le envio al resto
                     .forEach((resumen) -> {
                         if (usuarioresumen.getAgente() != resumen.getAgente()) {
@@ -216,8 +223,8 @@ public class MailServicioImpl implements MailServicio {
             mongoops = clientemongoservicio.clienteMongo();
             Query query = new Query().with(new Sort(Direction.DESC, "$natural"));
             query.fields().include("idcorreo");
-            mailsalida.setFecha_ingreso(formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA));
-            mailsalida.setFechainiciogestion(formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA));
+            mailsalida.setFecha_ingreso(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA));
+            mailsalida.setFechainiciogestion(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA));
             mailsalida.setEstado(2);//correo enviado
             mailsalida.setTipo("salida");
             Mail ultimomail = mongoops.findOne(query, Mail.class);
@@ -502,8 +509,8 @@ public class MailServicioImpl implements MailServicio {
             query.fields().include("idcorreo");
             Mail ultimomail = mongoops.findOne(query, Mail.class);
             mailsalida.setId(ultimomail.getIdcorreo() + 1);
-            mailsalida.setFecha_ingreso(formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA));
-            mailsalida.setFechainiciogestion(formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA));
+            mailsalida.setFecha_ingreso(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA));
+            mailsalida.setFechainiciogestion(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA));
             mailsalida.setTipo("salida");
             mailsalida.setEstado(2);//correo enviado           
             mongoops.insert(mailsalida);
@@ -530,12 +537,42 @@ public class MailServicioImpl implements MailServicio {
         try {
             mongoops = clientemongoservicio.clienteMongo();
             lista = mongoops.find(
-                    //                    new Query(new Criteria().andOperator(
-                    //                            Criteria.where("fecha_ingreso").gte(filtro.getFecha_inicio()),
-                    //                            Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin()))),
-                    new Query(Criteria.where("estado").is(1).and("usuario").in(filtro.getListadeagentes())
+                    new Query(new Criteria().andOperator(
+                            Criteria.where("fecha_ingreso").gte(filtro.getFecha_inicio()),
+                            Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin()))
+                            .and("estado").is(1).and("usuario").in(filtro.getListadeagentes())
                             .and("id_cola").in(filtro.getListadecolas())),
                     MailSalida.class);
+
+            for (MailSalida mail : lista) {
+                mail.setHora(
+                        formatodefechas.cambiarFormatoFechas(mail.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_HORA));
+                mail.setEstadoatencion(mail.getEstado() == 1 ? "ATENDIENDO" : "FINALIZADO");
+                mail.setValidacion(mail.getTipificacion() == 7 ? "INVALIDO" : "VALIDO");
+                mail.setTiempo_cola(mail.getTiempoencola() == 0 ? "00:00:00" : formatodefechas.convertirSegundosAFecha(mail.getTiempoencola()));
+                if (mail.getTipo().equals("salida")) {
+                    mail.setTiempoatencion("00:00:00");
+                } else {
+                    List<MailSalida> sublista = lista.stream().filter((correo) -> correo.getIdhilo() == mail.getIdhilo()).collect(Collectors.toList());
+                    if (sublista.size() > 0) {
+                        MailSalida mailmasreciente = sublista.stream().max((mail1, mail2) -> mail1.getFechainiciogestion().compareTo(mail2.getFechainiciogestion())).get();
+                        if (mailmasreciente.getTipo().equals("entrada")) {
+                            mail.setTiempoatencion(formatodefechas.convertirSegundosAFecha(
+                                    formatodefechas.restaDeFechasEnSegundos(formatodefechas.convertirFechaString(new Date(),
+                                            formatodefechas.FORMATO_FECHA_HORA), mail.getFechainiciogestion())));
+                        } else {
+                            mail.setTiempoatencion(formatodefechas.convertirSegundosAFecha(
+                                    formatodefechas.restaDeFechasEnSegundos(mailmasreciente.getFechainiciogestion(),
+                                            mail.getFechainiciogestion())));
+                        }
+                    } else {
+                        mail.setTiempoatencion(formatodefechas.convertirSegundosAFecha(
+                                formatodefechas.restaDeFechasEnSegundos(formatodefechas.convertirFechaString(new Date(),
+                                        formatodefechas.FORMATO_FECHA_HORA), mail.getFechainiciogestion())));
+                    }
+                }
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -549,12 +586,139 @@ public class MailServicioImpl implements MailServicio {
         try {
             mongoops = clientemongoservicio.clienteMongo();
             lista = mongoops.find(
-                    //                    new Query(new Criteria().andOperator(
-                    //                            Criteria.where("fecha_ingreso").gte(filtro.getFecha_inicio()),
-                    //                            Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin()))),
-                    new Query(Criteria.where("estado").is(1).and("usuario").in(filtro.getListadeagentes())
+                    new Query(new Criteria().andOperator(
+                            Criteria.where("fecha_ingreso").gte(filtro.getFecha_inicio()),
+                            Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin())).
+                            and("estado").is(1).and("usuario").in(filtro.getListadeagentes())
                             .and("id_cola").in(filtro.getListadecolas()).and("tipificacion").is(7)),//7 es spam
                     MailSalida.class);
+            for (MailSalida mail : lista) {
+                mail.setHora(
+                        formatodefechas.cambiarFormatoFechas(mail.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_HORA));
+                mail.setEstadoatencion(mail.getEstado() == 1 ? "ATENDIENDO" : "FINALIZADO");
+                mail.setValidacion(mail.getTipificacion() == 7 ? "INVALIDO" : "VALIDO");
+                mail.setTiempo_cola(mail.getTiempoencola() == 0 ? "00:00:00" : formatodefechas.convertirSegundosAFecha(mail.getTiempoencola()));
+                if (mail.getTipo().equals("salida")) {
+                    mail.setTiempoatencion("00:00:00");
+                } else {
+                    List<MailSalida> sublista = lista.stream().filter((correo) -> correo.getIdhilo() == mail.getIdhilo()).collect(Collectors.toList());
+                    if (sublista.size() > 0) {
+                        MailSalida mailmasreciente = sublista.stream().max((mail1, mail2) -> mail1.getFechainiciogestion().compareTo(mail2.getFechainiciogestion())).get();
+                        if (mailmasreciente.getTipo().equals("entrada")) {
+                            mail.setTiempoatencion(formatodefechas.convertirSegundosAFecha(
+                                    formatodefechas.restaDeFechasEnSegundos(formatodefechas.convertirFechaString(new Date(),
+                                            formatodefechas.FORMATO_FECHA_HORA), mail.getFechainiciogestion())));
+                        } else {
+                            mail.setTiempoatencion(formatodefechas.convertirSegundosAFecha(
+                                    formatodefechas.restaDeFechasEnSegundos(mailmasreciente.getFechainiciogestion(),
+                                            mail.getFechainiciogestion())));
+                        }
+                    } else {
+                        mail.setTiempoatencion(formatodefechas.convertirSegundosAFecha(
+                                formatodefechas.restaDeFechasEnSegundos(formatodefechas.convertirFechaString(new Date(),
+                                        formatodefechas.FORMATO_FECHA_HORA), mail.getFechainiciogestion())));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return lista;
+    }
+
+    @Override
+    public List<MailSalida> listarCorreos(FiltroIndividual filtro) {
+        MongoOperations mongoops;
+        List<MailSalida> lista = null;
+        try {
+            mongoops = clientemongoservicio.clienteMongo();
+            lista = mongoops.find(new Query(new Criteria().andOperator(
+                    Criteria.where("fecha_ingreso").gte(filtro.getFecha_inicio()),
+                    Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin())).
+                    and("usuario").in(filtro.getListadeagentes())
+                    .and("id_cola").in(filtro.getListadecolas()).and("estado").ne(0)),
+                    MailSalida.class);
+
+            for (MailSalida mail : lista) {
+                mail.setHora(
+                        formatodefechas.cambiarFormatoFechas(mail.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_HORA));
+                mail.setEstadoatencion(mail.getEstado() == 1 ? "ATENDIENDO" : "FINALIZADO");
+                mail.setValidacion(mail.getTipificacion() == 7 ? "INVALIDO" : "VALIDO");
+                mail.setTiempo_cola(mail.getTiempoencola() == 0 ? "00:00:00" : formatodefechas.convertirSegundosAFecha(mail.getTiempoencola()));
+                if (mail.getTipo().equals("salida")) {
+                    mail.setTiempoatencion("00:00:00");
+                } else {
+                    List<MailSalida> sublista = lista.stream().filter((correo) -> correo.getIdhilo() == mail.getIdhilo()).collect(Collectors.toList());
+                    if (sublista.size() > 0) {
+                        MailSalida mailmasreciente = sublista.stream().max((mail1, mail2) -> mail1.getFechainiciogestion().compareTo(mail2.getFechainiciogestion())).get();
+                        if (mailmasreciente.getTipo().equals("entrada")) {
+                            mail.setTiempoatencion(formatodefechas.convertirSegundosAFecha(
+                                    formatodefechas.restaDeFechasEnSegundos(formatodefechas.convertirFechaString(new Date(),
+                                            formatodefechas.FORMATO_FECHA_HORA), mail.getFechainiciogestion())));
+                        } else {
+                            mail.setTiempoatencion(formatodefechas.convertirSegundosAFecha(
+                                    formatodefechas.restaDeFechasEnSegundos(mailmasreciente.getFechainiciogestion(),
+                                            mail.getFechainiciogestion())));
+                        }
+                    } else {
+                        mail.setTiempoatencion(formatodefechas.convertirSegundosAFecha(
+                                formatodefechas.restaDeFechasEnSegundos(formatodefechas.convertirFechaString(new Date(),
+                                        formatodefechas.FORMATO_FECHA_HORA), mail.getFechainiciogestion())));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return lista;
+    }
+
+    @Override
+    public List<Pausa> detalleTiemposeEnPausa(FiltroIndividual filtro) {
+        MongoOperations mongoops;
+        List<Pausa> lista = null;
+        try {
+            mongoops = clientemongoservicio.clienteMongo();
+            lista = mongoops.find(
+                    new Query(new Criteria().andOperator(
+                            Criteria.where("fecha_ingreso").gte(filtro.getFecha_inicio()),
+                            Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin())).
+                            and("idagente").in(filtro.getListadeagentes())).with(new Sort(Direction.ASC, "iniciopausa")),
+                    Pausa.class);
+            for (Pausa pausa : lista) {
+                pausa.setFecha(formatodefechas.cambiarFormatoFechas(pausa.getIniciopausa(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA));
+                pausa.setHorainiciopausa(formatodefechas.cambiarFormatoFechas(pausa.getIniciopausa(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_HORA));
+                pausa.setHorafinpausa(formatodefechas.cambiarFormatoFechas(pausa.getFinpausa(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_HORA));
+                pausa.setDuracionpausa(formatodefechas.convertirSegundosAFechaNormal(pausa.getDuracion()));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return lista;
+    }
+
+    @Override
+    public List<ReporteGrupalPorDias> detalleGrupalDeCorreosPorDias(FiltroIndividual filtro) {
+        MongoOperations mongoops;
+        List<ReporteGrupalPorDias> lista = null;
+        try {
+            mongoops = clientemongoservicio.clienteMongo();
+            Aggregation agregacion = Aggregation.newAggregation(
+                    Aggregation.match(
+                            new Criteria().andOperator(
+                                    Criteria.where("fecha_ingreso").gte(filtro.getFecha_inicio()),
+                                    Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin())).
+                                    and("usuario").in(filtro.getListadeagentes())
+                                    .and("id_cola").in(filtro.getListadecolas()).and("tipomail").is("entrada")),
+                    Aggregation.project().andExpression("correo").as("asociado").
+                            andExpression("stock.te").as("te").
+                            andExpression("stock.driver").as("driver").
+                            andExpression("stock.batido").as("batido").
+                            andExpression("stock.proteina").as("proteina")
+            );
+            AggregationResults<ReporteGrupalPorDias> resultado = mongoops.aggregate(agregacion, "mail", ReporteGrupalPorDias.class);
+            lista = resultado.getMappedResults();
+
         } catch (Exception e) {
             e.printStackTrace();
         }
