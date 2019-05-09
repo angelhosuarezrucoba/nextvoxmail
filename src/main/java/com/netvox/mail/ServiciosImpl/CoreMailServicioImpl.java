@@ -5,7 +5,6 @@
  */
 package com.netvox.mail.ServiciosImpl;
 
-import com.netvox.mail.Api.entidadessupervisor.Pausa;
 import com.netvox.mail.configuraciones.WebSocket;
 import com.netvox.mail.entidades.Cola;
 import com.netvox.mail.entidades.Configuraciones;
@@ -43,6 +42,7 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.web.client.RestTemplate;
 
 @Service("coremailservicio")
 public class CoreMailServicioImpl {
@@ -94,6 +94,7 @@ public class CoreMailServicioImpl {
     private final int SERVICIO_MAIL = 2;
     private static String RUTA_IN;
     private static String RUTA_OUT;
+    RestTemplate resttemplate = new RestTemplate();
 
     public void cargarRutas() {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
@@ -464,20 +465,22 @@ public class CoreMailServicioImpl {
             conexion.close();
             mongoops = clientemongoservicio.clienteMongo();
 
-            if (mensaje.getEstado_mail() == 4) { // esto es la validacion para la pausa                
-                pausa = true;
-            } 
-
             if (!getListaresumen().stream().anyMatch((Resumen resumen) -> {
                 return resumen.getAgente() == mensaje.getIdagente();
             })) {
                 int mailspendienteporcola = obtenerCantidadPendientesPorCola(mensaje.getIdagente(), mensaje.getCampana(), mensaje.getColas());
                 Resumen resumen = new Resumen(mensaje.getCampana(), mensaje.getIdagente(), mensaje.getAgente(), mailspendienteporcola, mensaje.getColas(), pausa ? 4 : (mailspendienteporcola == 0) ? 1 : 2);
                 getListaresumen().add(resumen);
+                if (mensaje.getEstado_mail() == 4) { // esto es la validacion para la pausa     
+                    resttemplate.postForObject("http://localhost:8084/mail/apis/pausar", mensaje, Mensaje.class);
+                }
                 mongoops.insert(resumen);
                 logconexionesservicio.grabarConexion(resumen);
             }
 
+            if (mensaje.getEstado_mail() == 4) { // esto es la validacion para la pausa     
+                pausa = true;
+            }
             mailspendiente = getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).findFirst().get().getPendiente(); // es la misma variable que mailspendienteporcola pero aqui lo uso para memoria porque si no siempre consultaria a la bd , de este modo solo se consulta la bd una vez con cada login
             mensaje.setAcumulado_mail(mailspendiente);// se le puso por nombre acumulado mail solo para coordinar con el front, esto es la suma de mails pendiente.
             mensaje.setEstado_mail(pausa ? 4 : (mailspendiente == 0) ? 1 : 2);//disponible si tiene 0 pendientes,2 si tiene pendientes,es decir atendiendo
@@ -512,6 +515,22 @@ public class CoreMailServicioImpl {
 
     public void ejecutarHiloAsignacion() {
         taskExecutor.submit(hiloasignacionservicio);
+    }
+
+    public void grabarFirma(Mensaje mensaje) {
+        Connection conexion = clientemysqlservicio.obtenerConexion();
+        PreparedStatement preparedstatement = null;
+        try {
+            preparedstatement = conexion.prepareStatement("update usuario set firma_mail=? where idUsuario=?");
+            preparedstatement.setString(1, mensaje.getFirma());
+            preparedstatement.setInt(2, mensaje.getIdagente());
+            preparedstatement.execute();
+            preparedstatement.close();
+            conexion.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
     }
 
     public static String getRUTA_IN() {

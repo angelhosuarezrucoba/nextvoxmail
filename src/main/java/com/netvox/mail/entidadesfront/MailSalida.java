@@ -67,6 +67,9 @@ public class MailSalida {
     @Field(value = "listadeadjuntos")
     private List<Adjunto> listadeadjuntos = new ArrayList<>();
 
+    @Field(value = "comentario")
+    private String comentario;
+
     @Field(value = "idhilo")
     private int idhilo;//
 
@@ -75,7 +78,7 @@ public class MailSalida {
 
     @Field(value = "tiempoencola")
     private int tiempoencola;
-    
+
     @Field(value = "nombre")
     private String nombre;//nombre del agente
 
@@ -117,7 +120,7 @@ public class MailSalida {
 
     public void setTiempo_cola(String tiempo_cola) {
         this.tiempo_cola = tiempo_cola;
-        
+
     }
 
     public int getId() {
@@ -302,5 +305,13 @@ public class MailSalida {
 
     public void setNombre(String nombre) {
         this.nombre = nombre;
+    }
+
+    public String getComentario() {
+        return comentario;
+    }
+
+    public void setComentario(String comentario) {
+        this.comentario = comentario;
     }
 }

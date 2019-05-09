@@ -60,6 +60,8 @@ import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.aggregation.ConditionalOperators;
+import org.springframework.data.mongodb.core.aggregation.ConditionalOperators.Cond;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -357,6 +359,8 @@ public class MailServicioImpl implements MailServicio {
                 mailconfiguracion.setPass(resultset.getString("pass"));
                 mailconfiguracion.setPuertosalida(resultset.getInt("puerto_salida"));
             }
+            resultset.close();
+            conexion.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -701,6 +705,15 @@ public class MailServicioImpl implements MailServicio {
     public List<ReporteGrupalPorDias> detalleGrupalDeCorreosPorDias(FiltroIndividual filtro) {
         MongoOperations mongoops;
         List<ReporteGrupalPorDias> lista = null;
+
+        Cond condicionrecibidos = ConditionalOperators.when(new Criteria("tipomail").is("entrada")).then(1).otherwise(0);
+        Cond condicionencola = ConditionalOperators.when(new Criteria("estado").is(0)).then(1).otherwise(0);
+        Cond condicionatendiendo = ConditionalOperators.when(new Criteria("estado").is(1)).then(1).otherwise(0);
+        Cond condicionvalidos = ConditionalOperators.when(new Criteria().andOperator(new Criteria("hilocerrado").is(true),
+                new Criteria("tipificacion").ne(7))).then(1).otherwise(0);
+        Cond condicioninvalidos = ConditionalOperators.when(new Criteria().andOperator(new Criteria("hilocerrado").is(true),
+                new Criteria("tipificacion").is(7))).then(1).otherwise(0);
+        Cond condicionfinalizados = ConditionalOperators.when(new Criteria("hilocerrado").is(true)).then(1).otherwise(0);
         try {
             mongoops = clientemongoservicio.clienteMongo();
             Aggregation agregacion = Aggregation.newAggregation(
@@ -710,13 +723,148 @@ public class MailServicioImpl implements MailServicio {
                                     Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin())).
                                     and("usuario").in(filtro.getListadeagentes())
                                     .and("id_cola").in(filtro.getListadecolas()).and("tipomail").is("entrada")),
-                    Aggregation.project().andExpression("correo").as("asociado").
-                            andExpression("stock.te").as("te").
-                            andExpression("stock.driver").as("driver").
-                            andExpression("stock.batido").as("batido").
-                            andExpression("stock.proteina").as("proteina")
+                    Aggregation.project().andExpression("fecha_ingreso").substring(0, 10).as("fecha_ingreso").
+                            andExpression("tipomail").as("tipomail").
+                            andExpression("estado").as("estado").
+                            andExpression("hilocerrado").as("hilocerrado").
+                            andExpression("tipificacion").as("tipificacion"),
+                    Aggregation.group("fecha_ingreso").
+                            sum(condicionrecibidos).as("recibidos").
+                            sum(condicionencola).as("encola").
+                            sum(condicionatendiendo).as("atendiendo").
+                            sum(condicionvalidos).as("validos").
+                            sum(condicioninvalidos).as("invalidos").
+                            sum(condicionfinalizados).as("finalizados")
             );
             AggregationResults<ReporteGrupalPorDias> resultado = mongoops.aggregate(agregacion, "mail", ReporteGrupalPorDias.class);
+            lista = resultado.getMappedResults();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return lista;
+    }
+
+    @Override
+    public List<ReporteGrupalPorDias> detalleGrupalDeCorreosPorHoras(FiltroIndividual filtro) {
+
+        MongoOperations mongoops;
+        List<ReporteGrupalPorDias> lista = null;
+
+        Cond condicionrecibidos = ConditionalOperators.when(new Criteria("tipomail").is("entrada")).then(1).otherwise(0);
+        Cond condicionencola = ConditionalOperators.when(new Criteria("estado").is(0)).then(1).otherwise(0);
+        Cond condicionatendiendo = ConditionalOperators.when(new Criteria("estado").is(1)).then(1).otherwise(0);
+        Cond condicionvalidos = ConditionalOperators.when(new Criteria().andOperator(new Criteria("hilocerrado").is(true),
+                new Criteria("tipificacion").ne(7))).then(1).otherwise(0);
+        Cond condicioninvalidos = ConditionalOperators.when(new Criteria().andOperator(new Criteria("hilocerrado").is(true),
+                new Criteria("tipificacion").is(7))).then(1).otherwise(0);
+        Cond condicionfinalizados = ConditionalOperators.when(new Criteria("hilocerrado").is(true)).then(1).otherwise(0);
+        try {
+            mongoops = clientemongoservicio.clienteMongo();
+            Aggregation agregacion = Aggregation.newAggregation(
+                    Aggregation.match(
+                            new Criteria().andOperator(
+                                    Criteria.where("fecha_ingreso").gte(filtro.getFecha_inicio()),
+                                    Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin())).
+                                    and("usuario").in(filtro.getListadeagentes())
+                                    .and("id_cola").in(filtro.getListadecolas()).and("tipomail").is("entrada")),
+                    Aggregation.project().andExpression("fecha_ingreso").substring(11, 2).as("fecha_ingreso").
+                            andExpression("tipomail").as("tipomail").
+                            andExpression("estado").as("estado").
+                            andExpression("hilocerrado").as("hilocerrado").
+                            andExpression("tipificacion").as("tipificacion"),
+                    Aggregation.group("fecha_ingreso").
+                            sum(condicionrecibidos).as("recibidos").
+                            sum(condicionencola).as("encola").
+                            sum(condicionatendiendo).as("atendiendo").
+                            sum(condicionvalidos).as("validos").
+                            sum(condicioninvalidos).as("invalidos").
+                            sum(condicionfinalizados).as("finalizados")
+            );
+            AggregationResults<ReporteGrupalPorDias> resultado = mongoops.aggregate(agregacion, "mail", ReporteGrupalPorDias.class);
+            lista = resultado.getMappedResults();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return lista;
+    }
+
+    @Override
+    public List<ReporteGrupalPorDias> detalleGrupalDeCorreosPorAgente(FiltroIndividual filtro) {
+        MongoOperations mongoops;
+        List<ReporteGrupalPorDias> lista = null;
+
+        Cond condicionvalidos = ConditionalOperators.when(new Criteria().andOperator(new Criteria("hilocerrado").is(true),
+                new Criteria("tipificacion").ne(7))).then(1).otherwise(0);
+        Cond condicioninvalidos = ConditionalOperators.when(new Criteria().andOperator(new Criteria("hilocerrado").is(true),
+                new Criteria("tipificacion").is(7))).then(1).otherwise(0);
+        Cond condicionfinalizados = ConditionalOperators.when(new Criteria("hilocerrado").is(true)).then(1).otherwise(0);
+        try {
+            mongoops = clientemongoservicio.clienteMongo();
+            Aggregation agregacion = Aggregation.newAggregation(
+                    Aggregation.match(
+                            new Criteria().andOperator(
+                                    Criteria.where("fecha_ingreso").gte(filtro.getFecha_inicio()),
+                                    Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin())).
+                                    and("usuario").in(filtro.getListadeagentes())
+                                    .and("id_cola").in(filtro.getListadecolas()).and("tipomail").is("entrada")),
+                    Aggregation.project().andExpression("fecha_ingreso").substring(11, 2).as("fecha_ingreso").
+                            andExpression("nombre").as("nombre").
+                            andExpression("tipomail").as("tipomail").
+                            andExpression("estado").as("estado").
+                            andExpression("hilocerrado").as("hilocerrado").
+                            andExpression("tipificacion").as("tipificacion"),
+                    Aggregation.match(
+                            new Criteria().andOperator(
+                                    Criteria.where("fecha_ingreso").gte(filtro.getFecha_inicio().substring(11, 13)),
+                                    Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin().substring(11, 13)))),
+                    Aggregation.group("fecha_ingreso", "nombre").
+                            sum(condicionvalidos).as("validos").
+                            sum(condicioninvalidos).as("invalidos").
+                            sum(condicionfinalizados).as("finalizados"),
+                    Aggregation.project().andExpression("_id.fecha_ingreso").as("_id").
+                            andExpression("_id.nombre").as("nombre").
+                            andExpression("nombre").as("nombre").
+                            andExpression("validos").as("validos").
+                            andExpression("invalidos").as("invalidos").
+                            andExpression("finalizados").as("finalizados")
+            );
+            System.out.println(agregacion.toString());
+            AggregationResults<ReporteGrupalPorDias> resultado = mongoops.aggregate(agregacion, "mail", ReporteGrupalPorDias.class);
+            lista = resultado.getMappedResults();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return lista;
+    }
+
+    @Override
+    public List<MailSalida> detalleGrupalDeCorreosPorCola(FiltroIndividual filtro) {
+        MongoOperations mongoops;
+        List<MailSalida> lista = null;
+
+        try {
+            mongoops = clientemongoservicio.clienteMongo();
+            Aggregation agregacion = Aggregation.newAggregation(
+                    Aggregation.match(
+                            new Criteria().andOperator(
+                                    Criteria.where("fecha_ingreso").gte(filtro.getFecha_inicio()),
+                                    Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin())).
+                                    and("id_cola").in(filtro.getListadecolas()).and("tipomail").is("entrada").and("estado").is(0)),
+                    Aggregation.project().andExpression("fecha_ingreso").substring(11, 2).as("fecha"). //aqui lo hago solo para poder luego mostrar la fecha original                       
+                            andExpression("idcorreo").as("idcorreo").
+                            andExpression("fecha_ingreso").as("fecha_ingreso").
+                            andExpression("remitente").as("remitente").
+                            andExpression("asunto").as("asunto"),
+                    Aggregation.match(
+                            new Criteria().andOperator(
+                                    Criteria.where("fecha").gte(filtro.getFecha_inicio().substring(11, 13)),
+                                    Criteria.where("fecha").lte(filtro.getFecha_fin().substring(11, 13))))
+            );
+                        System.out.println(agregacion.toString());
+            AggregationResults<MailSalida> resultado = mongoops.aggregate(agregacion, "mail", MailSalida.class);
             lista = resultado.getMappedResults();
 
         } catch (Exception e) {

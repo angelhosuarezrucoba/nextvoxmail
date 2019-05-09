@@ -50,6 +50,13 @@ public interface MailServicio {
 
     public List<ReporteGrupalPorDias> detalleGrupalDeCorreosPorDias(FiltroIndividual filtro);
 
+    public List<ReporteGrupalPorDias> detalleGrupalDeCorreosPorHoras(FiltroIndividual filtro);
+
+    public List<ReporteGrupalPorDias> detalleGrupalDeCorreosPorAgente(FiltroIndividual filtro);
+
+    public List<MailSalida> detalleGrupalDeCorreosPorCola(FiltroIndividual filtro);
+
+
 
     
 }

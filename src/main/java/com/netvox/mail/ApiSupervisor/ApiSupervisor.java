@@ -11,7 +11,6 @@ import com.netvox.mail.Api.entidadessupervisor.ReporteGrupalPorDias;
 import com.netvox.mail.configuraciones.WebSocket;
 import com.netvox.mail.entidadesfront.MailSalida;
 import com.netvox.mail.servicios.MailServicio;
-import java.text.SimpleDateFormat;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,10 +34,9 @@ public class ApiSupervisor {
     @Qualifier("mailservicio")
     MailServicio mailservicio;
 
-
     @PostMapping("/listarcorreospendientes")
     public List<MailSalida> listarCorreosPendientes(@RequestBody FiltroIndividual filtro) {
-         return mailservicio.listarCorreosPendientes(filtro);
+        return mailservicio.listarCorreosPendientes(filtro);
     }
 
     @PostMapping("/listarcorreosinvalidos")
@@ -56,24 +54,23 @@ public class ApiSupervisor {
         return mailservicio.detalleTiemposeEnPausa(filtro);
     }
 
-      @PostMapping("/detallegrupaldecorreospordias")
+    @PostMapping("/detallegrupaldecorreospordias")
     public List<ReporteGrupalPorDias> detalleGrupalDeCorreosPorDias(@RequestBody FiltroIndividual filtro) {
         return mailservicio.detalleGrupalDeCorreosPorDias(filtro);
     }
 
-//    @PostMapping("/enviarcorreo")
-//    public void enviarCorreo(@RequestBody MailSalida mailsalida) {
-//        mailservicio.enviarcorreo(mailsalida);
-//    }
-//
-//    @PostMapping("/tipificarcorreo")
-//    public void tipificarCorreo(@RequestBody MailSalida mailsalida) {
-//        
-//        mailservicio.tipificarCorreo(mailsalida);
-//    }
-//
-//    @PostMapping("/listartipificaciones")
-//    public List<Tipificacion> listarTipificaciones() {
-//        return mailservicio.listarTipificaciones();
-//    }
+    @PostMapping("/detallegrupaldecorreosporhoras")
+    public List<ReporteGrupalPorDias> detalleGrupalDeCorreosPorHoras(@RequestBody FiltroIndividual filtro) {
+        return mailservicio.detalleGrupalDeCorreosPorHoras(filtro);
+    }
+
+    @PostMapping("/detallegrupaldecorreosporagente")
+    public List<ReporteGrupalPorDias> detalleGrupalDeCorreosPorAgente(@RequestBody FiltroIndividual filtro) {
+        return mailservicio.detalleGrupalDeCorreosPorAgente(filtro);
+    }
+
+    @PostMapping("/detallegrupaldecorreosporcola")
+    public List<MailSalida> detalleGrupalDeCorreosPorCola(@RequestBody FiltroIndividual filtro) {
+        return mailservicio.detalleGrupalDeCorreosPorCola(filtro);
+    }
 }

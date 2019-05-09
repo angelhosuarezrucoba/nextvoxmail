@@ -6,21 +6,15 @@ package com.netvox.mail.Api.entidadessupervisor;
  */
 public class ReporteGrupalPorDias {
 
-    private String _id;
+    private String id;
     private int recibidos;
     private int encola;
     private int atendiendo;
     private int validos;
     private int invalidos;
     private int finalizados;
-
-    public String getId() {
-        return _id;
-    }
-
-    public void setId(String _id) {
-        this._id = _id;
-    }
+    private String nombre;
+  
 
     public int getRecibidos() {
         return recibidos;
@@ -68,5 +62,21 @@ public class ReporteGrupalPorDias {
 
     public void setFinalizados(int finalizados) {
         this.finalizados = finalizados;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String Id) {
+        this.id = Id;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
     }
 }

@@ -16,7 +16,17 @@ public class Mensaje {
     private List<MailFront> listacorreos;
     private int peso_maximo_adjunto;
     private int idcorreoasignado;//con esto le aviso al front que correo fue asignado para que el lo descuente.
+    private String firma;
+    
+    
+    public Mensaje() {
+    }
 
+    
+    public Mensaje(int idagente) { //este constructor solo lo uso para los websockets de conexion y desconexion
+        this.idagente = idagente;
+    }   
+        
     public String getEvento() {
         return evento;
     }
@@ -111,6 +121,14 @@ public class Mensaje {
 
     public void setIdcorreoasignado(int idcorreoasignado) {
         this.idcorreoasignado = idcorreoasignado;
+    }
+
+    public String getFirma() {
+        return firma;
+    }
+
+    public void setFirma(String firma) {
+        this.firma = firma;
     }
 
   

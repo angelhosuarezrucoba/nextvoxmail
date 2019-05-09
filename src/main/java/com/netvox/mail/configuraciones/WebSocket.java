@@ -51,7 +51,7 @@ public class WebSocket extends TextWebSocketHandler {
                 enviarMensajeParaUnUsuario(coremailservicio.obtenerRespuestaDeLogin(mensaje), mensaje.getIdagente());
                 break;
             case "LOGOUT":
-               // resttemplate.postForLocation("http://localhost:8084/mail/apis/pausar", mensaje);
+                // resttemplate.postForLocation("http://localhost:8084/mail/apis/pausar", mensaje);
                 break;
             default:
                 break;
@@ -100,9 +100,11 @@ public class WebSocket extends TextWebSocketHandler {
 
         lista.remove(listaidagente.get(0));
 
-        if (lista.isEmpty()) {
+        if (lista.isEmpty()) {            
+           
+            resttemplate.postForObject("http://localhost:8084/mail/apis/pausar", new Mensaje(listaidagente.get(0).getIdagente()),Mensaje.class);
             MapaAgentes.getMapa().remove(listaidagente.get(0).getIdagente());
-            resumenservicio.borrarResumenBaseDatos(listaidagente.get(0).getIdagente());            
+            resumenservicio.borrarResumenBaseDatos(listaidagente.get(0).getIdagente());
             coremailservicio.borrarListaResumen(listaidagente.get(0).getIdagente());//en memoria
             logconexionesservcio.grabarDesconexion(listaidagente.get(0).getIdagente());
         }

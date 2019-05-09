@@ -9,8 +9,7 @@ public class FiltroIndividual {
     private String fecha_fin;
     private List<Integer> listadecolas = new ArrayList<>();
     private List<Integer> listadeagentes = new ArrayList<>();
-    
-
+ 
     public String getFecha_inicio() {
         return fecha_inicio;
     }

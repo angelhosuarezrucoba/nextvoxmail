@@ -20,7 +20,7 @@ public class MailInbox {
     private String destino;
     private String asunto;
     private String cc;//copia
-    private String mensaje;//mensaje de tipificacion
+    private String mensaje;//comentario de tipificacion
     private String fecha_ingreso;
     private String fecha_respuesta;
     private int tiempo_cola;//tiempo que estuvo en una cola;
