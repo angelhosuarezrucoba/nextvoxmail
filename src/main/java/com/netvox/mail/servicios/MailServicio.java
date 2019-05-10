@@ -8,7 +8,7 @@ package com.netvox.mail.servicios;
 
 import com.netvox.mail.Api.entidadessupervisor.FiltroIndividual;
 import com.netvox.mail.Api.entidadessupervisor.Pausa;
-import com.netvox.mail.Api.entidadessupervisor.ReporteGrupalPorDias;
+import com.netvox.mail.Api.entidadessupervisor.ReporteGrupal;
 import com.netvox.mail.entidadesfront.MailInbox;
 import com.netvox.mail.entidadesfront.MailSalida;
 import com.netvox.mail.entidadesfront.Mensaje;
@@ -24,7 +24,7 @@ public interface MailServicio {
     
     public abstract List<MailInbox> listarCorreos(Mensaje mensaje);
 
-    public String obtenerContenidoMail(MailInbox mailconsultainbox);
+    public String abrirCorreo(MailInbox mailconsultainbox);
 
     public List<MailInbox> listarCorreosEnCola(Mensaje mensaje);
     
@@ -48,11 +48,11 @@ public interface MailServicio {
 
     public List<Pausa> detalleTiemposeEnPausa(FiltroIndividual filtro);
 
-    public List<ReporteGrupalPorDias> detalleGrupalDeCorreosPorDias(FiltroIndividual filtro);
+    public List<ReporteGrupal> detalleGrupalDeCorreosPorDias(FiltroIndividual filtro);
 
-    public List<ReporteGrupalPorDias> detalleGrupalDeCorreosPorHoras(FiltroIndividual filtro);
+    public List<ReporteGrupal> detalleGrupalDeCorreosPorHoras(FiltroIndividual filtro);
 
-    public List<ReporteGrupalPorDias> detalleGrupalDeCorreosPorAgente(FiltroIndividual filtro);
+    public List<ReporteGrupal> detalleGrupalDeCorreosPorAgente(FiltroIndividual filtro);
 
     public List<MailSalida> detalleGrupalDeCorreosPorCola(FiltroIndividual filtro);
 

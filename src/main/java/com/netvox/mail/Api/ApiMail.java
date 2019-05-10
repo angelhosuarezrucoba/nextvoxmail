@@ -52,7 +52,7 @@ public class ApiMail {
 
     @PostMapping("/abrircorreo")
     public String abrirCorreo(@RequestBody MailInbox mailconsultainbox) {
-        return mailservicio.obtenerContenidoMail(mailconsultainbox);
+        return mailservicio.abrirCorreo(mailconsultainbox);
     }
 
     @PostMapping("/listarcorreoencola")

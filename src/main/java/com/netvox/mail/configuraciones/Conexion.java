@@ -51,7 +51,7 @@ public class Conexion {
         clavemysql = lista.get(6);
         ipmysql = lista.get(7);
         bdmysql = lista.get(8);
-        puertomysql = lista.get(9);
+        puertomysql = lista.get(9);        
         return new MongoClient(new MongoClientURI("mongodb://" + usuariomongo + ":" + clavemongo + "@" + ipmongo + ":" + puertomongo + "/" + bdmongo));
     }
 

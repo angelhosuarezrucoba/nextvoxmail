@@ -361,9 +361,9 @@ public class Utilidades {
                                 if (contentid != null) {
                                     contentid = contentid.replace("<", "");
                                     contentid = contentid.replace(">", "");
-                                    imagenes.put("cid:" + contentid, coremailservicio.getRUTA_IN()+"/" + mail.getIdcorreo() + "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
+                                    imagenes.put("cid:" + contentid, coremailservicio.getPath_entrada()+"/" + mail.getIdcorreo() + "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
                                 } else {
-                                    imagenes.put("cid:" + unaParte.getFileName() + "@", coremailservicio.getRUTA_IN() + "/"+mail.getIdcorreo() + "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
+                                    imagenes.put("cid:" + unaParte.getFileName() + "@", coremailservicio.getPath_entrada() + "/"+mail.getIdcorreo() + "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
                                 }
 
                             } catch (Exception ex) {

@@ -4,7 +4,7 @@ package com.netvox.mail.Api.entidadessupervisor;
  *
  * @author Angelho Suarez
  */
-public class ReporteGrupalPorDias {
+public class ReporteGrupal {
 
     private String id;
     private int recibidos;
@@ -14,6 +14,8 @@ public class ReporteGrupalPorDias {
     private int invalidos;
     private int finalizados;
     private String nombre;
+    private String tiempo_atencion;
+    private String tiempo_promedio_atencion;
   
 
     public int getRecibidos() {
@@ -79,4 +81,23 @@ public class ReporteGrupalPorDias {
     public void setNombre(String nombre) {
         this.nombre = nombre;
     }
+
+    public String getTiempo_atencion() {
+        return tiempo_atencion;
+    }
+
+    public void setTiempo_atencion(String tiempo_atencion) {
+        this.tiempo_atencion = tiempo_atencion;
+    }
+
+    public String getTiempo_promedio_atencion() {
+        return tiempo_promedio_atencion;
+    }
+
+    public void setTiempo_promedio_atencion(String tiempo_promedio_atencion) {
+        this.tiempo_promedio_atencion = tiempo_promedio_atencion;
+    }
+
+   
+
 }

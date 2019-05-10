@@ -37,7 +37,7 @@ public class WebsocketConfiguracion implements WebSocketConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(this.websockethandler, new String[]{"/{idagente}"}).setAllowedOrigins(new String[]{"*"}).addInterceptors(new HandshakeInterceptor[]{HandshakeInterceptor()});
+            registry.addHandler(this.websockethandler, new String[]{"/{idagente}"}).setAllowedOrigins(new String[]{"*"}).addInterceptors(new HandshakeInterceptor[]{HandshakeInterceptor()});
     }
 
 }

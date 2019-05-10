@@ -7,7 +7,7 @@ package com.netvox.mail.ApiSupervisor;
 
 import com.netvox.mail.Api.entidadessupervisor.FiltroIndividual;
 import com.netvox.mail.Api.entidadessupervisor.Pausa;
-import com.netvox.mail.Api.entidadessupervisor.ReporteGrupalPorDias;
+import com.netvox.mail.Api.entidadessupervisor.ReporteGrupal;
 import com.netvox.mail.configuraciones.WebSocket;
 import com.netvox.mail.entidadesfront.MailSalida;
 import com.netvox.mail.servicios.MailServicio;
@@ -55,17 +55,17 @@ public class ApiSupervisor {
     }
 
     @PostMapping("/detallegrupaldecorreospordias")
-    public List<ReporteGrupalPorDias> detalleGrupalDeCorreosPorDias(@RequestBody FiltroIndividual filtro) {
+    public List<ReporteGrupal> detalleGrupalDeCorreosPorDias(@RequestBody FiltroIndividual filtro) {
         return mailservicio.detalleGrupalDeCorreosPorDias(filtro);
     }
 
     @PostMapping("/detallegrupaldecorreosporhoras")
-    public List<ReporteGrupalPorDias> detalleGrupalDeCorreosPorHoras(@RequestBody FiltroIndividual filtro) {
+    public List<ReporteGrupal> detalleGrupalDeCorreosPorHoras(@RequestBody FiltroIndividual filtro) {
         return mailservicio.detalleGrupalDeCorreosPorHoras(filtro);
     }
 
     @PostMapping("/detallegrupaldecorreosporagente")
-    public List<ReporteGrupalPorDias> detalleGrupalDeCorreosPorAgente(@RequestBody FiltroIndividual filtro) {
+    public List<ReporteGrupal> detalleGrupalDeCorreosPorAgente(@RequestBody FiltroIndividual filtro) {
         return mailservicio.detalleGrupalDeCorreosPorAgente(filtro);
     }
 

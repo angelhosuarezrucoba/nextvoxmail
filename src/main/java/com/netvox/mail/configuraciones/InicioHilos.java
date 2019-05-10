@@ -1,9 +1,10 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.netvox.mail.configuraciones;
+
+/**
+ * @author Angelho Suarez
+ * @version 1.0
+ * @since JDK1.0
+ */
 
 import com.netvox.mail.ServiciosImpl.CoreMailServicioImpl;
 import javax.annotation.PostConstruct;
@@ -20,8 +21,8 @@ public class InicioHilos {
 
     ///esto ejecuta un hilo en cuanto inicia la web.
     @PostConstruct
-    public void init() {        
-     
+    public void init() {
+
         coremailservicio.cargarRutas();
         coremailservicio.cargarConfiguraciones();
         coremailservicio.ejecutarHiloEntrada();

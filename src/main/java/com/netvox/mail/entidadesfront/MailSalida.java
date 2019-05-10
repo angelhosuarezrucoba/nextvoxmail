@@ -67,6 +67,9 @@ public class MailSalida {
     @Field(value = "listadeadjuntos")
     private List<Adjunto> listadeadjuntos = new ArrayList<>();
 
+    @Field(value = "listadeembebidos")
+    private List<String> listadeembebidos = new ArrayList<>();
+
     @Field(value = "comentario")
     private String comentario;
 
@@ -81,6 +84,9 @@ public class MailSalida {
 
     @Field(value = "nombre")
     private String nombre;//nombre del agente
+
+    @Field(value = "tiempo_atencion")
+    private int tiempo_atencion;//
 
     //////////variables para el reporte
     private String hora;
@@ -313,5 +319,21 @@ public class MailSalida {
 
     public void setComentario(String comentario) {
         this.comentario = comentario;
+    }
+
+    public List<String> getListadeembebidos() {
+        return listadeembebidos;
+    }
+
+    public void setListadeembebidos(List<String> listadeembebidos) {
+        this.listadeembebidos = listadeembebidos;
+    }
+
+    public int getTiempo_atencion() {
+        return tiempo_atencion;
+    }
+
+    public void setTiempo_atencion(int tiempo_atencion) {
+        this.tiempo_atencion = tiempo_atencion;
     }
 }

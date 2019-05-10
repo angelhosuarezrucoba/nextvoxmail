@@ -47,6 +47,22 @@ import org.springframework.web.client.RestTemplate;
 @Service("coremailservicio")
 public class CoreMailServicioImpl {
 
+    public static String getPath_entrada() {
+        return path_entrada;
+    }
+
+    public static void setPath_entrada(String aPath_entrada) {
+        path_entrada = aPath_entrada;
+    }
+
+    public static String getPath_salida() {
+        return path_salida;
+    }
+
+    public static void setPath_salida(String aPath_salida) {
+        path_salida = aPath_salida;
+    }
+
     @Autowired
     @Qualifier("clientemysqlservicio")
     ClienteMysqlServicioImpl clientemysqlservicio;
@@ -94,6 +110,8 @@ public class CoreMailServicioImpl {
     private final int SERVICIO_MAIL = 2;
     private static String RUTA_IN;
     private static String RUTA_OUT;
+    private static String path_entrada;
+    private static String path_salida;
     RestTemplate resttemplate = new RestTemplate();
 
     public void cargarRutas() {
@@ -101,6 +119,8 @@ public class CoreMailServicioImpl {
         Rutas rutas = mongoops.find(new Query(), Rutas.class).get(0); //este toma el unico resultado que hay en la base
         RUTA_IN = rutas.getRuta_in();
         RUTA_OUT = rutas.getRuta_out();
+        path_entrada = rutas.getPath_entrada();
+        path_salida = rutas.getPath_salida();
     }
 
 //id 36 cambiar a mongo despues
@@ -125,7 +145,7 @@ public class CoreMailServicioImpl {
                     + "cola.campana "
                     + "from email_configuracion "
                     + "inner join cola on cola.idCola = email_configuracion.queue "
-                    + "where cola.service_mail = 1 and cola.campana <> 0 and email_configuracion.id=35";
+                    + "where cola.service_mail = 1 and cola.campana <> 0";
 
             resultado = statement.executeQuery(sql);
             while (resultado.next()) {
@@ -504,7 +524,7 @@ public class CoreMailServicioImpl {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    
+
         return mensaje;
     }
 

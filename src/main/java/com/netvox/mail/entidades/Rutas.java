@@ -9,23 +9,12 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "rutas")
 public class Rutas {
-    private String url_in;
     private String ruta_in;
     private String ruta_out;
-    private String ruta_adjunto;
-    private String ruta_tomcat;
-    private String ruta_firmas;
-    private String ip_ccvox;
-    private String ip_server_mail;
-    private int puerto_server_mail;
+    private String path_entrada;
+    private String path_salida;
 
-    public String getUrl_in() {
-        return url_in;
-    }
-
-    public void setUrl_in(String url_in) {
-        this.url_in = url_in;
-    }
+  
     
     public String getRuta_in() {
         return ruta_in;
@@ -43,55 +32,21 @@ public class Rutas {
         this.ruta_out = ruta_out;
     }
 
-    public String getRuta_adjunto() {
-        return ruta_adjunto;
+    public String getPath_entrada() {
+        return path_entrada;
     }
 
-    public void setRuta_adjunto(String ruta_adjunto) {
-        this.ruta_adjunto = ruta_adjunto;
+    public void setPath_entrada(String path_entrada) {
+        this.path_entrada = path_entrada;
     }
 
-    public String getRuta_tomcat() {
-        return ruta_tomcat;
+    public String getPath_salida() {
+        return path_salida;
     }
 
-    public void setRuta_tomcat(String ruta_tomcat) {
-        this.ruta_tomcat = ruta_tomcat;
+    public void setPath_salida(String path_salida) {
+        this.path_salida = path_salida;
     }
 
-    public String getIp_ccvox() {
-        return ip_ccvox;
-    }
-
-    public void setIp_ccvox(String ip_ccvox) {
-        this.ip_ccvox = ip_ccvox;
-    }
-
-    public String getIp_server_mail() {
-        return ip_server_mail;
-    }
-
-    public void setIp_server_mail(String ip_server_mail) {
-        this.ip_server_mail = ip_server_mail;
-    }
-
-    public int getPuerto_server_mail() {
-        return puerto_server_mail;
-    }
-
-    public void setPuerto_server_mail(int puerto_server_mail) {
-        this.puerto_server_mail = puerto_server_mail;
-    }
-
-    public String getRuta_firmas() {
-        return ruta_firmas;
-    }
-
-    public void setRuta_firmas(String ruta_firmas) {
-        this.ruta_firmas = ruta_firmas;
-    }
-
-
-       
 }
 
