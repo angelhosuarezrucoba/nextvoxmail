@@ -449,6 +449,8 @@ public class CoreMailServicioImpl {
 
     public Mensaje obtenerRespuestaDeLogin(Mensaje mensaje) {
         Connection conexion = clientemysqlservicio.obtenerConexion();
+        Connection conexionfirma = clientemysqlservicio.obtenerConexion();
+
         List<MailFront> correos = new ArrayList<>();
         boolean pausa = false;
         try {
@@ -463,6 +465,16 @@ public class CoreMailServicioImpl {
             statement.close();
             resultset.close();
             conexion.close();
+
+            PreparedStatement preparedstatement = conexionfirma.prepareStatement("select firma_mail from usuario where idUsuario=?");
+            preparedstatement.setInt(1, mensaje.getIdagente());
+            ResultSet resultsetfirma = preparedstatement.executeQuery();
+            while (resultsetfirma.next()) {
+                mensaje.setFirma(resultsetfirma.getString("firma_mail"));
+            }
+            resultsetfirma.close();
+            conexionfirma.close();
+
             mongoops = clientemongoservicio.clienteMongo();
 
             if (!getListaresumen().stream().anyMatch((Resumen resumen) -> {
@@ -492,6 +504,7 @@ public class CoreMailServicioImpl {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    
         return mensaje;
     }
 
@@ -530,7 +543,7 @@ public class CoreMailServicioImpl {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
+
     }
 
     public static String getRUTA_IN() {
