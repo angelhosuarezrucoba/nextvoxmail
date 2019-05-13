@@ -250,6 +250,20 @@ public class MailServicioImpl implements MailServicio {
             } else {
                 mailsalida.setId(ultimomail.getIdcorreo() + 1);
             }
+
+            ///este pedazo de codigo era para cuando alguien manda un correo , no puedo atarlos a un hilo
+//             me quedaria pensar que puedo unirlo siempre que la tipificacion sea -1 
+//            List<Mail> hilomail = mongoops.find(
+//                    new Query(Criteria.where("remitente").is(mailsalida.getRemitente()).
+//                            and("destino").is(mailsalida.getDestino()).and("tipificacion").is(7).
+//                            and("hilocerrado").is(false)), Mail.class);
+//
+//            if (hilomail.size() > 0) {
+//                update.set("idhilo", hilomail.get(0).getIdhilo());
+//            } else {
+//                update.set("idhilo", mail.getIdcorreo());
+//            }
+            mailsalida.setIdhilo(mailsalida.getId());
             mongoops.insert(mailsalida);
 
         } catch (Exception e) {
@@ -523,6 +537,8 @@ public class MailServicioImpl implements MailServicio {
         try {
             mongoops = clientemongoservicio.clienteMongo();
             System.out.println("estoy en el generarcorreo y la tipificacion es " + mailsalida.getTipificacion());
+            System.out.println("estoy en el generarcorreo y el idhilo es " + mailsalida.getIdhilo());
+
             mongoops.updateFirst(new Query(
                     Criteria.where("idcorreo").is(mailsalida.getId())),
                     new Update().set("descripcion_tipificacion", mailsalida.getDescripcion_tipificacion()).set("tipificacion", mailsalida.getTipificacion()), MailSalida.class);
@@ -533,16 +549,23 @@ public class MailServicioImpl implements MailServicio {
             mailsalida.setFecha_ingreso(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA));
             mailsalida.setFechainiciogestion(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA));
             mailsalida.setTipo("salida");
-            mailsalida.setEstado(2);//correo enviado
-            mailsalida.setTiempo_atencion(formatodefechas.restaDeFechasEnSegundos(mailsalida.getFechainiciogestion(), ultimomail.getFechainiciogestion()));
+            mailsalida.setEstado(2);//correo enviado            
             mongoops.insert(mailsalida);
-
             if (mailsalida.isHilocerrado()) {
                 System.out.println("entre a hilocerrado y es " + mailsalida.getIdhilo());
                 mongoops.updateMulti(new Query(Criteria.where("idhilo").is(mailsalida.getIdhilo())),
                         new Update().set("hilocerrado", true).
                                 set("descripcion_tipificacion", mailsalida.getDescripcion_tipificacion()).
                                 set("tipificacion", mailsalida.getTipificacion()),
+                        MailSalida.class);
+                Query queryhilo = new Query(Criteria.where("idhilo").is(mailsalida.getIdhilo()));
+                query.fields().include("idcorreo").include("fechainiciogestion");
+                List<MailSalida> listahilo = mongoops.find(queryhilo, MailSalida.class);
+                MailSalida minimo = listahilo.stream().min((mail_1, mail_2) -> Integer.compare(mail_1.getId(), mail_2.getId())).get();
+                MailSalida maximo = listahilo.stream().max((mail_1, mail_2) -> Integer.compare(mail_1.getId(), mail_2.getId())).get();
+                mongoops.updateFirst(new Query(Criteria.where("idcorreo").is(minimo.getId())),
+                        new Update().set("tiempo_atencion", formatodefechas.restaDeFechasEnSegundos(maximo.getFechainiciogestion(), minimo.getFechainiciogestion()))
+                                .set("fechafingestion", maximo.getFechainiciogestion()),
                         MailSalida.class);
             }
         } catch (Exception e) {
@@ -823,29 +846,34 @@ public class MailServicioImpl implements MailServicio {
             Aggregation agregacion = Aggregation.newAggregation(
                     Aggregation.match(
                             new Criteria().andOperator(
-                                    Criteria.where("fecha_ingreso").gte(filtro.getFecha_inicio()),
-                                    Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin())).
+                                    Criteria.where("fechainiciogestion").gte(filtro.getFecha_inicio()),
+                                    Criteria.where("fechainiciogestion").lte(filtro.getFecha_fin())).
                                     and("id_cola").in(filtro.getListadecolas()).and("tipomail").is("entrada")),
-                    Aggregation.project().andExpression("fecha_ingreso").substring(11, 2).as("fecha_ingreso").
+                    Aggregation.project().andExpression("fechainiciogestion").substring(11, 2).as("fechainiciogestion").
                             andExpression("nombre").as("nombre").
                             andExpression("tipomail").as("tipomail").
                             andExpression("estado").as("estado").
                             andExpression("hilocerrado").as("hilocerrado").
-                            andExpression("tipificacion").as("tipificacion"),
+                            andExpression("tipificacion").as("tipificacion").
+                            andExpression("tiempo_atencion").as("tiempo_atencion"),
                     Aggregation.match(
                             new Criteria().andOperator(
-                                    Criteria.where("fecha_ingreso").gte(filtro.getFecha_inicio().substring(11, 13)),
-                                    Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin().substring(11, 13)))),
-                    Aggregation.group("fecha_ingreso", "nombre").
+                                    Criteria.where("fechainiciogestion").gte(filtro.getFecha_inicio().substring(11, 13)),
+                                    Criteria.where("fechainiciogestion").lte(filtro.getFecha_fin().substring(11, 13)))),
+                    Aggregation.group("fechainiciogestion", "nombre").
                             sum(condicionvalidos).as("validos").
                             sum(condicioninvalidos).as("invalidos").
-                            sum(condicionfinalizados).as("finalizados"),
-                    Aggregation.project().andExpression("_id.fecha_ingreso").as("_id").
+                            sum(condicionfinalizados).as("finalizados").
+                            sum("tiempo_atencion").as("tiempo_atencion").
+                            avg("tiempo_atencion").as("tiempo_promedio_atencion"),
+                    Aggregation.project().andExpression("_id.fechainiciogestion").as("_id").
                             andExpression("_id.nombre").as("nombre").
                             andExpression("nombre").as("nombre").
                             andExpression("validos").as("validos").
                             andExpression("invalidos").as("invalidos").
-                            andExpression("finalizados").as("finalizados")
+                            andExpression("finalizados").as("finalizados").
+                            andExpression("tiempo_atencion").as("tiempo_atencion").
+                            andExpression("tiempo_promedio_atencion").as("tiempo_promedio_atencion")
             );
             System.out.println(agregacion.toString());
             AggregationResults<ReporteGrupal> resultado = mongoops.aggregate(agregacion, "mail", ReporteGrupal.class);

@@ -14,8 +14,8 @@ public class ReporteGrupal {
     private int invalidos;
     private int finalizados;
     private String nombre;
-    private String tiempo_atencion;
-    private String tiempo_promedio_atencion;
+    private int tiempo_atencion;
+    private long tiempo_promedio_atencion;
   
 
     public int getRecibidos() {
@@ -82,21 +82,23 @@ public class ReporteGrupal {
         this.nombre = nombre;
     }
 
-    public String getTiempo_atencion() {
+    public int getTiempo_atencion() {
         return tiempo_atencion;
     }
 
-    public void setTiempo_atencion(String tiempo_atencion) {
+    public void setTiempo_atencion(int tiempo_atencion) {
         this.tiempo_atencion = tiempo_atencion;
     }
 
-    public String getTiempo_promedio_atencion() {
+    public long getTiempo_promedio_atencion() {
         return tiempo_promedio_atencion;
     }
 
-    public void setTiempo_promedio_atencion(String tiempo_promedio_atencion) {
+    public void setTiempo_promedio_atencion(long tiempo_promedio_atencion) {
         this.tiempo_promedio_atencion = tiempo_promedio_atencion;
     }
+
+
 
    
 

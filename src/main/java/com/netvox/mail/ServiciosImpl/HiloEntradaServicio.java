@@ -68,7 +68,7 @@ public class HiloEntradaServicio implements Runnable {
     @Override
     public void run() {
         while (isActivo()) {
-            try {
+            try {                
                 coremailservicio.llenarListaAjustesMail(); // lee las configuraciones por campaña y setea emailporcampana
                 System.out.println("----------------------------------------------------------------------------------------");
                 System.out.println("LEYENDO CUENTAS DE CORREO");

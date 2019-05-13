@@ -291,7 +291,7 @@ public class CoreMailServicioImpl {
             mongoops = clientemongoservicio.clienteMongo();
             List<Mail> hilomail = mongoops.find(
                     new Query(Criteria.where("remitente").is(mail.getRemitente()).
-                            and("destino").is(mail.getDestino()).
+                            and("destino").is(mail.getDestino()).and("tipificacion").is(2).
                             and("hilocerrado").is(false)), Mail.class);
 
             Update update = new Update();
@@ -393,7 +393,7 @@ public class CoreMailServicioImpl {
         try {
             mongoops = clientemongoservicio.clienteMongo();
             query = new Query(Criteria.where("estado").is(0).and("campana").ne(0).and("tipomail").is("entrada"));
-            query.fields().include("idcorreo").include("campana").include("fecha_ingreso").
+            query.fields().include("idcorreo").include("campana").include("fecha_ingreso").include("idhilo").
                     include("asunto").include("idconfiguracion").include("id_cola").include("remitente").include("nombre_cola").include("nombre_campana").include("destino");
             listado = mongoops.find(query, Mail.class);
         } catch (Exception e) {
@@ -439,6 +439,7 @@ public class CoreMailServicioImpl {
             mailinbox.setAsunto(mail.getAsunto());
             mailinbox.setFecha_ingreso(mail.getFecha_ingreso());
             mailinbox.setAdjuntos(mail.getListadeadjuntos());
+            mailinbox.setIdhilo(mail.getIdhilo());
 
             //este envia a todos.
             getListaresumen().stream().filter((resumen) -> resumen.getListacolas().contains(mail.getId_cola())) // aqui le envio al resto
