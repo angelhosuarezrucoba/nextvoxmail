@@ -289,10 +289,10 @@ public class CoreMailServicioImpl {
                 mail.setNombre_campana(resultado.getString(1));
             }
             mongoops = clientemongoservicio.clienteMongo();
-            List<Mail> hilomail = mongoops.find(
-                    new Query(Criteria.where("remitente").is(mail.getRemitente()).
-                            and("destino").is(mail.getDestino()).and("tipificacion").is(2).
-                            and("hilocerrado").is(false)), Mail.class);
+//            List<Mail> hilomail = mongoops.find(
+//                    new Query(Criteria.where("remitente").is(mail.getRemitente()).
+//                            and("destino").is(mail.getDestino()).and("tipificacion").is(2).
+//                            and("hilocerrado").is(false)), Mail.class);
 
             Update update = new Update();
             update.set("remitente", mail.getRemitente())
@@ -306,13 +306,14 @@ public class CoreMailServicioImpl {
                     .set("destino", mail.getDestino())
                     .set("tipificacion", 0)
                     .set("descripcion_tipificacion", "nuevo")
-                    .set("hilocerrado", false);
-
-            if (hilomail.size() > 0) {
-                update.set("idhilo", hilomail.get(0).getIdhilo());
-            } else {
-                update.set("idhilo", mail.getIdcorreo());
-            }
+                    .set("hilocerrado", false)
+                    .set("idhilo", mail.getIdcorreo())
+                    .set("tiempo_atencion", 0);
+//            if (hilomail.size() > 0) {
+//                update.set("idhilo", hilomail.get(0).getIdhilo());
+//            } else {
+//                update.set("idhilo", mail.getIdcorreo());
+//            }
             nuevomail = mongoops.findAndModify(new Query(Criteria.where("idcorreo").is(mail.getIdcorreo())), update, new FindAndModifyOptions().returnNew(true), Mail.class);
 //todo esto sigue sin tener sentido para el uso del mail
             procedimientoalmacenado = conexion.prepareCall("call sp_actualiza_resumen_servicio_en_cola(?,?,?)");

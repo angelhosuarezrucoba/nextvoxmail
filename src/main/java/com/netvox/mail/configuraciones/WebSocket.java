@@ -99,9 +99,10 @@ public class WebSocket extends TextWebSocketHandler {
 
         lista.remove(listaidagente.get(0));
 
-        if (lista.isEmpty()) {            
-           
-            resttemplate.postForObject("http://localhost:8080/mail/apis/pausar", new Mensaje(listaidagente.get(0).getIdagente()),Mensaje.class);
+        if (lista.isEmpty()) {
+            if (coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == listaidagente.get(0).getIdagente()).findFirst().get().getEstadoagente() == 4) {
+                resttemplate.postForObject("http://localhost:8084/mail/apis/pausar", new Mensaje(listaidagente.get(0).getIdagente()), Mensaje.class);
+            }
             MapaAgentes.getMapa().remove(listaidagente.get(0).getIdagente());
             resumenservicio.borrarResumenBaseDatos(listaidagente.get(0).getIdagente());
             coremailservicio.borrarListaResumen(listaidagente.get(0).getIdagente());//en memoria

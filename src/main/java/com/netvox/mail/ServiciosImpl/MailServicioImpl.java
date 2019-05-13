@@ -35,6 +35,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
@@ -104,11 +106,13 @@ public class MailServicioImpl implements MailServicio {
             mailinbox.setEstado(t.getEstado());
             mailinbox.setRemitente(t.getRemitente());
             mailinbox.setAsunto(t.getTitulo());
-            mailinbox.setFecha_ingreso(t.getFecha_ingreso());
+            mailinbox.setFecha_ingreso(formatodefechas.cambiarFormatoFechas(t.getFecha_ingreso(),
+                    formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_HORA_SLASH));//la mando asi para el front y su comodidad
             mailinbox.setTipificacion(t.getTipificacion());
             mailinbox.setDescripcion_tipificacion(t.getDescripcion_tipificacion());
             mailinbox.setAdjuntos(t.getListadeadjuntos());
             mailinbox.setIdhilo(t.getIdhilo());
+            mailinbox.setDestino(t.getDestino());
             listamailinbox.add(mailinbox);
         });
         return listamailinbox;
@@ -255,7 +259,7 @@ public class MailServicioImpl implements MailServicio {
 //             me quedaria pensar que puedo unirlo siempre que la tipificacion sea -1 
 //            List<Mail> hilomail = mongoops.find(
 //                    new Query(Criteria.where("remitente").is(mailsalida.getRemitente()).
-//                            and("destino").is(mailsalida.getDestino()).and("tipificacion").is(7).
+//                            and("destino").is(mailsalida.getDestino()).and("tipificacion").is(1). 
 //                            and("hilocerrado").is(false)), Mail.class);
 //
 //            if (hilomail.size() > 0) {
@@ -507,8 +511,12 @@ public class MailServicioImpl implements MailServicio {
         MongoOperations mongoops;
         try {
             mongoops = clientemongoservicio.clienteMongo();
+            MailSalida mail = mongoops.findOne(new Query(Criteria.where("idcorreo").is(mailsalida.getId())), MailSalida.class);
             mongoops.updateFirst(new Query(Criteria.where("idcorreo").is(mailsalida.getId())),
-                    new Update().set("descripcion_tipificacion", mailsalida.getDescripcion_tipificacion()).set("tipificacion", mailsalida.getTipificacion()), MailSalida.class);//estoy usando esta clase solo por lo conveniente que es ya que tiene id y tipificacion
+                    new Update().set("descripcion_tipificacion", mailsalida.getDescripcion_tipificacion()).set("tipificacion", mailsalida.getTipificacion())
+                            .set("tiempo_atencion", formatodefechas.restaDeFechasEnSegundos(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA), mail.getFechainiciogestion()))
+                            .set("fechafingestion", mail.getFechainiciogestion()),
+                    MailSalida.class);//estoy usando esta clase solo por lo conveniente que es ya que tiene id y tipificacion
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -543,7 +551,7 @@ public class MailServicioImpl implements MailServicio {
                     Criteria.where("idcorreo").is(mailsalida.getId())),
                     new Update().set("descripcion_tipificacion", mailsalida.getDescripcion_tipificacion()).set("tipificacion", mailsalida.getTipificacion()), MailSalida.class);
             Query query = new Query().with(new Sort(Direction.DESC, "$natural"));
-            query.fields().include("idcorreo").include("fechainiciogestion");
+            query.fields().include("idcorreo");
             MailSalida ultimomail = mongoops.findOne(query, MailSalida.class);
             mailsalida.setId(ultimomail.getId() + 1);
             mailsalida.setFecha_ingreso(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA));
@@ -593,7 +601,7 @@ public class MailServicioImpl implements MailServicio {
                 mail.setHora(
                         formatodefechas.cambiarFormatoFechas(mail.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_HORA));
                 mail.setEstadoatencion(mail.getEstado() == 1 ? "ATENDIENDO" : "FINALIZADO");
-                mail.setValidacion(mail.getTipificacion() == 7 ? "INVALIDO" : "VALIDO");
+                mail.setValidacion(mail.getTipificacion() == 1 ? "INVALIDO" : "VALIDO");
                 mail.setTiempo_cola(mail.getTiempoencola() == 0 ? "00:00:00" : formatodefechas.convertirSegundosAFecha(mail.getTiempoencola()));
                 if (mail.getTipo().equals("salida")) {
                     mail.setTiempoatencion("00:00:00");
@@ -635,13 +643,13 @@ public class MailServicioImpl implements MailServicio {
                             Criteria.where("fecha_ingreso").gte(filtro.getFecha_inicio()),
                             Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin())).
                             and("estado").is(1).and("usuario").in(filtro.getListadeagentes())
-                            .and("id_cola").in(filtro.getListadecolas()).and("tipificacion").is(7)),//7 es spam
+                            .and("id_cola").in(filtro.getListadecolas()).and("tipificacion").is(1)),//1 es spam
                     MailSalida.class);
             for (MailSalida mail : lista) {
                 mail.setHora(
                         formatodefechas.cambiarFormatoFechas(mail.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_HORA));
                 mail.setEstadoatencion(mail.getEstado() == 1 ? "ATENDIENDO" : "FINALIZADO");
-                mail.setValidacion(mail.getTipificacion() == 7 ? "INVALIDO" : "VALIDO");
+                mail.setValidacion(mail.getTipificacion() == 1 ? "INVALIDO" : "VALIDO");
                 mail.setTiempo_cola(mail.getTiempoencola() == 0 ? "00:00:00" : formatodefechas.convertirSegundosAFecha(mail.getTiempoencola()));
                 if (mail.getTipo().equals("salida")) {
                     mail.setTiempoatencion("00:00:00");
@@ -688,7 +696,7 @@ public class MailServicioImpl implements MailServicio {
                 mail.setHora(
                         formatodefechas.cambiarFormatoFechas(mail.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_HORA));
                 mail.setEstadoatencion(mail.getEstado() == 1 ? "ATENDIENDO" : "FINALIZADO");
-                mail.setValidacion(mail.getTipificacion() == 7 ? "INVALIDO" : "VALIDO");
+                mail.setValidacion(mail.getTipificacion() == 1 ? "INVALIDO" : "VALIDO");
                 mail.setTiempo_cola(mail.getTiempoencola() == 0 ? "00:00:00" : formatodefechas.convertirSegundosAFecha(mail.getTiempoencola()));
                 if (mail.getTipo().equals("salida")) {
                     mail.setTiempoatencion("00:00:00");
@@ -753,9 +761,9 @@ public class MailServicioImpl implements MailServicio {
         Cond condicionencola = ConditionalOperators.when(new Criteria("estado").is(0)).then(1).otherwise(0);
         Cond condicionatendiendo = ConditionalOperators.when(new Criteria("estado").is(1)).then(1).otherwise(0);
         Cond condicionvalidos = ConditionalOperators.when(new Criteria().andOperator(new Criteria("hilocerrado").is(true),
-                new Criteria("tipificacion").ne(7))).then(1).otherwise(0);
+                new Criteria("tipificacion").ne(1))).then(1).otherwise(0);
         Cond condicioninvalidos = ConditionalOperators.when(new Criteria().andOperator(new Criteria("hilocerrado").is(true),
-                new Criteria("tipificacion").is(7))).then(1).otherwise(0);
+                new Criteria("tipificacion").is(1))).then(1).otherwise(0);
         Cond condicionfinalizados = ConditionalOperators.when(new Criteria("hilocerrado").is(true)).then(1).otherwise(0);
         try {
             mongoops = clientemongoservicio.clienteMongo();
@@ -797,9 +805,9 @@ public class MailServicioImpl implements MailServicio {
         Cond condicionencola = ConditionalOperators.when(new Criteria("estado").is(0)).then(1).otherwise(0);
         Cond condicionatendiendo = ConditionalOperators.when(new Criteria("estado").is(1)).then(1).otherwise(0);
         Cond condicionvalidos = ConditionalOperators.when(new Criteria().andOperator(new Criteria("hilocerrado").is(true),
-                new Criteria("tipificacion").ne(7))).then(1).otherwise(0);
+                new Criteria("tipificacion").ne(1))).then(1).otherwise(0);
         Cond condicioninvalidos = ConditionalOperators.when(new Criteria().andOperator(new Criteria("hilocerrado").is(true),
-                new Criteria("tipificacion").is(7))).then(1).otherwise(0);
+                new Criteria("tipificacion").is(1))).then(1).otherwise(0);
         Cond condicionfinalizados = ConditionalOperators.when(new Criteria("hilocerrado").is(true)).then(1).otherwise(0);
         try {
             mongoops = clientemongoservicio.clienteMongo();
@@ -837,9 +845,9 @@ public class MailServicioImpl implements MailServicio {
         List<ReporteGrupal> lista = null;
 
         Cond condicionvalidos = ConditionalOperators.when(new Criteria().andOperator(new Criteria("hilocerrado").is(true),
-                new Criteria("tipificacion").ne(7))).then(1).otherwise(0);
+                new Criteria("tipificacion").ne(1))).then(1).otherwise(0);
         Cond condicioninvalidos = ConditionalOperators.when(new Criteria().andOperator(new Criteria("hilocerrado").is(true),
-                new Criteria("tipificacion").is(7))).then(1).otherwise(0);
+                new Criteria("tipificacion").is(1))).then(1).otherwise(0);
         Cond condicionfinalizados = ConditionalOperators.when(new Criteria("hilocerrado").is(true)).then(1).otherwise(0);
         try {
             mongoops = clientemongoservicio.clienteMongo();
@@ -872,13 +880,20 @@ public class MailServicioImpl implements MailServicio {
                             andExpression("validos").as("validos").
                             andExpression("invalidos").as("invalidos").
                             andExpression("finalizados").as("finalizados").
-                            andExpression("tiempo_atencion").as("tiempo_atencion").
-                            andExpression("tiempo_promedio_atencion").as("tiempo_promedio_atencion")
+                            andExpression("tiempo_atencion").as("tiempo_atencion_int").
+                            andExpression("tiempo_promedio_atencion").trunc().as("tiempo_promedio_atencion_double")
             );
             System.out.println(agregacion.toString());
             AggregationResults<ReporteGrupal> resultado = mongoops.aggregate(agregacion, "mail", ReporteGrupal.class);
             lista = resultado.getMappedResults();
-
+            lista.stream().forEach((resultados) -> {
+                try {
+                    resultados.setTiempo_atencion(formatodefechas.convertirSegundosAFechaNormal(resultados.getTiempo_atencion_int()));
+                    resultados.setTiempo_promedio_atencion(formatodefechas.convertirSegundosAFechaNormal((int) resultados.getTiempo_promedio_atencion_double()));
+                } catch (ParseException ex) {
+                    ex.printStackTrace();
+                }
+            });
         } catch (Exception e) {
             e.printStackTrace();
         }
