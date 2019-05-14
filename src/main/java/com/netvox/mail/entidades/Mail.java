@@ -35,6 +35,10 @@ public class Mail {
     private String copia;
     private int idhilo;
     private boolean hilocerrado;
+    private int tiempo_atencion;
+    
+    
+    
 
     public Mail(int idcorreo, int estado, String tipomail, String fecha_ingreso, int idconfiguracion, int id_cola) {
         this.idcorreo = idcorreo;
@@ -229,6 +233,14 @@ public class Mail {
 
     public void setHilocerrado(boolean hilocerrado) {
         this.hilocerrado = hilocerrado;
+    }
+
+    public int getTiempo_atencion() {
+        return tiempo_atencion;
+    }
+
+    public void setTiempo_atencion(int tiempo_atencion) {
+        this.tiempo_atencion = tiempo_atencion;
     }
 
 }

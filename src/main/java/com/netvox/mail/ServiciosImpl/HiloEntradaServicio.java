@@ -68,11 +68,19 @@ public class HiloEntradaServicio implements Runnable {
     @Override
     public void run() {
         while (isActivo()) {
-            try {                
+            try {
                 coremailservicio.llenarListaAjustesMail(); // lee las configuraciones por campaña y setea emailporcampana
                 System.out.println("----------------------------------------------------------------------------------------");
                 System.out.println("LEYENDO CUENTAS DE CORREO");
                 System.out.println("COLAS CON MAIL ACTIVO " + coremailservicio.getMapadeajustesmail().size()); //en este punto ya se tiene con el metodo anterior los mails por campaña
+                
+                
+                
+                
+               
+                
+                
+                
                 for (MailAjustes mailajustes : coremailservicio.getMapadeajustesmail().values()) {
                     System.out.println("shost => " + mailajustes.getHost());
                     System.out.println("puerto => " + mailajustes.getPuerto());
@@ -108,7 +116,6 @@ public class HiloEntradaServicio implements Runnable {
                                     }
                                     String remitente = null;
                                     for (Address froms : mensaje.getFrom()) {
-
                                         if (froms.toString().contains("<")) {
                                             remitente = froms.toString().split("<")[1];
                                         } else {
@@ -142,7 +149,6 @@ public class HiloEntradaServicio implements Runnable {
                                     listamails.add(mail);
                                     Mail nuevomail = coremailservicio.guardarMail(mail);
                                     mail.setListadeadjuntos(nuevomail.getListadeadjuntos());
-                                    mensaje.setFlag(Flags.Flag.SEEN, true);
                                     coremailservicio.notificarCorreoNuevoEnCola(mail);
                                 }
                             }

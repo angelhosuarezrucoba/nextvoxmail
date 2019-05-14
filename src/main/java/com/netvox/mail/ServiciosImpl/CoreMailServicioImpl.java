@@ -125,7 +125,6 @@ public class CoreMailServicioImpl {
 
 //id 36 cambiar a mongo despues
     public void llenarListaAjustesMail() {
-
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
         setMapadeajustesmail(new HashMap<>());
         Connection conexion = clientemysqlservicio.obtenerConexion();
@@ -312,7 +311,7 @@ public class CoreMailServicioImpl {
 //            if (hilomail.size() > 0) {
 //                update.set("idhilo", hilomail.get(0).getIdhilo());
 //            } else {
-//                update.set("idhilo", mail.getIdcorreo());
+//               update.set("idhilo", mail.getIdcorreo());
 //            }
             nuevomail = mongoops.findAndModify(new Query(Criteria.where("idcorreo").is(mail.getIdcorreo())), update, new FindAndModifyOptions().returnNew(true), Mail.class);
 //todo esto sigue sin tener sentido para el uso del mail
