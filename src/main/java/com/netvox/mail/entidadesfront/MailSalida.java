@@ -61,6 +61,9 @@ public class MailSalida {
     @Field(value = "fechainiciogestion")
     private String fechainiciogestion;
 
+    @Field(value = "fechafingestion")
+    private String fechafingestion;
+
     @Field(value = "descripcion_tipificacion")
     private String descripcion_tipificacion = "nuevo";//si no consigue un valor en base le pondra este por defecto
 
@@ -335,5 +338,13 @@ public class MailSalida {
 
     public void setTiempo_atencion(int tiempo_atencion) {
         this.tiempo_atencion = tiempo_atencion;
+    }
+
+    public String getFechafingestion() {
+        return fechafingestion;
+    }
+
+    public void setFechafingestion(String fechafingestion) {
+        this.fechafingestion = fechafingestion;
     }
 }

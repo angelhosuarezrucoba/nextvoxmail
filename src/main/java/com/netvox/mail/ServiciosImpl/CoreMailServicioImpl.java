@@ -6,11 +6,10 @@
 package com.netvox.mail.ServiciosImpl;
 
 import com.netvox.mail.configuraciones.WebSocket;
-import com.netvox.mail.entidades.Cola;
 import com.netvox.mail.entidades.Configuraciones;
 import com.netvox.mail.entidades.Rutas;
 import com.netvox.mail.entidades.Mail;
-import com.netvox.mail.entidades.MailAjustes;
+import com.netvox.mail.entidades.CuentaDeCorreo;
 import com.netvox.mail.entidades.Resumen;
 import com.netvox.mail.entidadesfront.MailFront;
 import com.netvox.mail.entidadesfront.MailInbox;
@@ -104,7 +103,6 @@ public class CoreMailServicioImpl {
     @Qualifier("formatodefechas")
     FormatoDeFechas formatodefechas;
 
-    private static volatile HashMap<String, MailAjustes> mapadeajustesmail;
     private static Configuraciones configuraciones;
     private static List<Resumen> listaresumen = new ArrayList<>();
     private final int SERVICIO_MAIL = 2;
@@ -123,75 +121,68 @@ public class CoreMailServicioImpl {
         path_salida = rutas.getPath_salida();
     }
 
-//id 36 cambiar a mongo despues
-    public void llenarListaAjustesMail() {
-        MongoOperations mongoops = clientemongoservicio.clienteMongo();
-        setMapadeajustesmail(new HashMap<>());
+    public List<CuentaDeCorreo> obtenerCuentasDeCorreo() {
         Connection conexion = clientemysqlservicio.obtenerConexion();
         ResultSet resultado = null;
+        List<CuentaDeCorreo> lista = new ArrayList<>();
         try {
-            Statement statement = conexion.createStatement();
+
             String sql = "select "
-                    + "cola.idCola , "
-                    + "email_configuracion.usuario, "
-                    + "email_configuracion.pass, "
-                    + "email_configuracion.host, "
-                    + "email_configuracion.store, "
-                    + "email_configuracion.puerto, "
-                    + "email_configuracion.maximo_adjunto, "
-                    + "cola.nombre nombre_cola, "
-                    + "email_configuracion.id, "
-                    + "cola.campana "
+                    + "cola.idCola as id_cola, "
+                    + "email_configuracion.usuario as usuario, "
+                    + "email_configuracion.pass as clave, "
+                    + "email_configuracion.host as host, "
+                    + "email_configuracion.store as store, "
+                    + "email_configuracion.puerto as puerto, "
+                    + "email_configuracion.maximo_adjunto as maximo_adjunto, "
+                    + "cola.nombre as nombre_cola, "
+                    + "email_configuracion.id as id_configuracion, "
+                    + "cola.campana as id_campana "
                     + "from email_configuracion "
                     + "inner join cola on cola.idCola = email_configuracion.queue "
                     + "where cola.service_mail = 1 and cola.campana <> 0";
 
-            resultado = statement.executeQuery(sql);
+            resultado = conexion.createStatement().executeQuery(sql);
             while (resultado.next()) {
-                MailAjustes mail;
-                if (getMapadeajustesmail().containsKey(resultado.getString(2))) {
-                    mail = getMapadeajustesmail().get(resultado.getString(2));
-                    mail.getColas().add(new Cola(
-                            resultado.getInt(1),
-                            resultado.getString(8),
-                            "",
-                            resultado.getInt(10)));
-                } else {
-                    mail = new MailAjustes(resultado.getString(2), resultado.getString(3),
-                            resultado.getString(4), resultado.getString(5), resultado.getInt(6),
-                            resultado.getInt(7), resultado.getInt(9));
-                    mail.getColas().add(new Cola(
-                            resultado.getInt(1),
-                            resultado.getString(8),
-                            "",
-                            resultado.getInt(10)));
-                }
-                getMapadeajustesmail().put(mail.getUser(), mail);
+                lista.add(new CuentaDeCorreo(
+                        resultado.getString("usuario"),
+                        resultado.getString("clave"),
+                        resultado.getString("host"),
+                        resultado.getString("store"),
+                        resultado.getInt("puerto"),
+                        resultado.getInt("maximo_adjunto"),
+                        resultado.getInt("id_cola"),
+                        resultado.getString("nombre_cola"),
+                        resultado.getInt("id_campana"),
+                        resultado.getInt("id_configuracion"))
+                );
             }
-            statement.close();
             resultado.close();
             conexion.close();
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
+        return lista;
     }
 
-    public int obtenerNuevoId(String tipomail, int idconfiguracion, int idcola) {//  mongo, tipomail es entrada o salida
+    public Mail insertarNuevoMail(int idconfiguracion, int idcola, String nombre_cola, int id_campana, String asunto, String remitente, String destino) {//  mongo, tipomail es entrada o salida
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
         int nuevoid = 0;
+        Mail nuevomail = null;
         try {
             Mail mail = mongoops.findOne(new Query().with(new Sort(Direction.DESC, "$natural")), Mail.class);
             if (mail == null) {
                 nuevoid = 1;
-                mongoops.insert(new Mail(1, 0, tipomail, formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA), idconfiguracion, idcola));
+                mongoops.insert(new Mail(1, 0, "entrada", formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA), idconfiguracion, idcola, nombre_cola, id_campana, asunto, remitente, destino));
             } else {
                 nuevoid = mail.getIdcorreo() + 1;
-                mongoops.insert(new Mail(nuevoid, 0, tipomail, formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA), idconfiguracion, idcola));
+                mongoops.insert(new Mail(nuevoid, 0, "entrada", formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA), idconfiguracion, idcola, nombre_cola, id_campana, asunto, remitente, destino));
             }
+            nuevomail = mongoops.findOne(new Query(Criteria.where("idcorreo").is(nuevoid)), Mail.class);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-        return nuevoid;
+        return nuevomail;
     }
 
     //este metodo debe combinarse con el de obtener configuracion mail . no deberian ser 2 , solo siguio el modelo viejo
@@ -271,52 +262,37 @@ public class CoreMailServicioImpl {
         return elimino;
     }
 
-    public Mail guardarMail(Mail mail) {
+    public Mail ActualizarMail(Mail mail) {
         Connection conexion = null;
         ResultSet resultado = null;
         PreparedStatement preparedstatement;
         CallableStatement procedimientoalmacenado;
         MongoOperations mongoops = null;
         Mail nuevomail = null;
+        FindAndModifyOptions opciones = new FindAndModifyOptions();
+        opciones.returnNew(true);
         try {
             //seguimos dependiendo del sql . eso debe ser eliminado
             conexion = clientemysqlservicio.obtenerConexion();
             preparedstatement = conexion.prepareStatement("select campana.nombre from campana where campana.id=?");
-            preparedstatement.setInt(1, mail.getCola().getId_campana());
+            preparedstatement.setInt(1, mail.getCampana());
             resultado = preparedstatement.executeQuery();
             while (resultado.next()) {
                 mail.setNombre_campana(resultado.getString(1));
             }
             mongoops = clientemongoservicio.clienteMongo();
-//            List<Mail> hilomail = mongoops.find(
-//                    new Query(Criteria.where("remitente").is(mail.getRemitente()).
-//                            and("destino").is(mail.getDestino()).and("tipificacion").is(2).
-//                            and("hilocerrado").is(false)), Mail.class);
-
             Update update = new Update();
-            update.set("remitente", mail.getRemitente())
-                    .set("asunto", mail.getAsunto())
-                    .set("estado", 0)
-                    .set("campana", mail.getCola().getId_campana())
-                    .set("nombre_campana", mail.getNombre_campana())
-                    .set("id_cola", mail.getId_cola())
-                    .set("nombre_cola", mail.getCola().getNombre_cola())
-                    .set("mensaje", mail.getMensaje())
-                    .set("destino", mail.getDestino())
+            update.set("nombre_campana", mail.getNombre_campana())
                     .set("tipificacion", 0)
                     .set("descripcion_tipificacion", "nuevo")
                     .set("hilocerrado", false)
                     .set("idhilo", mail.getIdcorreo())
                     .set("tiempo_atencion", 0);
-//            if (hilomail.size() > 0) {
-//                update.set("idhilo", hilomail.get(0).getIdhilo());
-//            } else {
-//               update.set("idhilo", mail.getIdcorreo());
-//            }
-            nuevomail = mongoops.findAndModify(new Query(Criteria.where("idcorreo").is(mail.getIdcorreo())), update, new FindAndModifyOptions().returnNew(true), Mail.class);
+
+            nuevomail = mongoops.findAndModify(new Query(Criteria.where("idcorreo").is(mail.getIdcorreo())), update, opciones, Mail.class);
 //todo esto sigue sin tener sentido para el uso del mail
             procedimientoalmacenado = conexion.prepareCall("call sp_actualiza_resumen_servicio_en_cola(?,?,?)");
-            procedimientoalmacenado.setInt(1, mail.getCola().getId_campana());
+            procedimientoalmacenado.setInt(1, mail.getCampana());
             procedimientoalmacenado.setInt(2, SERVICIO_MAIL);
             procedimientoalmacenado.setBoolean(3, true);
             procedimientoalmacenado.execute();
@@ -324,7 +300,7 @@ public class CoreMailServicioImpl {
             String sql = "insert into servicios_cola_online set id = ?, campana = ?, servicio = 2, fecha_cola = now()";
             preparedstatement = conexion.prepareStatement(sql);
             preparedstatement.setInt(1, mail.getIdcorreo());
-            preparedstatement.setInt(2, mail.getCola().getId_campana());
+            preparedstatement.setInt(2, mail.getCampana());
             preparedstatement.execute();
             preparedstatement.close();
 
@@ -348,7 +324,7 @@ public class CoreMailServicioImpl {
                     mailinbox.setRemitente(mail.getRemitente());
                     mailinbox.setDestino(mail.getDestino());
                     mailinbox.setAsunto(mail.getAsunto());
-                    mailinbox.setFecha_ingreso(mail.getFecha_ingreso());
+                    mailinbox.setFecha_ingreso(formatodefechas.cambiarFormatoFechas(mail.getFecha_ingreso(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_HORA_SLASH));
                     mailinbox.setAdjuntos(mail.getListadeadjuntos());
                     mensaje.setEvento("CORREOCOLA");
                     mensaje.setNew_mail(mailinbox);
@@ -437,7 +413,7 @@ public class CoreMailServicioImpl {
             mailinbox.setRemitente(mail.getRemitente());
             mailinbox.setDestino(mail.getDestino());
             mailinbox.setAsunto(mail.getAsunto());
-            mailinbox.setFecha_ingreso(mail.getFecha_ingreso());
+            mailinbox.setFecha_ingreso(formatodefechas.cambiarFormatoFechas(mail.getFecha_ingreso(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_HORA_SLASH));
             mailinbox.setAdjuntos(mail.getListadeadjuntos());
             mailinbox.setIdhilo(mail.getIdhilo());
 
@@ -465,7 +441,6 @@ public class CoreMailServicioImpl {
         } catch (ParseException ex) {
             ex.printStackTrace();
         }
-        //}
     }
 
     public Mensaje obtenerRespuestaDeLogin(Mensaje mensaje) {
@@ -581,14 +556,6 @@ public class CoreMailServicioImpl {
 
     public static void setRUTA_OUT(String aCARPETA_OUT) {
         RUTA_OUT = aCARPETA_OUT;
-    }
-
-    public static HashMap<String, MailAjustes> getMapadeajustesmail() {
-        return mapadeajustesmail;
-    }
-
-    public static void setMapadeajustesmail(HashMap<String, MailAjustes> mapadeajustesmail) {
-        CoreMailServicioImpl.mapadeajustesmail = mapadeajustesmail;
     }
 
     public static List<Resumen> getListaresumen() {

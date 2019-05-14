@@ -113,6 +113,7 @@ public class MailServicioImpl implements MailServicio {
             mailinbox.setAdjuntos(t.getListadeadjuntos());
             mailinbox.setIdhilo(t.getIdhilo());
             mailinbox.setDestino(t.getDestino());
+            mailinbox.setId_cola(t.getCola());
             listamailinbox.add(mailinbox);
         });
         return listamailinbox;
@@ -312,10 +313,12 @@ public class MailServicioImpl implements MailServicio {
         FileOutputStream archivosalidastream = null;
         File archivo;
         BufferedOutputStream buferdesalida;
+        FindAndModifyOptions opciones = new FindAndModifyOptions();
+        opciones.returnNew(true);
         try {
             mongoops = clientemongoservicio.clienteMongo();
             nuevomail = mongoops.findAndModify(new Query(Criteria.where("idcorreo").is(mailsalida.getId())),
-                    new Update().set("mensaje", reemplazarImagenesEnBase64(mailsalida)), new FindAndModifyOptions().returnNew(true), MailSalida.class);
+                    new Update().set("mensaje", reemplazarImagenesEnBase64(mailsalida)), opciones, MailSalida.class);
             archivo = new File(coremailservicio.getRUTA_OUT() + "/" + nuevomail.getId() + "/" + nuevomail.getId() + ".txt");
 
             archivosalidastream = new FileOutputStream(archivo);
@@ -515,8 +518,10 @@ public class MailServicioImpl implements MailServicio {
             mongoops.updateFirst(new Query(Criteria.where("idcorreo").is(mailsalida.getId())),
                     new Update().set("descripcion_tipificacion", mailsalida.getDescripcion_tipificacion()).set("tipificacion", mailsalida.getTipificacion())
                             .set("tiempo_atencion", formatodefechas.restaDeFechasEnSegundos(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA), mail.getFechainiciogestion()))
-                            .set("fechafingestion", mail.getFechainiciogestion()),
+                            .set("fechafingestion", formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA))
+                            .set("hilocerrado", true),
                     MailSalida.class);//estoy usando esta clase solo por lo conveniente que es ya que tiene id y tipificacion
+            System.out.println("entre a tipificar correo");
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -559,23 +564,23 @@ public class MailServicioImpl implements MailServicio {
             mailsalida.setTipo("salida");
             mailsalida.setEstado(2);//correo enviado            
             mongoops.insert(mailsalida);
-            if (mailsalida.isHilocerrado()) {
-                System.out.println("entre a hilocerrado y es " + mailsalida.getIdhilo());
-                mongoops.updateMulti(new Query(Criteria.where("idhilo").is(mailsalida.getIdhilo())),
-                        new Update().set("hilocerrado", true).
-                                set("descripcion_tipificacion", mailsalida.getDescripcion_tipificacion()).
-                                set("tipificacion", mailsalida.getTipificacion()),
-                        MailSalida.class);
-                Query queryhilo = new Query(Criteria.where("idhilo").is(mailsalida.getIdhilo()));
-                query.fields().include("idcorreo").include("fechainiciogestion");
-                List<MailSalida> listahilo = mongoops.find(queryhilo, MailSalida.class);
-                MailSalida minimo = listahilo.stream().min((mail_1, mail_2) -> Integer.compare(mail_1.getId(), mail_2.getId())).get();
-                MailSalida maximo = listahilo.stream().max((mail_1, mail_2) -> Integer.compare(mail_1.getId(), mail_2.getId())).get();
-                mongoops.updateFirst(new Query(Criteria.where("idcorreo").is(minimo.getId())),
-                        new Update().set("tiempo_atencion", formatodefechas.restaDeFechasEnSegundos(maximo.getFechainiciogestion(), minimo.getFechainiciogestion()))
-                                .set("fechafingestion", maximo.getFechainiciogestion()),
-                        MailSalida.class);
-            }
+            //if (mailsalida.isHilocerrado()) {
+            System.out.println("entre a hilocerrado y es " + mailsalida.getIdhilo());
+            mongoops.updateMulti(new Query(Criteria.where("idhilo").is(mailsalida.getIdhilo())),
+                    new Update().set("hilocerrado", true).
+                            set("descripcion_tipificacion", mailsalida.getDescripcion_tipificacion()).
+                            set("tipificacion", mailsalida.getTipificacion()),
+                    MailSalida.class);
+            Query queryhilo = new Query(Criteria.where("idhilo").is(mailsalida.getIdhilo()));
+            query.fields().include("idcorreo").include("fechainiciogestion");
+            List<MailSalida> listahilo = mongoops.find(queryhilo, MailSalida.class);
+            MailSalida minimo = listahilo.stream().min((mail_1, mail_2) -> Integer.compare(mail_1.getId(), mail_2.getId())).get();
+            MailSalida maximo = listahilo.stream().max((mail_1, mail_2) -> Integer.compare(mail_1.getId(), mail_2.getId())).get();
+            mongoops.updateFirst(new Query(Criteria.where("idcorreo").is(minimo.getId())),
+                    new Update().set("tiempo_atencion", formatodefechas.restaDeFechasEnSegundos(maximo.getFechainiciogestion(), minimo.getFechainiciogestion()))
+                            .set("fechafingestion", maximo.getFechainiciogestion()),
+                    MailSalida.class);
+            //}
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("entre al error de generarcorreo");

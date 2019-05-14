@@ -55,6 +55,7 @@ public class Utilidades {
 
     public boolean createFileHTML(Message mensaje, Mail mail, int peso_maximo_adjunto) {
         boolean created = false;
+        MongoOperations mongoops = clientemongoservicio.clienteMongo();
         int id = mail.getIdcorreo();
         try {
             File unidad = new File(coremailservicio.getRUTA_IN());
@@ -145,7 +146,7 @@ public class Utilidades {
                             System.out.println("CAPTURE APELLIDO : " + linea);
                         }
                     }
-                    cuerpoMensaje=texto;
+                    cuerpoMensaje = texto;
                 }
             } else if (contenidodelmensaje instanceof Multipart) {
                 System.out.println("ENTRE EN EL ELSEIF COMO MULTIPART");
@@ -166,8 +167,7 @@ public class Utilidades {
                         }
                     }
                 } else {
-                    List<Adjunto> listadeadjuntos = new ArrayList<>(); //esta lista es la que incluire en mongo       
-                    MongoOperations mongoops = clientemongoservicio.clienteMongo();
+                    List<Adjunto> listadeadjuntos = new ArrayList<>(); //esta lista es la que incluire en mongo     
                     for (int i = 0; i < numPart; i++) {
                         Part part = multipart.getBodyPart(i);
                         String disposition = part.getDisposition();
@@ -233,10 +233,9 @@ public class Utilidades {
                             System.out.println("NOMBRE ADJUNTO " + aux);
                             MimeBodyPart mbp = (MimeBodyPart) part;
                             String rutadeadjunto = adjuntos.getAbsolutePath() + "/" + aux;
-                            mbp.saveFile(adjuntos.getAbsolutePath() + "/" + aux);                            
-                        
-                            
-                            listadeadjuntos.add(new Adjunto(aux,mbp.getSize(),rutadeadjunto));
+                            mbp.saveFile(adjuntos.getAbsolutePath() + "/" + aux);
+
+                            listadeadjuntos.add(new Adjunto(aux, mbp.getSize(), rutadeadjunto));
                             sumarAdjuntos(new File(adjuntos.getAbsolutePath() + "/" + aux), mail, peso_maximo_adjunto);
                         } else if ((disposition != null) && (disposition.equalsIgnoreCase(Part.INLINE))) {
                             analizaParteDeMensaje(part, cuerpoMensaje, imagenes, unidad, adjuntos, mail, peso_maximo_adjunto);
@@ -263,6 +262,7 @@ public class Utilidades {
             }
 
             mail.setMensaje(cuerpoMensaje);
+            mongoops.updateFirst(new Query(Criteria.where("idcorreo").is(id)), new Update().set("mensaje", mail.getMensaje()), Mail.class);
             created = true;
         } catch (IOException | MessagingException ex) {
             ex.printStackTrace();
@@ -349,7 +349,7 @@ public class Utilidades {
                             FileOutputStream fichero = null;
                             InputStream imagen = null;
                             try {
-                                fichero = new FileOutputStream(unidad.getAbsolutePath() + "/"+mail.getIdcorreo()+"/embed_" + unaParte.getFileName());
+                                fichero = new FileOutputStream(unidad.getAbsolutePath() + "/" + mail.getIdcorreo() + "/embed_" + unaParte.getFileName());
                                 imagen = unaParte.getInputStream();
                                 byte[] bytes = new byte[1000];
                                 int leidos = 0;
@@ -361,9 +361,9 @@ public class Utilidades {
                                 if (contentid != null) {
                                     contentid = contentid.replace("<", "");
                                     contentid = contentid.replace(">", "");
-                                    imagenes.put("cid:" + contentid, coremailservicio.getPath_entrada()+"/" + mail.getIdcorreo() + "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
+                                    imagenes.put("cid:" + contentid, coremailservicio.getPath_entrada() + "/" + mail.getIdcorreo() + "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
                                 } else {
-                                    imagenes.put("cid:" + unaParte.getFileName() + "@", coremailservicio.getPath_entrada() + "/"+mail.getIdcorreo() + "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
+                                    imagenes.put("cid:" + unaParte.getFileName() + "@", coremailservicio.getPath_entrada() + "/" + mail.getIdcorreo() + "/embed_" + unaParte.getFileName() + "\" id=\"" + imagenes.size());
                                 }
 
                             } catch (Exception ex) {

@@ -5,11 +5,9 @@
  */
 package com.netvox.mail.ServiciosImpl;
 
-import com.netvox.mail.entidades.Cola;
 import com.netvox.mail.entidades.Mail;
-import com.netvox.mail.entidades.MailAjustes;
+import com.netvox.mail.entidades.CuentaDeCorreo;
 import com.netvox.mail.servicios.ClienteMongoServicio;
-import com.netvox.mail.utilidades.FormatoDeFechas;
 import java.io.File;
 import java.util.Properties;
 import javax.mail.Address;
@@ -28,7 +26,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import com.netvox.mail.utilidades.Utilidades;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -55,13 +52,10 @@ public class HiloEntradaServicio implements Runnable {
     @Qualifier("utilidades")
     Utilidades utilidades;
 
-    private FormatoDeFechas formato = new FormatoDeFechas();
     private Store store = null;
     private Folder folder = null;
-    private List<Mail> listamails;
     private Properties props;
     private Session sesion;
-    private int id;
     private List<Message> listacorreosnoleidos;
     private boolean activo = true;
 
@@ -69,99 +63,48 @@ public class HiloEntradaServicio implements Runnable {
     public void run() {
         while (isActivo()) {
             try {
-                coremailservicio.llenarListaAjustesMail(); // lee las configuraciones por campaña y setea emailporcampana
                 System.out.println("----------------------------------------------------------------------------------------");
                 System.out.println("LEYENDO CUENTAS DE CORREO");
-                System.out.println("COLAS CON MAIL ACTIVO " + coremailservicio.getMapadeajustesmail().size()); //en este punto ya se tiene con el metodo anterior los mails por campaña
-                
-                
-                
-                
-               
-                
-                
-                
-                for (MailAjustes mailajustes : coremailservicio.getMapadeajustesmail().values()) {
-                    System.out.println("shost => " + mailajustes.getHost());
-                    System.out.println("puerto => " + mailajustes.getPuerto());
-                    props = ObtenerPropiedades(mailajustes.getHost(), mailajustes.getPuerto());
-                    listamails = new ArrayList<>(); //solo se usa para imprimir la lista de mails.
-                    try {
-                        System.out.println("STORE INBOUND => " + mailajustes.getStore());
-                        System.out.println("mail_setup.getHost() => " + mailajustes.getHost());
-                        System.out.println("mail_setup.getUser() => " + mailajustes.getUser());
-                        System.out.println("mail_setup.getPass() => " + mailajustes.getPass());
-                        sesion = obtenerSesion(props, mailajustes.getUser(), mailajustes.getPass());
-                        store = sesion.getStore(mailajustes.getStore());
-                        store.connect(mailajustes.getHost(), mailajustes.getUser(), mailajustes.getPass());
-                        folder = store.getFolder("INBOX");
-                        folder.open(Folder.READ_WRITE);
-                        id = 0; //inicializa el id de la cola
-                        listacorreosnoleidos = obtenerCorreosNoLeidos(folder, 20);//el segundo parametro indica cuantos correos debo tomar.
-                        System.out.println("CORREOS NO LEIDOS : " + listacorreosnoleidos.size());
-                        for (Message mensaje : listacorreosnoleidos) {
-                            if (mensaje.getSubject() != null && mensaje.getSubject().equalsIgnoreCase(mailajustes.getUser())) {
-                                System.out.println("***** EL CLIENTE Y EL SERVIDOR SON EL MISMO.... IGNORANDO");
+                List<CuentaDeCorreo> listadecuentasdecorreo = coremailservicio.obtenerCuentasDeCorreo();
+                for (CuentaDeCorreo cuentadecorreo : listadecuentasdecorreo) {
+                    System.out.println("cuentadecorreo : " + cuentadecorreo.getUsuario());
+                    props = ObtenerPropiedades(cuentadecorreo.getHost(), cuentadecorreo.getPuerto());
+                    sesion = obtenerSesion(props, cuentadecorreo.getUsuario(), cuentadecorreo.getClave());
+                    store = sesion.getStore(cuentadecorreo.getStore());
+                    store.connect(cuentadecorreo.getHost(), cuentadecorreo.getUsuario(), cuentadecorreo.getClave());
+                    folder = store.getFolder("INBOX");
+                    folder.open(Folder.READ_WRITE);
+                    listacorreosnoleidos = obtenerCorreosNoLeidos(folder, 20);//el segundo parametro indica cuantos correos debo tomar.
+                    for (Message mensaje : listacorreosnoleidos) {
+                        String remitente = obtenerRemitente(mensaje);
+                        if (remitente.equals("")) {
+                            System.out.println("REMITENTE NO CAPTURADO");
+                        } else {
+                            Mail mail = coremailservicio.insertarNuevoMail(
+                                    cuentadecorreo.getIdconfiguracion(),
+                                    cuentadecorreo.getId_cola(),
+                                    cuentadecorreo.getNombre_cola(),
+                                    cuentadecorreo.getId_campana(),
+                                    mensaje.getSubject() == null ? "" : mensaje.getSubject(),
+                                    remitente,
+                                    cuentadecorreo.getUsuario()/*esto es el destino*/
+                            );
+                            if (!utilidades.createFileHTML(mensaje, mail, cuentadecorreo.getMaximo_adjunto())) {//aqui ya le tengo puesto el mensaje y los adjuntos
+                                System.out.println("FALLO EN EL CREATE HTML");
                             } else {
-                                for (Cola cola : mailajustes.getColas()) {//se debe buscar un mejor nombre, la consulta encuentra una clase mail y cada mail tiene una lista de colas
-                                    id = coremailservicio.obtenerNuevoId("entrada", mailajustes.getId(), cola.getId_cola());
-                                    Mail mail = new Mail();
-                                    mail.setIdconfiguracion(mailajustes.getId());//setIdconfiguracion
-                                    mail.setCola(cola);
-                                    mail.setId_cola(cola.getId_cola());
-                                    mail.setIdcorreo(id);
-                                    mail.setCampana(cola.getId_campana());
-                                    if (mensaje.getSubject() != null) {
-                                        mail.setAsunto(mensaje.getSubject().trim());
-                                    }
-                                    String remitente = null;
-                                    for (Address froms : mensaje.getFrom()) {
-                                        if (froms.toString().contains("<")) {
-                                            remitente = froms.toString().split("<")[1];
-                                        } else {
-                                            remitente = froms.toString();
-                                        }
-                                        remitente = remitente.replace(">", "");
-                                        remitente = remitente.trim();
-                                    }
-                                    mail.setRemitente(remitente);
-                                    if (!utilidades.createFileHTML(mensaje, mail, mailajustes.getMaximo_adjunto())) {
-                                        System.out.println("FALLO EN EL CREATE HTML");
-                                        mensaje.setFlag(Flags.Flag.SEEN, true);
-                                        continue;
-                                    }
-                                    if (mail.getPeso_adjunto() > mailajustes.getMaximo_adjunto()) {
-                                        FileUtils.deleteDirectory(new File(mail.getRuta()));
-                                        mailautomatico.enviarEmail(mail);
-                                        coremailservicio.eliminarEmailOnline(mail.getIdcorreo());
-                                        continue;
-                                    }
-                                    if (remitente == null) {
-                                        System.out.println("REMITENTE NO CAPTURADO");
-                                        mensaje.setFlag(Flags.Flag.SEEN, true);
-                                        continue;
-                                    }
-                                    remitente = remitente.replace("\n", "");
-                                    System.out.println("REMITENTE CAPTURADO " + remitente);
-                                    mail.setRemitente(remitente.trim());
-                                    mail.setFecha_ingreso(formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA_SLASH));//esto solo le facilita al front el manejo de fecha
-                                    mail.setDestino(mailajustes.getUser());
-                                    listamails.add(mail);
-                                    Mail nuevomail = coremailservicio.guardarMail(mail);
-                                    mail.setListadeadjuntos(nuevomail.getListadeadjuntos());
-                                    coremailservicio.notificarCorreoNuevoEnCola(mail);
+                                if (mail.getPeso_adjunto() > cuentadecorreo.getMaximo_adjunto()) {
+                                    FileUtils.deleteDirectory(new File(mail.getRuta()));
+                                    mailautomatico.enviarEmail(mail);
+                                    coremailservicio.eliminarEmailOnline(mail.getIdcorreo());
+                                } else {
+                                    Mail nuevomail = coremailservicio.ActualizarMail(mail);
+                                    coremailservicio.notificarCorreoNuevoEnCola(nuevomail);
                                 }
                             }
                         }
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                    } finally {
-                        cerrarFolderYstore(folder, store);
+                        mensaje.setFlag(Flags.Flag.SEEN, true);
                     }
-                    listamails.forEach((mail) -> {
-                        System.out.println(mail.toString());
-                    });
-                    listamails.clear();
+                    cerrarFolderYstore(folder, store);
                 }
                 System.out.println("FIN LECTURA DE CUENTAS");
                 System.out.println("----------------------------------------------------------------------------------------");
@@ -234,6 +177,25 @@ public class HiloEntradaServicio implements Runnable {
 
     public void setActivo(boolean activo) {
         this.activo = activo;
+    }
+
+    private String obtenerRemitente(Message mensaje) {
+        String remitente = "";
+        try {
+            for (Address froms : mensaje.getFrom()) {
+                if (froms.toString().contains("<")) {
+                    remitente = froms.toString().split("<")[1];
+                } else {
+                    remitente = froms.toString();
+                }
+                remitente = remitente.replace(">", "");
+                remitente = remitente.trim();
+                remitente = remitente.replace("\n", "");
+            }
+        } catch (MessagingException ex) {
+            ex.printStackTrace();
+        }
+        return remitente;
     }
 
 }

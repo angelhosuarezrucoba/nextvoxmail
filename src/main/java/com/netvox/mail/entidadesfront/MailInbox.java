@@ -30,6 +30,7 @@ public class MailInbox {
     private String descripcion_tipificacion;
     private int idhilo;
     private boolean hilocerrado;
+    private int id_cola;
      
     
     public int getId() {
@@ -158,5 +159,13 @@ public class MailInbox {
 
     public void setHilocerrado(boolean hilocerrado) {
         this.hilocerrado = hilocerrado;
+    }
+
+    public int getId_cola() {
+        return id_cola;
+    }
+
+    public void setId_cola(int id_cola) {
+        this.id_cola = id_cola;
     }
 }

@@ -17,7 +17,6 @@ public class Mail {
     private String remitente;
     private String destino;
     private String asunto;//subject;  
-    private Cola cola;
     private int usuario;
     private String mensaje;
     private int id_cola;
@@ -36,11 +35,9 @@ public class Mail {
     private int idhilo;
     private boolean hilocerrado;
     private int tiempo_atencion;
-    
-    
-    
+    private String nombre_cola;
 
-    public Mail(int idcorreo, int estado, String tipomail, String fecha_ingreso, int idconfiguracion, int id_cola) {
+    public Mail(int idcorreo, int estado, String tipomail, String fecha_ingreso, int idconfiguracion, int id_cola, String nombre_cola, int id_campana, String asunto, String remitente,String destino) {
         this.idcorreo = idcorreo;
         this.tipomail = tipomail;
         this.estado = estado;
@@ -48,15 +45,16 @@ public class Mail {
         this.idconfiguracion = idconfiguracion;
         this.id_cola = id_cola;
         this.listadeadjuntos = new ArrayList<>();
+        this.nombre_cola = nombre_cola;
+        this.campana = id_campana;
+        this.asunto = asunto;
+        this.remitente = remitente;
+        this.destino=destino;
+
     }
 
     public Mail() {
 
-    }
-
-    @Override
-    public String toString() {
-        return "Mail{" + "idcorreo=" + idcorreo + ", remitente=" + remitente + ", destino=" + destino + ", asunto=" + asunto + ", cola=" + cola + ", usuario=" + usuario + ", mensaje=" + mensaje + ", id_cola=" + id_cola + ", tipomail=" + tipomail + ", campana=" + campana + ", nombre=" + nombre + ", apellido=" + apellido + ", nombre_campana=" + nombre_campana + ", peso_adjunto=" + peso_adjunto + ", ruta=" + ruta + ", idconfiguracion=" + idconfiguracion + ", estado=" + estado + ", fecha_ingreso=" + fecha_ingreso + ", listadeadjuntos=" + listadeadjuntos + '}';
     }
 
     public String getRemitente() {
@@ -163,14 +161,6 @@ public class Mail {
         this.idconfiguracion = idconfiguracion;
     }
 
-    public Cola getCola() {
-        return cola;
-    }
-
-    public void setCola(Cola cola) {
-        this.cola = cola;
-    }
-
     public int getEstado() {
         return estado;
     }
@@ -241,6 +231,14 @@ public class Mail {
 
     public void setTiempo_atencion(int tiempo_atencion) {
         this.tiempo_atencion = tiempo_atencion;
+    }
+
+    public String getNombre_cola() {
+        return nombre_cola;
+    }
+
+    public void setNombre_cola(String nombre_cola) {
+        this.nombre_cola = nombre_cola;
     }
 
 }
