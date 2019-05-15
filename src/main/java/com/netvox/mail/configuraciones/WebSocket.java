@@ -8,6 +8,7 @@ package com.netvox.mail.configuraciones;
 import com.google.gson.Gson;
 import com.netvox.mail.ServiciosImpl.CoreMailServicioImpl;
 import com.netvox.mail.ServiciosImpl.LogConexionesServicio;
+import com.netvox.mail.ServiciosImpl.VerificadorDeSesionServicioImpl;
 import com.netvox.mail.entidadesfront.Agente;
 import com.netvox.mail.entidadesfront.MapaAgentes;
 import com.netvox.mail.entidadesfront.Mensaje;
@@ -40,15 +41,24 @@ public class WebSocket extends TextWebSocketHandler {
     @Qualifier("logconexionesservicio")
     LogConexionesServicio logconexionesservcio;
 
+    @Autowired
+    @Qualifier("verificadordesesionservicio")
+    VerificadorDeSesionServicioImpl verificadordesesionservicio;
+
     RestTemplate resttemplate = new RestTemplate();
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         Mensaje mensaje = new Gson().fromJson(message.getPayload(), Mensaje.class);
-        System.out.println(message.getPayload());
         switch (mensaje.getEvento()) {
             case "LOGIN":
-                enviarMensajeParaUnUsuario(coremailservicio.obtenerRespuestaDeLogin(mensaje), mensaje.getIdagente());
+                if (verificadordesesionservicio.sesionvalida(mensaje.getIdentificador())) {
+                    enviarMensajeParaUnUsuario(coremailservicio.obtenerRespuestaDeLogin(mensaje), mensaje.getIdagente());
+                } else {
+                    Mensaje mensajerror = new Mensaje();
+                    mensajerror.setEvento("ERRORLOGIN");
+                    enviarMensajeParaUnUsuario(mensajerror, mensaje.getIdagente());
+                }
                 break;
             case "LOGOUT":
                 break;
@@ -77,7 +87,6 @@ public class WebSocket extends TextWebSocketHandler {
                 System.out.println("       sesion: " + sesion.getSesion().getId());
             });
         });
-
     } //coloca un id de agente a cada sesion y las agrupa para que se visualice en cada pantalla
 
     @Override
@@ -99,14 +108,17 @@ public class WebSocket extends TextWebSocketHandler {
 
         lista.remove(listaidagente.get(0));
 
+        
+        //aqui hay que validar porque el agente no existe en listaresumen.
         if (lista.isEmpty()) {
+            logconexionesservcio.grabarDesconexion(listaidagente.get(0).getIdagente());
             if (coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == listaidagente.get(0).getIdagente()).findFirst().get().getEstadoagente() == 4) {
                 resttemplate.postForObject("http://localhost:8084/mail/apis/pausar", new Mensaje(listaidagente.get(0).getIdagente()), Mensaje.class);
             }
             MapaAgentes.getMapa().remove(listaidagente.get(0).getIdagente());
             resumenservicio.borrarResumenBaseDatos(listaidagente.get(0).getIdagente());
             coremailservicio.borrarListaResumen(listaidagente.get(0).getIdagente());//en memoria
-            logconexionesservcio.grabarDesconexion(listaidagente.get(0).getIdagente());
+
         }
 
     }

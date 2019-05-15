@@ -5,6 +5,7 @@
  */
 package com.netvox.mail.Api;
 
+import com.netvox.mail.ServiciosImpl.VerificadorDeSesionServicioImpl;
 import com.netvox.mail.configuraciones.WebSocket;
 import com.netvox.mail.entidadesfront.MailSalida;
 import com.netvox.mail.entidadesfront.MailInbox;
@@ -13,6 +14,7 @@ import com.netvox.mail.entidadesfront.Tipificacion;
 import com.netvox.mail.servicios.MailServicio;
 import java.text.SimpleDateFormat;
 import java.util.List;
+import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -40,8 +42,17 @@ public class ApiMail {
     @Qualifier("mailservicio")
     MailServicio mailservicio;
 
+    @Autowired
+    @Qualifier("verificadordesesionservicio")
+    VerificadorDeSesionServicioImpl verificadordesesionservicio;
+
     @PostMapping("/crearcorreo")
-    public MailInbox crearcorreo(@RequestBody MailSalida mailsalida) {
+    public MailInbox crearcorreo(@RequestBody MailSalida mailsalida, @RequestHeader String identificador, HttpServletResponse response) {
+        if (verificadordesesionservicio.sesionvalida(identificador)) {
+            response.setStatus(HttpServletResponse.SC_OK);
+        } else {
+            response.setStatus(HttpServletResponse.SC_CONFLICT);
+        }
         return mailservicio.crearCorreo(mailsalida);
     }
 
@@ -77,7 +88,7 @@ public class ApiMail {
 
     @PostMapping("/tipificarcorreo")
     public void tipificarCorreo(@RequestBody MailSalida mailsalida) {
-        
+
         mailservicio.tipificarCorreo(mailsalida);
     }
 

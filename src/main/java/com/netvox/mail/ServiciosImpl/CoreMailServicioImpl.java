@@ -23,7 +23,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.mongodb.core.MongoOperations;
@@ -102,6 +101,10 @@ public class CoreMailServicioImpl {
     @Autowired
     @Qualifier("formatodefechas")
     FormatoDeFechas formatodefechas;
+
+    @Autowired
+    @Qualifier("resumendiarioservicio")
+    ResumenDiarioServicioImpl resumendiarioservicio;
 
     private static Configuraciones configuraciones;
     private static List<Resumen> listaresumen = new ArrayList<>();
@@ -323,6 +326,8 @@ public class CoreMailServicioImpl {
                     mailinbox.setEstado(0);
                     mailinbox.setRemitente(mail.getRemitente());
                     mailinbox.setDestino(mail.getDestino());
+                    mailinbox.setCc("");//sera vacio hasta que podamos encontrar el codigo que llene eso en el metodo Utilidades.createhtml
+                    mailinbox.setId_cola(mail.getId_cola());
                     mailinbox.setAsunto(mail.getAsunto());
                     mailinbox.setFecha_ingreso(formatodefechas.cambiarFormatoFechas(mail.getFecha_ingreso(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_HORA_SLASH));
                     mailinbox.setAdjuntos(mail.getListadeadjuntos());
@@ -397,6 +402,9 @@ public class CoreMailServicioImpl {
                         agente.setEstadoagente(2);
                         agente.setPendiente(usuarioresumen.getPendiente() + 1);
                     });
+            resumendiarioservicio.actualizarPendientes(1, usuarioresumen.getAgente());
+            resumendiarioservicio.actualizarEstado(usuarioresumen.getAgente(), 2, 2);
+            mongoops.updateFirst(new Query(Criteria.where("agente").is(usuarioresumen.getAgente())), new Update().set("estado", 2), Resumen.class);
             mongoops.updateFirst(new Query(
                     Criteria.where("idcorreo").is(mail.getIdcorreo())),
                     new Update()
@@ -416,7 +424,8 @@ public class CoreMailServicioImpl {
             mailinbox.setFecha_ingreso(formatodefechas.cambiarFormatoFechas(mail.getFecha_ingreso(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_HORA_SLASH));
             mailinbox.setAdjuntos(mail.getListadeadjuntos());
             mailinbox.setIdhilo(mail.getIdhilo());
-
+            mailinbox.setId_cola(mail.getId_cola());
+            mailinbox.setCc("");//esto es para notificar 
             //este envia a todos.
             getListaresumen().stream().filter((resumen) -> resumen.getListacolas().contains(mail.getId_cola())) // aqui le envio al resto
                     .forEach((resumen) -> {
@@ -428,7 +437,8 @@ public class CoreMailServicioImpl {
             mensaje.setEvento("CORREOASIGNADO");
             mensaje.setNew_mail(mailinbox);
             websocket.enviarMensajeParaUnUsuario(mensaje, usuarioresumen.getAgente());//aqui envio el mensaje a un usuario asignado
-            //esto debe borrarse no me sirve.
+
+//esto debe borrarse no me sirve.
             procedimientoalmacenado = conexion.prepareCall("call sp_actualiza_resumen_servicio_en_cola(?,?,?)");
             procedimientoalmacenado.setInt(1, mail.getCampana());
             procedimientoalmacenado.setInt(2, SERVICIO_MAIL);

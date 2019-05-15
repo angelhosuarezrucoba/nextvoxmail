@@ -14,7 +14,6 @@ public class Resumen {
     private int campana;
     private int agente;
     private String nombre;
-    //private int mailsacumulados;
     private int pendiente;
     private List<Integer> listacolas;
     private int estadoagente;

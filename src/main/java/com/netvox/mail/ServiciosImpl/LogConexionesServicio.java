@@ -2,7 +2,10 @@ package com.netvox.mail.ServiciosImpl;
 
 import com.netvox.mail.entidades.LogConexiones;
 import com.netvox.mail.entidades.Resumen;
+import com.netvox.mail.entidadesfront.MailSalida;
 import com.netvox.mail.utilidades.FormatoDeFechas;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.util.Date;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -19,14 +22,20 @@ public class LogConexionesServicio {
     @Qualifier("clientemongoservicio")
     ClienteMongoServicioImpl clientemongoservicio;
 
-    FormatoDeFechas formato = new FormatoDeFechas();
+    @Autowired
+    @Qualifier("formatodefechas")
+    FormatoDeFechas formatodefechas;
+
+    @Autowired
+    @Qualifier("resumendiarioservicio")
+    ResumenDiarioServicioImpl resumendiarioservicio;
 
     public void grabarConexion(Resumen resumen) {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
 
         try {
             LogConexiones log = mongoops.findOne(new Query(Criteria.where("agente").is(resumen.getAgente())
-                    .and("fechaconexion").regex(formato.convertirFechaString(new Date(), formato.FORMATO_FECHA))), LogConexiones.class);
+                    .and("fechaconexion").regex(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA))), LogConexiones.class);
 
             if (log == null) {
                 mongoops.insert(
@@ -37,8 +46,11 @@ public class LogConexionesServicio {
                                 resumen.getPendiente(),
                                 resumen.getListacolas(),
                                 resumen.getEstadoagente(),
-                                formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA)
+                                formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)
                         ));
+                resumendiarioservicio.insertarConexion(resumen);
+            } else {
+                resumendiarioservicio.actualizaHoraLogueo(resumen);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -49,8 +61,8 @@ public class LogConexionesServicio {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
         try {
             mongoops.updateFirst(new Query(Criteria.where("agente").is(idagente)
-                    .and("fechaconexion").regex(formato.convertirFechaString(new Date(), formato.FORMATO_FECHA))),
-                    new Update().set("fechadesconexion", formato.convertirFechaString(new Date(), formato.FORMATO_FECHA_HORA)), LogConexiones.class);
+                    .and("fechaconexion").regex(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA))),
+                    new Update().set("fechadesconexion", formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)), LogConexiones.class);
         } catch (Exception e) {
             e.printStackTrace();
         }

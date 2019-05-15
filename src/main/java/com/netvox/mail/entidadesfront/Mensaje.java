@@ -17,6 +17,7 @@ public class Mensaje {
     private int peso_maximo_adjunto;
     private int idcorreoasignado;//con esto le aviso al front que correo fue asignado para que el lo descuente.
     private String firma;
+    private String identificador;
     
     
     public Mensaje() {
@@ -131,6 +132,15 @@ public class Mensaje {
         this.firma = firma;
     }
 
+    public String getIdentificador() {
+        return identificador;
+    }
+
+    public void setIdentificador(String identificador) {
+        this.identificador = identificador;
+    }
+
+ 
   
 
 }
