@@ -13,6 +13,11 @@ import org.springframework.data.mongodb.core.mapping.Field;
 @Document(collection = "mail")
 public class MailSalida {
 
+    @Override
+    public String toString() {
+        return "MailSalida{" + "id=" + id + ", tipo=" + tipo + ", titulo=" + titulo + ", remitente=" + remitente + ", destino=" + destino + ", copia=" + copia + ", cola=" + cola + ", mensaje=" + mensaje + ", tipificacion=" + tipificacion + ", id_agente=" + id_agente + ", reenvio=" + reenvio + ", id_campana=" + id_campana + ", nombre_campana=" + nombre_campana + ", estado=" + estado + ", fecha_ingreso=" + fecha_ingreso + ", fechainiciogestion=" + fechainiciogestion + ", fechafingestion=" + fechafingestion + ", descripcion_tipificacion=" + descripcion_tipificacion + ", listadeadjuntos=" + listadeadjuntos + ", listadeembebidos=" + listadeembebidos + ", comentario=" + comentario + ", idhilo=" + idhilo + ", hilocerrado=" + hilocerrado + ", tiempoencola=" + tiempoencola + ", nombre=" + nombre + ", tiempo_atencion=" + tiempo_atencion + ", hora=" + hora + ", estadoatencion=" + estadoatencion + ", validacion=" + validacion + ", tiempo_cola=" + tiempo_cola + ", tiempoatencion=" + tiempoatencion + '}';
+    }
+
     @Field(value = "idcorreo")
     private int id;//idcorreo
 

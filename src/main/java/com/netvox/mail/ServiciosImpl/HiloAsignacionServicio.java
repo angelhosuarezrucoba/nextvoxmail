@@ -7,7 +7,6 @@ package com.netvox.mail.ServiciosImpl;
 
 import com.netvox.mail.entidades.Mail;
 import com.netvox.mail.entidades.Resumen;
-import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,10 +20,8 @@ public class HiloAsignacionServicio implements Runnable {
     @Qualifier("coremailservicio")
     CoreMailServicioImpl coremailservicio;
 
-    private HashMap<Integer, List<Mail>> mailsporcola;
-    // private List<Usuario> listausuarios;
+
     private boolean activo = true;
-    // private Usuario usuarioasignado;
 
     @Override
     public void run() {

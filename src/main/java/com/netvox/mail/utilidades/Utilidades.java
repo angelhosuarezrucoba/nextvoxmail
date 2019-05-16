@@ -46,6 +46,7 @@ public class Utilidades {
     ClienteMongoServicio clientemongoservicio;
 
     public void printException(Exception ex) {
+        
         System.out.println("MSG:" + ex.getMessage() + " ,EXP:" + ex.toString());
         for (int i = 0; i < ex.getStackTrace().length; i++) {
             System.out.println(ex.getStackTrace()[i]);
@@ -149,7 +150,6 @@ public class Utilidades {
                     cuerpoMensaje = texto;
                 }
             } else if (contenidodelmensaje instanceof Multipart) {
-                System.out.println("ENTRE EN EL ELSEIF COMO MULTIPART");
                 Multipart multipart = (Multipart) contenidodelmensaje;
                 int numPart = multipart.getCount();
                 ContentType tipocontenido = new ContentType(multipart.getContentType());
@@ -329,7 +329,6 @@ public class Utilidades {
                 } else {
                     if (unaParte.isMimeType("image/*")) {
                         try {
-                            System.out.println(unidad.getAbsolutePath() + "/" + unaParte.getFileName());//aqui es donde imprime el archivo
                             boolean depurar = false;
                             if (unaParte.getFileName() == null) {
                                 return mensaje;

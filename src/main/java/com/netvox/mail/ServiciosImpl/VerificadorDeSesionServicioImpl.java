@@ -1,8 +1,8 @@
 package com.netvox.mail.ServiciosImpl;
 
 import com.netvox.mail.entidades.RespuestaIdentificador;
-import javax.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 @Service("verificadordesesionservicio")
@@ -13,9 +13,10 @@ public class VerificadorDeSesionServicioImpl {
     public boolean sesionvalida(String identificador) {
         boolean valido = false;
         try {
-            RespuestaIdentificador respuesta = resttemplate.postForObject("192.168.10.206:8080/autenticacion/consultaridentificador", identificador, RespuestaIdentificador.class);
+            RespuestaIdentificador respuesta = resttemplate.postForObject("http://192.168.10.206:8080/autenticacion/consultaridentificador", identificador, RespuestaIdentificador.class);
             valido = true;
-        } catch (Exception e) {
+        } catch (HttpClientErrorException e) {
+            System.out.println("error en la sesion");
             e.printStackTrace();
         }
         return valido;

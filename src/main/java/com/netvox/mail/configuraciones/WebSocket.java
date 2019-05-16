@@ -69,6 +69,9 @@ public class WebSocket extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+        
+        //esto debe migrar a un metodo para ser llamado luego del login y no exactamente despues de conseguir la conexion
+        
         System.out.println("Conectando agente " + session.getAttributes().get("idagente") + " SessionID " + session.getId());
         int idagente = Integer.parseInt((String) session.getAttributes().get("idagente"));
         Agente agente = new Agente(idagente, session);
@@ -93,6 +96,8 @@ public class WebSocket extends TextWebSocketHandler {
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status)
             throws Exception { // remueve la sesion de la lista de sesiones que tiene un agente
 
+        
+        //deberia validarse en caso de que nunca se haya conseguido el inicio de sesion , que es el caso de un login invalido, por lo general no sucedera.
         System.out.println("cerr lasesion " + session.getId());
         List<Agente> lista = MapaAgentes.getMapa().values().stream()
                 .filter((listadeagentes) -> {
@@ -108,8 +113,6 @@ public class WebSocket extends TextWebSocketHandler {
 
         lista.remove(listaidagente.get(0));
 
-        
-        //aqui hay que validar porque el agente no existe en listaresumen.
         if (lista.isEmpty()) {
             logconexionesservcio.grabarDesconexion(listaidagente.get(0).getIdagente());
             if (coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == listaidagente.get(0).getIdagente()).findFirst().get().getEstadoagente() == 4) {

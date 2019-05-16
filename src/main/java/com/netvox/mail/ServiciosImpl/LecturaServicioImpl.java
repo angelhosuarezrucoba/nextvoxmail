@@ -25,7 +25,7 @@ public class LecturaServicioImpl {
 
     public LecturaServicioImpl() {
         try {
-            file = new File("C:\\Users\\desarrollo5\\Desktop\\netvox\\configuracion.txt");
+            file = new File("/usr/local/Tomcat8.0/webapps/configuracion.txt");
             fr = new FileReader(file);
             br = new BufferedReader(fr);
         } catch (FileNotFoundException ex) {

@@ -175,7 +175,6 @@ public class ResumenDiarioServicioImpl {
                                     andExpression("_id").as("idagente").
                                     andExpression("duracion").as("duracion")
                     );
-                    System.out.println(agregacion.toString());
                     try {
                         duracion = mongoops.aggregate(agregacion, "pausas", Pausa.class).getMappedResults().stream().filter((agente) -> agente.getIdagente() == idagente).findFirst().get().getDuracion();
                     } catch (Exception e) {

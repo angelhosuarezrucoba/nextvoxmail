@@ -13,6 +13,7 @@ import com.netvox.mail.entidadesfront.Mensaje;
 import com.netvox.mail.entidadesfront.Tipificacion;
 import com.netvox.mail.servicios.MailServicio;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,53 +49,110 @@ public class ApiMail {
 
     @PostMapping("/crearcorreo")
     public MailInbox crearcorreo(@RequestBody MailSalida mailsalida, @RequestHeader String identificador, HttpServletResponse response) {
+        MailInbox mail = new MailInbox();
         if (verificadordesesionservicio.sesionvalida(identificador)) {
             response.setStatus(HttpServletResponse.SC_OK);
+            mail = mailservicio.crearCorreo(mailsalida);
         } else {
             response.setStatus(HttpServletResponse.SC_CONFLICT);
         }
-        return mailservicio.crearCorreo(mailsalida);
+        return mail;
     }
 
     @PostMapping("/listarcorreo")
-    public List<MailInbox> listarCorreos(@RequestBody Mensaje mensaje) {;
-        return mailservicio.listarCorreos(mensaje);
+    public List<MailInbox> listarCorreos(@RequestBody Mensaje mensaje, @RequestHeader String identificador, HttpServletResponse response) {
+        List<MailInbox> lista = new ArrayList<>();
+        if (verificadordesesionservicio.sesionvalida(identificador)) {
+            response.setStatus(HttpServletResponse.SC_OK);
+            lista = mailservicio.listarCorreos(mensaje);
+        } else {
+            response.setStatus(HttpServletResponse.SC_CONFLICT);
+        }
+        return lista;
     }
 
     @PostMapping("/abrircorreo")
-    public String abrirCorreo(@RequestBody MailInbox mailconsultainbox) {
-        return mailservicio.abrirCorreo(mailconsultainbox);
+    public String abrirCorreo(@RequestBody MailInbox mailconsultainbox, @RequestHeader String identificador,
+            HttpServletResponse response) {
+        String mensaje = "No autorizado";
+        if (verificadordesesionservicio.sesionvalida(identificador)) {
+            response.setStatus(HttpServletResponse.SC_OK);
+            mensaje = mailservicio.abrirCorreo(mailconsultainbox);
+        } else {
+            response.setStatus(HttpServletResponse.SC_CONFLICT);
+        }
+        return mensaje;
     }
 
     @PostMapping("/listarcorreoencola")
-    public List<MailInbox> listarCorreoEnCola(@RequestBody Mensaje mensaje) {;
-        return mailservicio.listarCorreosEnCola(mensaje);
+    public List<MailInbox> listarCorreoEnCola(@RequestBody Mensaje mensaje, @RequestHeader String identificador,
+            HttpServletResponse response) {
+        List<MailInbox> lista = new ArrayList<>();
+        if (verificadordesesionservicio.sesionvalida(identificador)) {
+            response.setStatus(HttpServletResponse.SC_OK);
+            lista = mailservicio.listarCorreosEnCola(mensaje);
+        } else {
+            response.setStatus(HttpServletResponse.SC_CONFLICT);
+        }
+        return lista;
     }
 
     @PostMapping("/asignarcorreo")
-    public void asignarCorreo(@RequestBody Mensaje mensaje) {
-        mailservicio.autoAsignarse(mensaje);
+    public void asignarCorreo(@RequestBody Mensaje mensaje, @RequestHeader String identificador,
+            HttpServletResponse response) {
+        if (verificadordesesionservicio.sesionvalida(identificador)) {
+            response.setStatus(HttpServletResponse.SC_OK);
+            mailservicio.autoAsignarse(mensaje);
+        } else {
+            response.setStatus(HttpServletResponse.SC_CONFLICT);
+        }
     }
 
     @PostMapping("/adjuntararchivo")
-    public void adjuntarArchivo(@RequestParam("archivo") MultipartFile archivo, @RequestHeader int idcorreo) {
-        mailservicio.adjuntarcorreo(archivo, idcorreo);
+    public String adjuntarArchivo(@RequestParam("archivo") MultipartFile archivo,
+            @RequestHeader int idcorreo, @RequestHeader String identificador, HttpServletResponse response) {
+        if (verificadordesesionservicio.sesionvalida(identificador)) {
+            response.setStatus(HttpServletResponse.SC_OK);
+            mailservicio.adjuntarcorreo(archivo, idcorreo);
+        } else {
+            response.setStatus(HttpServletResponse.SC_CONFLICT);
+        }
+        return "ok";
     }
 
     @PostMapping("/enviarcorreo")
-    public void enviarCorreo(@RequestBody MailSalida mailsalida) {
-        mailservicio.enviarcorreo(mailsalida);
+    public void enviarCorreo(@RequestBody MailSalida mailsalida,
+            @RequestHeader String identificador, HttpServletResponse response) {  
+        if (verificadordesesionservicio.sesionvalida(identificador)) {
+            response.setStatus(HttpServletResponse.SC_OK);
+            mailservicio.enviarcorreo(mailsalida);
+        } else {
+            response.setStatus(HttpServletResponse.SC_CONFLICT);
+        }
     }
 
     @PostMapping("/tipificarcorreo")
-    public void tipificarCorreo(@RequestBody MailSalida mailsalida) {
+    public void tipificarCorreo(@RequestBody MailSalida mailsalida,
+            @RequestHeader String identificador, HttpServletResponse response) {
+        if (verificadordesesionservicio.sesionvalida(identificador)) {
+            response.setStatus(HttpServletResponse.SC_OK);
+            mailservicio.tipificarCorreo(mailsalida);
+        } else {
+            response.setStatus(HttpServletResponse.SC_CONFLICT);
+        }
 
-        mailservicio.tipificarCorreo(mailsalida);
     }
 
     @PostMapping("/listartipificaciones")
-    public List<Tipificacion> listarTipificaciones() {
-        return mailservicio.listarTipificaciones();
+    public List<Tipificacion> listarTipificaciones(@RequestHeader String identificador,
+            HttpServletResponse response) {
+        List<Tipificacion> lista = new ArrayList<>();
+        if (verificadordesesionservicio.sesionvalida(identificador)) {
+            response.setStatus(HttpServletResponse.SC_OK);
+            lista = mailservicio.listarTipificaciones();
+        } else {
+            response.setStatus(HttpServletResponse.SC_CONFLICT);
+        }
+        return lista;
     }
-
 }

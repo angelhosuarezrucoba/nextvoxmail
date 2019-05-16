@@ -20,16 +20,6 @@ public class ClienteMysqlServicioImpl {
     @Qualifier("datasource")
     DataSource datasource;
 
-//    public void cerrarConexion(Connection conexion) {
-//        try {
-//            if (null != conexion && !conexion.isClosed() ) {
-//                conexion.close();
-//            }
-//        } catch (SQLException e) {
-//            e.printStackTrace();
-//        }
-//    }
-
     public Connection obtenerConexion() {
         Connection conexion = null;
         try {
