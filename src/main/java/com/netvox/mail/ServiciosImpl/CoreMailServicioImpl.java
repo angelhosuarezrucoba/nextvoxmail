@@ -35,8 +35,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.stream.Collectors;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Update;
@@ -170,25 +168,10 @@ public class CoreMailServicioImpl {
 
     public Mail insertarNuevoMail(int idconfiguracion, int idcola, String nombre_cola, int id_campana, String asunto, String remitente, String destino) {//  mongo, tipomail es entrada o salida
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
-//        int nuevoid = 0;
         Mail nuevomail = null;
         try {
-//            Mail mail = mongoops.findOne(new Query().with(new Sort(Direction.DESC, "$natural")), Mail.class);
-//            if (mail == null) {
-//                nuevoid = 1;
-//                mongoops.insert(new Mail(1, 0, "entrada", formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA), idconfiguracion, idcola, nombre_cola, id_campana, asunto, remitente, destino));
-//            } else {
-//                nuevoid = mail.getIdcorreo() + 1;
-//                mongoops.insert(new Mail(nuevoid, 0, "entrada", formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA), idconfiguracion, idcola, nombre_cola, id_campana, asunto, remitente, destino));
-//            }
-//            
-            
-           // nuevomail = mongoops.findOne(new Query(Criteria.where("idcorreo").is(nuevoid)), Mail.class);
-           nuevomail= new  Mail(generadorId(), 0, "entrada", formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA), idconfiguracion, idcola, nombre_cola, id_campana, asunto, remitente, destino);
-           mongoops.insert(nuevomail);
-                   
-            
-            
+            nuevomail = new Mail(generadorId(), 0, "entrada", formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA), idconfiguracion, idcola, nombre_cola, id_campana, asunto, remitente, destino);
+            mongoops.insert(nuevomail);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -532,7 +515,9 @@ public class CoreMailServicioImpl {
 
     public int generadorId() {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
-        return mongoops.findAndModify(new Query(Criteria.where("id").is(1)), new Update().inc("idcorreo", 1), Configuraciones.class).getIdcorreo();
+        FindAndModifyOptions opciones = new FindAndModifyOptions();
+        opciones.returnNew(true);
+        return mongoops.findAndModify(new Query(Criteria.where("id").is(1)), new Update().inc("idcorreo", 1), opciones, Configuraciones.class).getIdcorreo();
     }
 
     public void borrarListaResumen(int idagente) {

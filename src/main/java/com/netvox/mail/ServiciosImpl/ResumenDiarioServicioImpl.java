@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 @Service("resumendiarioservicio")
@@ -34,8 +33,7 @@ public class ResumenDiarioServicioImpl {
     public void insertarConexion(Resumen resumen) {
         try {
             Connection conexion = clientemysqlservicio.obtenerConexion();
-            MongoOperations mongoops = clientemongoservicio.clienteMongo();
-            String sqlresumen_diario = ("select first_firmado,hora_logueo,session,tiempo_acumulado_logueado from resumen_diario where agente=" + resumen.getAgente() + " and campana=" + resumen.getCampana());
+             String sqlresumen_diario = ("select first_firmado,hora_logueo,session,tiempo_acumulado_logueado from resumen_diario where agente=" + resumen.getAgente() + " and campana=" + resumen.getCampana());
             ResultSet resultado = conexion.createStatement().executeQuery(sqlresumen_diario);
             String hora_logueo = "";
             String session = "";

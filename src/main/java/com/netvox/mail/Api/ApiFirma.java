@@ -7,10 +7,7 @@ package com.netvox.mail.Api;
 
 import com.netvox.mail.ServiciosImpl.CoreMailServicioImpl;
 import com.netvox.mail.configuraciones.WebSocket;
-import com.netvox.mail.entidadesfront.MailSalida;
-import com.netvox.mail.entidadesfront.MailInbox;
 import com.netvox.mail.entidadesfront.Mensaje;
-import com.netvox.mail.servicios.MailServicio;
 import java.text.SimpleDateFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;

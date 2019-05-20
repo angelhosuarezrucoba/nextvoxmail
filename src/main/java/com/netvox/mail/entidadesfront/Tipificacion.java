@@ -10,9 +10,8 @@ public class Tipificacion {
         this.id = id;
         this.nombre = nombre;
     }
-
-    
-    
+ 
+   
     public int getId() {
         return id;
     }

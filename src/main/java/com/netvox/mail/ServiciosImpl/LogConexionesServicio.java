@@ -2,10 +2,7 @@ package com.netvox.mail.ServiciosImpl;
 
 import com.netvox.mail.entidades.LogConexiones;
 import com.netvox.mail.entidades.Resumen;
-import com.netvox.mail.entidadesfront.MailSalida;
 import com.netvox.mail.utilidades.FormatoDeFechas;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.util.Date;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
