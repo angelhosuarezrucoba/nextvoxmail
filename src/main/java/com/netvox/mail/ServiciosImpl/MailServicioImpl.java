@@ -5,8 +5,11 @@
  */
 package com.netvox.mail.ServiciosImpl;
 
+import com.netvox.mail.Api.entidadessupervisor.Contenido;
 import com.netvox.mail.Api.entidadessupervisor.FiltroIndividual;
+import com.netvox.mail.Api.entidadessupervisor.Grafico;
 import com.netvox.mail.Api.entidadessupervisor.Pausa;
+import com.netvox.mail.Api.entidadessupervisor.ReporteGrafico;
 import com.netvox.mail.Api.entidadessupervisor.ReporteGrupal;
 import static com.netvox.mail.ServiciosImpl.CoreMailServicioImpl.getListaresumen;
 import com.netvox.mail.configuraciones.WebSocket;
@@ -62,6 +65,7 @@ import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.aggregation.ConditionalOperators;
 import org.springframework.data.mongodb.core.aggregation.ConditionalOperators.Cond;
+import org.springframework.data.mongodb.core.aggregation.ConvertOperators;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -992,5 +996,97 @@ public class MailServicioImpl implements MailServicio {
             e.printStackTrace();
         }
         return lista;
+    }
+
+    @Override
+    public Grafico graficoMultiCanal(Contenido contenido) {
+        MongoOperations mongoops;
+        List<ReporteGrafico> lista = null;
+        Grafico grafico = new Grafico();
+        Aggregation agregacion = null;
+        try {
+            mongoops = clientemongoservicio.clienteMongo();
+            int hora_actual = formatodefechas.obtenerHora(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA));
+            if (contenido.getOnlinehistorico().equals("online")) {
+                if (contenido.getVista() == 1) {
+                    //hroas
+                    for (int i = 0; i <= hora_actual; i++) {
+                        grafico.getValores_entrantes().add(0);
+                    }
+                    agregacion = Aggregation.newAggregation(
+                            Aggregation.match(Criteria.where("id_cola").in(contenido.getColas()).and("fecha_ingreso").regex(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA)).and("tipomail").is("entrada")),
+                            Aggregation.project().andExpression("fecha_ingreso").substring(0, 10).as("fecha").andExpression("fecha_ingreso").substring(11, 2).as("hora"),
+                            Aggregation.group("fecha", "hora").count().as("cantidad"),
+                            Aggregation.project().andExpression("_id.fecha").as("fecha").and(ConvertOperators.valueOf("_id.hora").convertToInt()).as("hora").andExpression("cantidad").as("cantidad")
+                    );
+                    AggregationResults<ReporteGrafico> resultado = mongoops.aggregate(agregacion, "mail", ReporteGrafico.class);
+                    lista = resultado.getMappedResults();
+                    lista.stream().forEach((mail) -> {
+                        grafico.getValores_entrantes().set(mail.getHora(), mail.getCantidad());
+                    });
+                } else {
+                    //minutos
+                    for (int hora = 0; hora <= hora_actual; hora++) {
+                        for (int minuto = 1; minuto <= 4; minuto++) {
+                            grafico.getValores_entrantes().add(0);
+                        }
+                    }
+                    agregacion = Aggregation.newAggregation(
+                            Aggregation.match(Criteria.where("id_cola").in(contenido.getColas()).and("fecha_ingreso").regex(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA)).and("tipomail").is("entrada")),
+                            Aggregation.project().andExpression("fecha_ingreso").substring(0, 10).as("fecha").
+                                    andExpression("fecha_ingreso").substring(11, 2).as("hora").
+                                    andExpression("fecha_ingreso").substring(14, 2).as("minuto"),
+                            Aggregation.group("fecha", "hora", "minuto").
+                                    count().as("cantidad"),
+                            Aggregation.project().andExpression("_id.fecha").as("fecha").
+                                    and(ConvertOperators.valueOf("_id.hora").convertToInt()).as("hora").
+                                    and(ConvertOperators.valueOf("_id.minuto").convertToInt()).as("minuto").
+                                    andExpression("cantidad").as("cantidad")
+                    );
+                    AggregationResults<ReporteGrafico> resultado = mongoops.aggregate(agregacion, "mail", ReporteGrafico.class);
+                    lista = resultado.getMappedResults();
+                    lista.stream().forEach(mail -> {
+                        if (45 < mail.getMinuto()) {
+                            mail.setRango_minuto(4);
+                        } else if (30 < mail.getMinuto() && mail.getMinuto() < 46) {
+                            mail.setRango_minuto(3);
+                        } else if (15 < mail.getMinuto() && mail.getMinuto() < 31) {
+                            mail.setRango_minuto(2);
+                        } else {
+                            mail.setRango_minuto(1);
+                        }
+                        grafico.getValores_entrantes().set(mail.getHora() * 4 + mail.getRango_minuto() - 1, mail.getCantidad());
+
+                    });
+                    grafico.setValores_entrantes(grafico.getValores_entrantes().stream().skip(28).collect(Collectors.toList()));
+                }
+            } else {
+                for (int i = 0; i < 24; i++) {
+                    grafico.getValores_entrantes().add(0);
+                }
+                agregacion = Aggregation.newAggregation(
+                        Aggregation.match(Criteria.where("id_cola").in(contenido.getColas()).and("fecha_ingreso").regex(contenido.getFecha()).and("tipomail").is("entrada")),
+                        Aggregation.project().andExpression("fecha_ingreso").substring(0, 10).as("fecha").andExpression("fecha_ingreso").substring(11, 2).as("hora"),
+                        Aggregation.project().andExpression("fecha").as("fecha").and(ConvertOperators.valueOf("hora").convertToInt()).as("hora"),
+                        Aggregation.match(new Criteria().andOperator(
+                                    Criteria.where("hora").gte(contenido.getHorainicio()),
+                                    Criteria.where("hora").lte(contenido.getHorafin()))),
+                        Aggregation.group("fecha", "hora").count().as("cantidad"),
+                        Aggregation.project().andExpression("_id.fecha").as("fecha").andExpression("_id.hora").as("hora").andExpression("cantidad").as("cantidad")
+                );
+                
+                AggregationResults<ReporteGrafico> resultado = mongoops.aggregate(agregacion, "mail", ReporteGrafico.class);
+                lista = resultado.getMappedResults();
+                lista.stream().forEach((mail) -> {
+                    grafico.getValores_entrantes().set(mail.getHora(), mail.getCantidad());
+                });
+                grafico.setValores_entrantes(grafico.getValores_entrantes().stream().limit(contenido.getHorafin()).skip(contenido.getHorainicio()).collect(Collectors.toList()));
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return grafico;
     }
 }

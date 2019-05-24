@@ -1,7 +1,9 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Esta clase contiene los metodos en general que requiere la aplicacion 
+ * Se deben migrar algunos metodos a los servicios correspondientes, se hizo 
+ * siguiendo el modelo del viejo core pero no es practico . debe cambiarse en una version posterior.
+ * 
+ *  
  */
 package com.netvox.mail.ServiciosImpl;
 
@@ -42,22 +44,6 @@ import org.springframework.web.client.RestTemplate;
 
 @Service("coremailservicio")
 public class CoreMailServicioImpl {
-
-    public static String getPath_entrada() {
-        return path_entrada;
-    }
-
-    public static void setPath_entrada(String aPath_entrada) {
-        path_entrada = aPath_entrada;
-    }
-
-    public static String getPath_salida() {
-        return path_salida;
-    }
-
-    public static void setPath_salida(String aPath_salida) {
-        path_salida = aPath_salida;
-    }
 
     @Autowired
     @Qualifier("clientemysqlservicio")
@@ -489,12 +475,15 @@ public class CoreMailServicioImpl {
             if (mensaje.getEstado_mail() == 4) { // esto es la validacion para la pausa     
                 pausa = true;
             }
+
             mailspendiente = getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).findFirst().get().getPendiente(); // es la misma variable que mailspendienteporcola pero aqui lo uso para memoria porque si no siempre consultaria a la bd , de este modo solo se consulta la bd una vez con cada login
             mensaje.setAcumulado_mail(mailspendiente);// se le puso por nombre acumulado mail solo para coordinar con el front, esto es la suma de mails pendiente.
             mensaje.setEstado_mail(pausa ? 4 : (mailspendiente == 0) ? 1 : 2);//disponible si tiene 0 pendientes,2 si tiene pendientes,es decir atendiendo
+            mensaje.setPedido_pausa(pausa ? ((mailspendiente == 0) ? 0 : 1) : 0);
             mensaje.setCantidad_cola_mail(obtenerCantidadNoAsignadosPorColas(mensaje.getColas())); // todos los mails que estan sin asignar dependiendo de la cola
             mensaje.setEvento("LOGINRESPONSE");
             mensaje.setListacorreos(correos);
+            mensaje.setTiempo_pausa(resumendiarioservicio.tiempoEnPausa(mensaje.getIdagente()));
             mensaje.setPeso_maximo_adjunto(getConfiguraciones().getPeso_maximo_adjunto());
 
         } catch (Exception e) {
@@ -579,6 +568,22 @@ public class CoreMailServicioImpl {
 
     public static void setConfiguraciones(Configuraciones aConfiguraciones) {
         configuraciones = aConfiguraciones;
+    }
+
+    public static String getPath_entrada() {
+        return path_entrada;
+    }
+
+    public static void setPath_entrada(String aPath_entrada) {
+        path_entrada = aPath_entrada;
+    }
+
+    public static String getPath_salida() {
+        return path_salida;
+    }
+
+    public static void setPath_salida(String aPath_salida) {
+        path_salida = aPath_salida;
     }
 
 }

@@ -6,7 +6,9 @@
 package com.netvox.mail.servicios;
 
 
+import com.netvox.mail.Api.entidadessupervisor.Contenido;
 import com.netvox.mail.Api.entidadessupervisor.FiltroIndividual;
+import com.netvox.mail.Api.entidadessupervisor.Grafico;
 import com.netvox.mail.Api.entidadessupervisor.Pausa;
 import com.netvox.mail.Api.entidadessupervisor.ReporteGrupal;
 import com.netvox.mail.entidadesfront.MailInbox;
@@ -55,6 +57,8 @@ public interface MailServicio {
     public List<ReporteGrupal> detalleGrupalDeCorreosPorAgente(FiltroIndividual filtro);
 
     public List<MailSalida> detalleGrupalDeCorreosPorCola(FiltroIndividual filtro);
+
+    public Grafico graficoMultiCanal(Contenido contenido);
 
 
 

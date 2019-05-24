@@ -33,7 +33,7 @@ public class ResumenDiarioServicioImpl {
     public void insertarConexion(Resumen resumen) {
         try {
             Connection conexion = clientemysqlservicio.obtenerConexion();
-             String sqlresumen_diario = ("select first_firmado,hora_logueo,session,tiempo_acumulado_logueado from resumen_diario where agente=" + resumen.getAgente() + " and campana=" + resumen.getCampana());
+            String sqlresumen_diario = ("select first_firmado,hora_logueo,session,tiempo_acumulado_logueado from resumen_diario where agente=" + resumen.getAgente() + " and campana=" + resumen.getCampana());
             ResultSet resultado = conexion.createStatement().executeQuery(sqlresumen_diario);
             String hora_logueo = "";
             String session = "";
@@ -149,35 +149,22 @@ public class ResumenDiarioServicioImpl {
     }
 
     public void actualizarEstado(int idagente, int estadonuevo, int estadooriginal) {
+        Connection conexion;
         try {
-            Connection conexion = clientemysqlservicio.obtenerConexion();
-            MongoOperations mongoops = clientemongoservicio.clienteMongo();
-            int duracion = 0;
-            String sql = "";
+            conexion = clientemysqlservicio.obtenerConexion();
+            int duracion;
+            String sql;
 
             switch (estadonuevo) {
                 case 4:
                     sql = ("update resumen_diario_correo set"
                             + " hora_inicio_estado='" + formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)
                             + "', hora_inicio_pausa='" + formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)
-                            + "', pedido_pausa=" + (estadooriginal == 1 ? 1 : 0)
+                            + "', pedido_pausa=" + (estadooriginal == 2 ? 1 : 0)
                             + " where agente=" + idagente);
                     break;
                 default:
-                    Aggregation agregacion = Aggregation.newAggregation(
-                            Aggregation.match(Criteria.where("finpausa").regex(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA)).
-                                    and("idagente").is(idagente)),
-                            Aggregation.group("idagente").
-                                    sum("duracion").as("duracion"),
-                            Aggregation.project().
-                                    andExpression("_id").as("idagente").
-                                    andExpression("duracion").as("duracion")
-                    );
-                    try {
-                        duracion = mongoops.aggregate(agregacion, "pausas", Pausa.class).getMappedResults().stream().filter((agente) -> agente.getIdagente() == idagente).findFirst().get().getDuracion();
-                    } catch (Exception e) {
-                        duracion = 0;                      
-                    }
+                    duracion = tiempoEnPausa(idagente);
 
                     sql = ("update resumen_diario_correo set estado=" + estadonuevo
                             + ", hora_inicio_estado='" + formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)
@@ -193,6 +180,26 @@ public class ResumenDiarioServicioImpl {
             System.out.println("No se actualizo el estado");
             e.printStackTrace();
         }
+    }
+
+    public int tiempoEnPausa(int idagente) {
+        int duracion;
+        MongoOperations mongoops = clientemongoservicio.clienteMongo();
+        Aggregation agregacion = Aggregation.newAggregation(
+                Aggregation.match(Criteria.where("finpausa").regex(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA)).
+                        and("idagente").is(idagente)),
+                Aggregation.group("idagente").
+                        sum("duracion").as("duracion"),
+                Aggregation.project().
+                        andExpression("_id").as("idagente").
+                        andExpression("duracion").as("duracion")
+        );
+        try {
+            duracion = mongoops.aggregate(agregacion, "pausas", Pausa.class).getMappedResults().stream().filter((agente) -> agente.getIdagente() == idagente).findFirst().get().getDuracion();
+        } catch (Exception e) {
+            duracion = 0;
+        }
+        return duracion;
     }
 
 }

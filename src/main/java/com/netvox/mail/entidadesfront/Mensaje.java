@@ -18,7 +18,8 @@ public class Mensaje {
     private int idcorreoasignado;//con esto le aviso al front que correo fue asignado para que el lo descuente.
     private String firma;
     private String identificador;
-    
+    private int tiempo_pausa;
+    private int pedido_pausa;
     
     public Mensaje() {
     }
@@ -138,6 +139,22 @@ public class Mensaje {
 
     public void setIdentificador(String identificador) {
         this.identificador = identificador;
+    }
+
+    public int getTiempo_pausa() {
+        return tiempo_pausa;
+    }
+
+    public void setTiempo_pausa(int tiempo_pausa) {
+        this.tiempo_pausa = tiempo_pausa;
+    }
+
+    public int getPedido_pausa() {
+        return pedido_pausa;
+    }
+
+    public void setPedido_pausa(int pedido_pausa) {
+        this.pedido_pausa = pedido_pausa;
     }
 
  

@@ -169,7 +169,6 @@ public class FormatoDeFechas {
         return fecha;
     }
 
-    
     /**
      * Calcula las horas entre dos horas pueden ser fechas yyyy-MM-dd HH:mm:ss
      *
@@ -377,6 +376,29 @@ public class FormatoDeFechas {
             SimpleDateFormat dateFormat = new SimpleDateFormat(formato);
             return Integer.parseInt(dateFormat.format(fecactual));
         }
+    }
+
+    /**
+     * Obtiene una hora a partir
+     *
+     * @param fecha cualquier cadena de fecha con el formato yyyy-MM-dd
+     * @return una hora como entero
+     *
+     */
+    public int obtenerHora(String fecha) {
+        int hora = 0;
+        SimpleDateFormat formatohora = new SimpleDateFormat("HH");
+        try {
+            String horatexto = formatohora.format(FORMATO_FECHA_HORA.parse(fecha));
+            if (horatexto.charAt(0) == '0') {
+                hora = Integer.parseInt(horatexto.substring(1));
+            } else {
+                hora = Integer.parseInt(horatexto);
+            }
+        } catch (ParseException ex) {
+            System.out.println("error en el metodo : obtenerHora");
+        }
+        return hora;
     }
 
 }
