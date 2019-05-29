@@ -5,7 +5,7 @@
  */
 package com.netvox.mail.servicios;
 
-
+import com.netvox.mail.Api.entidadessupervisor.AtendidosPorCola;
 import com.netvox.mail.Api.entidadessupervisor.Contenido;
 import com.netvox.mail.Api.entidadessupervisor.FiltroIndividual;
 import com.netvox.mail.Api.entidadessupervisor.Grafico;
@@ -23,24 +23,24 @@ import org.springframework.web.multipart.MultipartFile;
  * @author desarrollo5
  */
 public interface MailServicio {
-    
+
     public abstract List<MailInbox> listarCorreos(Mensaje mensaje);
 
     public String abrirCorreo(MailInbox mailconsultainbox);
 
     public List<MailInbox> listarCorreosEnCola(Mensaje mensaje);
-    
+
     public void autoAsignarse(Mensaje mensaje);
-    
+
     public MailInbox crearCorreo(MailSalida mailsalida);
 
-    public void adjuntarcorreo(MultipartFile archivo,int idagente);
+    public void adjuntarcorreo(MultipartFile archivo, int idagente);
 
     public void enviarcorreo(MailSalida mailsalida);
 
     public void tipificarCorreo(MailSalida mailsalida);
 
-    public  List<Tipificacion> listarTipificaciones();
+    public List<Tipificacion> listarTipificaciones();
 
     public List<MailSalida> listarCorreosPendientes(FiltroIndividual filtro);
 
@@ -60,7 +60,10 @@ public interface MailServicio {
 
     public Grafico graficoMultiCanal(Contenido contenido);
 
+    public Grafico reporteMensual(Contenido contenido);
 
+    public List<AtendidosPorCola> atendidosPorCola(Contenido contenido);
 
-    
+    public void pausaSupervisor(Contenido contenido);
+
 }

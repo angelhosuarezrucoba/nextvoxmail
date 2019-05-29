@@ -21,6 +21,11 @@ public class Contenido {
     private int horainicio;
     private int horafin;
     private String onlinehistorico;
+    private int mes ; // el mes siempre me trae una unidad menos , va de 0 a 11
+    private int ano;//año
+    
+    
+    
     public int getCampana() {
         return campana;
     }
@@ -83,6 +88,22 @@ public class Contenido {
 
     public void setOnlinehistorico(String onlinehistorico) {
         this.onlinehistorico = onlinehistorico;
+    }
+
+    public int getMes() {
+        return mes;
+    }
+
+    public void setMes(int mes) {
+        this.mes = mes;
+    }
+
+    public int getAno() {
+        return ano;
+    }
+
+    public void setAno(int ano) {
+        this.ano = ano;
     }
 
 }

@@ -5,9 +5,11 @@
  */
 package com.netvox.mail.ServiciosImpl;
 
+import com.netvox.mail.Api.entidadessupervisor.AtendidosPorCola;
 import com.netvox.mail.Api.entidadessupervisor.Contenido;
 import com.netvox.mail.Api.entidadessupervisor.FiltroIndividual;
 import com.netvox.mail.Api.entidadessupervisor.Grafico;
+import com.netvox.mail.Api.entidadessupervisor.Mes;
 import com.netvox.mail.Api.entidadessupervisor.Pausa;
 import com.netvox.mail.Api.entidadessupervisor.ReporteGrafico;
 import com.netvox.mail.Api.entidadessupervisor.ReporteGrupal;
@@ -35,6 +37,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
@@ -1069,12 +1072,12 @@ public class MailServicioImpl implements MailServicio {
                         Aggregation.project().andExpression("fecha_ingreso").substring(0, 10).as("fecha").andExpression("fecha_ingreso").substring(11, 2).as("hora"),
                         Aggregation.project().andExpression("fecha").as("fecha").and(ConvertOperators.valueOf("hora").convertToInt()).as("hora"),
                         Aggregation.match(new Criteria().andOperator(
-                                    Criteria.where("hora").gte(contenido.getHorainicio()),
-                                    Criteria.where("hora").lte(contenido.getHorafin()))),
+                                Criteria.where("hora").gte(contenido.getHorainicio()),
+                                Criteria.where("hora").lte(contenido.getHorafin()))),
                         Aggregation.group("fecha", "hora").count().as("cantidad"),
                         Aggregation.project().andExpression("_id.fecha").as("fecha").andExpression("_id.hora").as("hora").andExpression("cantidad").as("cantidad")
                 );
-                
+
                 AggregationResults<ReporteGrafico> resultado = mongoops.aggregate(agregacion, "mail", ReporteGrafico.class);
                 lista = resultado.getMappedResults();
                 lista.stream().forEach((mail) -> {
@@ -1088,5 +1091,106 @@ public class MailServicioImpl implements MailServicio {
         }
 
         return grafico;
+    }
+
+    @Override
+    public Grafico reporteMensual(Contenido contenido) {
+        MongoOperations mongoops;
+        List<ReporteGrafico> lista = null;
+        Grafico grafico = new Grafico();
+        Aggregation agregacion = null;
+        try {
+            mongoops = clientemongoservicio.clienteMongo();
+            List<Mes> listameses = obtenerListaMeses();
+            int totaldias = listameses.get(contenido.getMes()).getDiascantidad();
+            if ((contenido.getMes() + 1) == formatodefechas.obtenerMes(new Date())) {
+                totaldias = formatodefechas.obtenerDia(new Date());
+            }
+            for (int i = 0; i < totaldias; i++) {
+                grafico.getValores_entrantes().add(0);
+                grafico.getValores_contestadas().add(0);
+            }
+            agregacion = Aggregation.newAggregation(
+                    Aggregation.match(Criteria.where("id_cola").in(contenido.getColas()).and("fecha_ingreso").regex(contenido.getAno() + "-" + ((contenido.getMes() + 1) < 10 ? "0" + (contenido.getMes() + 1) : (contenido.getMes() + 1))).and("tipomail").is("entrada")
+                            .and("estado").in(Arrays.asList(0, 1))),
+                    Aggregation.project().andExpression("fecha_ingreso").substring(0, 10).as("fecha").andExpression("fecha_ingreso").substring(8, 2).as("dia"),
+                    Aggregation.project().andExpression("fecha").as("fecha").and(ConvertOperators.valueOf("dia").convertToInt()).as("dia"),
+                    Aggregation.group("fecha", "dia").count().as("cantidad"),
+                    Aggregation.project().andExpression("_id.fecha").as("fecha").andExpression("_id.dia").as("dia").andExpression("cantidad").as("cantidad")
+            );
+            AggregationResults<ReporteGrafico> resultado = mongoops.aggregate(agregacion, "mail", ReporteGrafico.class);
+            System.out.println(agregacion.toString());
+            lista = resultado.getMappedResults();
+            lista.stream().forEach((mail) -> {
+                grafico.getValores_entrantes().set(mail.getDia() - 1, mail.getCantidad());
+            });
+
+            agregacion = Aggregation.newAggregation(
+                    Aggregation.match(Criteria.where("id_cola").in(contenido.getColas()).and("fecha_ingreso").regex(contenido.getAno() + "-" + ((contenido.getMes() + 1) < 10 ? "0" + (contenido.getMes() + 1) : (contenido.getMes() + 1))).and("tipomail").is("entrada")
+                            .and("estado").is(1).and("hilocerrado").is(true)),
+                    Aggregation.project().andExpression("fecha_ingreso").substring(0, 10).as("fecha").andExpression("fecha_ingreso").substring(8, 2).as("dia"),
+                    Aggregation.project().andExpression("fecha").as("fecha").and(ConvertOperators.valueOf("dia").convertToInt()).as("dia"),
+                    Aggregation.group("fecha", "dia").count().as("cantidad"),
+                    Aggregation.project().andExpression("_id.fecha").as("fecha").andExpression("_id.dia").as("dia").andExpression("cantidad").as("cantidad")
+            );
+            AggregationResults<ReporteGrafico> resultadoatendidos = mongoops.aggregate(agregacion, "mail", ReporteGrafico.class);
+            System.out.println(agregacion.toString());
+            lista = resultadoatendidos.getMappedResults();
+            lista.stream().forEach((mail) -> {
+                grafico.getValores_contestadas().set(mail.getDia() - 1, mail.getCantidad());
+            });
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return grafico;
+    }
+
+    public List<Mes> obtenerListaMeses() {
+        List<Mes> listameses = new ArrayList<>();
+        listameses.add(new Mes(31, "enero"));
+        listameses.add(new Mes(28, "febrero"));
+        listameses.add(new Mes(31, "marzo"));
+        listameses.add(new Mes(30, "abril"));
+        listameses.add(new Mes(31, "mayo"));
+        listameses.add(new Mes(30, "junio"));
+        listameses.add(new Mes(31, "julio"));
+        listameses.add(new Mes(31, "agosto"));
+        listameses.add(new Mes(30, "setiembre"));
+        listameses.add(new Mes(31, "octubre"));
+        listameses.add(new Mes(30, "nomviembre"));
+        listameses.add(new Mes(31, "diciemrbe"));
+        return listameses;
+    }
+
+    @Override
+    public List<AtendidosPorCola> atendidosPorCola(Contenido contenido) {
+        MongoOperations mongoops;
+        List<AtendidosPorCola> lista = null;
+        Aggregation agregacion = null;
+        try {
+            mongoops = clientemongoservicio.clienteMongo();
+            agregacion = Aggregation.newAggregation(
+                    Aggregation.match(Criteria.where("campana").is(contenido.getCampana()).and("fechafingestion").regex(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA)).and("tipomail").is("entrada")
+                            .and("estado").is(1)),
+                    Aggregation.project().andExpression("id_cola").as("id_cola"),
+                    Aggregation.group("id_cola").count().as("cantidad"),
+                    Aggregation.project().andExpression("_id").as("id_cola").andExpression("cantidad").as("cantidad")
+            );
+            AggregationResults<AtendidosPorCola> resultado = mongoops.aggregate(agregacion, "mail", AtendidosPorCola.class);
+            System.out.println(agregacion.toString());
+            lista = resultado.getMappedResults();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return lista;
+    }
+
+    @Override
+    public void pausaSupervisor(Contenido contenido) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }

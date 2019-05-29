@@ -401,4 +401,15 @@ public class FormatoDeFechas {
         return hora;
     }
 
+    //Retorna el dia de una fecha
+    public int obtenerDia(Date fechahoy) {
+
+        if (null == fechahoy) {
+            return 0;
+        } else {
+            String formato = "dd";
+            SimpleDateFormat dateFormat = new SimpleDateFormat(formato);
+            return Integer.parseInt(dateFormat.format(fechahoy));
+        }
+    }
 }

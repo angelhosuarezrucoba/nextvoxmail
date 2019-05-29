@@ -12,6 +12,7 @@ public class ReporteGrafico {
     private int minuto;
     private int cantidad;
     private int rango_minuto;
+    private int dia;
     public String getFecha() {
         return fecha;
     }
@@ -58,6 +59,14 @@ public class ReporteGrafico {
 
     public void setRango_minuto(int rango_minuto) {
         this.rango_minuto = rango_minuto;
+    }
+
+    public int getDia() {
+        return dia;
+    }
+
+    public void setDia(int dia) {
+        this.dia = dia;
     }
 
   

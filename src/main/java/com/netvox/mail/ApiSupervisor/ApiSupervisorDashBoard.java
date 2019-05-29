@@ -5,10 +5,12 @@
  */
 package com.netvox.mail.ApiSupervisor;
 
+import com.netvox.mail.Api.entidadessupervisor.AtendidosPorCola;
 import com.netvox.mail.Api.entidadessupervisor.Contenido;
 import com.netvox.mail.Api.entidadessupervisor.Grafico;
 import com.netvox.mail.configuraciones.WebSocket;
 import com.netvox.mail.servicios.MailServicio;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -35,4 +37,15 @@ public class ApiSupervisorDashBoard {
     public Grafico graficoMultiCanal(@RequestBody Contenido contenido) {
         return mailservicio.graficoMultiCanal(contenido);
     }
+
+    @PostMapping("/reportemensual")
+    public Grafico reporteMensual(@RequestBody Contenido contenido) {
+        return mailservicio.reporteMensual(contenido);
+    }
+
+    @PostMapping("/atendidosporcola")
+    public List<AtendidosPorCola> atendidosPorCola(@RequestBody Contenido contenido) {
+        return mailservicio.atendidosPorCola(contenido);
+    }
+
 }

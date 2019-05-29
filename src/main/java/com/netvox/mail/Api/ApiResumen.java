@@ -33,9 +33,12 @@ public class ApiResumen {
     @Qualifier("resumenservicio")
     ResumenServicio resumenservicio;
 
-
     @PostMapping("/pausar")
     public void pausar(@RequestBody Mensaje mensaje) {
         resumenservicio.pausar(mensaje);
+        if (mensaje.isPausasupervisor()) {//esto es para comprobar si el supervisor me esta pidiendo pausar al agente, solo en disponible
+            mensaje.setEvento("PAUSA");
+            websocket.enviarMensajeParaUnUsuario(mensaje, mensaje.getIdagente());
+        }
     }
 }

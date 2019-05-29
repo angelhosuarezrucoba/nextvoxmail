@@ -20,6 +20,7 @@ public class Mensaje {
     private String identificador;
     private int tiempo_pausa;
     private int pedido_pausa;
+    private boolean pausasupervisor; //esto sirve para que  el supervisor mande la pausa y el cliente se entere por websocket
     
     public Mensaje() {
     }
@@ -155,6 +156,14 @@ public class Mensaje {
 
     public void setPedido_pausa(int pedido_pausa) {
         this.pedido_pausa = pedido_pausa;
+    }
+
+    public boolean isPausasupervisor() {
+        return pausasupervisor;
+    }
+
+    public void setPausasupervisor(boolean pausasupervisor) {
+        this.pausasupervisor = pausasupervisor;
     }
 
  
