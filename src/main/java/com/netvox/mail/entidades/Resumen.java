@@ -17,6 +17,7 @@ public class Resumen {
     private int pendiente;
     private List<Integer> listacolas;
     private int estadoagente;
+    private boolean pedido_pausa;
     
 
     public Resumen() {
@@ -79,5 +80,13 @@ public class Resumen {
 
     public void setListacolas(List<Integer> listacolas) {
         this.listacolas = listacolas;
+    }
+
+    public boolean isPedido_pausa() {
+        return pedido_pausa;
+    }
+
+    public void setPedido_pausa(boolean pedido_pausa) {
+        this.pedido_pausa = pedido_pausa;
     }
 }

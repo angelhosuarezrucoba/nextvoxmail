@@ -148,7 +148,7 @@ public class ResumenDiarioServicioImpl {
         }
     }
 
-    public void actualizarEstado(int idagente, int estadonuevo, int estadooriginal) {
+    public void actualizarEstado(int idagente, int estadonuevo, int estadoanterior) {
         Connection conexion;
         try {
             conexion = clientemysqlservicio.obtenerConexion();
@@ -160,7 +160,8 @@ public class ResumenDiarioServicioImpl {
                     sql = ("update resumen_diario_correo set"
                             + " hora_inicio_estado='" + formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)
                             + "', hora_inicio_pausa='" + formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)
-                            + "', pedido_pausa=" + (estadooriginal == 2 ? 1 : 0)
+                         //   +"',estado="+4
+                            + ", pedido_pausa=" + (estadoanterior == 2 ? 1 : 0)
                             + " where agente=" + idagente);
                     break;
                 default:
