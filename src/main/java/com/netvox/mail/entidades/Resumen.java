@@ -17,13 +17,12 @@ public class Resumen {
     private int pendiente;
     private List<Integer> listacolas;
     private int estadoagente;
-    private boolean pedido_pausa;
-    
+    private int pedido_pausa;
 
     public Resumen() {
     }
 
-    public Resumen(int campana, int agente, String nombre, int pendiente, List<Integer> listacolas, int estadoagente) {
+    public Resumen(int campana, int agente, String nombre, int pendiente, List<Integer> listacolas, int estadoagente, int pedido_pausa) {
         this.campana = campana;
         this.agente = agente;
         this.nombre = nombre;
@@ -64,8 +63,6 @@ public class Resumen {
         this.pendiente = pendiente;
     }
 
- 
-
     public int getEstadoagente() {
         return estadoagente;
     }
@@ -82,11 +79,11 @@ public class Resumen {
         this.listacolas = listacolas;
     }
 
-    public boolean isPedido_pausa() {
+    public int getPedido_pausa() {
         return pedido_pausa;
     }
 
-    public void setPedido_pausa(boolean pedido_pausa) {
+    public void setPedido_pausa(int pedido_pausa) {
         this.pedido_pausa = pedido_pausa;
     }
 }

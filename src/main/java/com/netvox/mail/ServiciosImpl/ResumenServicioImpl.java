@@ -1,17 +1,13 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.netvox.mail.ServiciosImpl;
 
-import com.netvox.mail.Api.entidadessupervisor.Pausa;
+import com.netvox.mail.configuraciones.WebSocket;
 import com.netvox.mail.entidades.Resumen;
 import com.netvox.mail.entidadesfront.Mensaje;
+import com.netvox.mail.servicios.PausaServicio;
 import com.netvox.mail.servicios.ResumenServicio;
-import com.netvox.mail.utilidades.FormatoDeFechas;
-import java.util.Date;
-import java.util.stream.Collectors;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.mongodb.core.MongoOperations;
@@ -32,12 +28,22 @@ public class ResumenServicioImpl implements ResumenServicio {
     CoreMailServicioImpl coremailservicio;
 
     @Autowired
-    @Qualifier("formatodefechas")
-    FormatoDeFechas formatodefechas;
-
-    @Autowired
     @Qualifier("resumendiarioservicio")
     ResumenDiarioServicioImpl resumendiarioservicio;
+
+    @Autowired
+    @Qualifier("resumenservicio")
+    ResumenServicio resumenservicio;
+
+    @Autowired
+    @Qualifier("pausaservicio")
+    PausaServicio pausaservicio;
+
+    @Autowired
+    @Qualifier("websocket")
+    WebSocket websocket;
+
+    Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Override
     public void borrarResumenBaseDatos(int idagente) {
@@ -61,36 +67,85 @@ public class ResumenServicioImpl implements ResumenServicio {
 
     @Override
     public void pausar(Mensaje mensaje) {
-        MongoOperations mongoops = clientemongoservicio.clienteMongo();
-        Resumen usuarioresumen = coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).findFirst().get();
-        Pausa pausa = null;
+        Resumen usuarioresumen = obtenerResumen(mensaje.getIdagente());
         try {
             if (usuarioresumen.getEstadoagente() == 4) {//despausar
-                coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).collect(Collectors.toList()).get(0).setEstadoagente(usuarioresumen.getPendiente() == 0 ? 1 : 2);
-                pausa = mongoops.findOne(new Query(Criteria.where("idagente").is(mensaje.getIdagente()).
-                        and("finpausa").is(null)), Pausa.class);
-                pausa.setFinpausa(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA));
-                pausa.setDuracion(formatodefechas.restaDeFechasEnSegundos(pausa.getFinpausa(), pausa.getIniciopausa()));
-                mongoops.updateFirst(new Query(Criteria.where("idagente").is(mensaje.getIdagente()).
-                        and("finpausa").is(null)),
-                        new Update().set("finpausa", pausa.getFinpausa()).set("duracion", pausa.getDuracion()), Pausa.class);
-                resumendiarioservicio.actualizarEstado(usuarioresumen.getAgente(), usuarioresumen.getPendiente() == 0 ? 1 : 2, usuarioresumen.getPendiente() == 0 ? 1 : 2);
-                System.out.println("El agente " + usuarioresumen.getNombre() + " salio de la pausa");
-
-            } else {//pausar
-                coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).collect(Collectors.toList()).get(0).setEstadoagente(4);
-                pausa = new Pausa();
-                pausa.setIdagente(mensaje.getIdagente());
-                pausa.setNombreagente(coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).collect(Collectors.toList()).get(0).getNombre());
-                pausa.setIniciopausa(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA));
-                mongoops.insert(pausa);
-                resumendiarioservicio.actualizarEstado(usuarioresumen.getAgente(), 4, usuarioresumen.getPendiente() == 0 ? 1 : 2);
-                System.out.println("El agente " + usuarioresumen.getNombre() + " entro en pausa");
+                modificarEstado(usuarioresumen.getAgente(), 1);
+                pausaservicio.despausar(usuarioresumen.getAgente());
+                resumendiarioservicio.actualizarEstado(usuarioresumen.getAgente(), 1, 0);// aqui si se termina una pausa real y se contabiliza
+                log.info("El agente " + usuarioresumen.getNombre() + " salio de la pausa");
+            } else if (usuarioresumen.getPedido_pausa() == 1) { //despausar  
+                modificarPedidoPausa(usuarioresumen.getAgente(), 0);
+                resumendiarioservicio.actualizarEstado(usuarioresumen.getAgente(), 2, 0);// en este caso se tiene que cambiar el pedido de pausa.
+                log.info("El agente " + usuarioresumen.getNombre() + " salio de la pausa");
+            } else {//pausar                
+                if (usuarioresumen.getEstadoagente() == 1) {//si esta en 1 se pausa y se cuenta el tiempo,  si esta en 2 se da el "pedido_pausa"
+                    modificarEstado(usuarioresumen.getAgente(), 4);
+                    if (mensaje.isPausasupervisor()) {
+                        mensaje.setEvento("PAUSA");
+                        websocket.enviarMensajeParaUnUsuario(mensaje, usuarioresumen.getAgente());
+                    }
+                    pausaservicio.pausar(usuarioresumen.getAgente());
+                } else {
+                    modificarPedidoPausa(usuarioresumen.getAgente(), 1);
+                }
+                resumendiarioservicio.actualizarEstado(usuarioresumen.getAgente(), obtenerEstado(usuarioresumen.getAgente()), obtenerPedidoPausa(usuarioresumen.getAgente()));
+                log.info("El agente " + usuarioresumen.getNombre() + " entro en pausa");
             }
-            mongoops.updateFirst(new Query(Criteria.where("agente").is(usuarioresumen.getAgente())), new Update().set("estadoagente", coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).findFirst().get().getEstadoagente()), Resumen.class);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error al pausar", e.getCause());
         }
+    }
+
+    @Override
+    public List<Resumen> obtenerListaResumen() {
+        return coremailservicio.getListaresumen();
+    }
+
+    @Override
+    public int obtenerEstado(int idagente) {
+        return coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == idagente).findFirst().get().getEstadoagente();
+    }
+
+    @Override
+    public void modificarPedidoPausa(int idagente, int pedidopausa) {
+        MongoOperations mongoops = clientemongoservicio.clienteMongo();
+        coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == idagente).findFirst().get().setPedido_pausa(pedidopausa);
+        mongoops.updateFirst(new Query(Criteria.where("agente").is(idagente)), new Update().set("pedido_pausa", pedidopausa), Resumen.class);
+    }
+
+    @Override
+    public int obtenerPedidoPausa(int idagente) {
+        return coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == idagente).findFirst().get().getPedido_pausa();
+    }
+
+    @Override
+    public int obtenerPendientes(int idagente) {
+        return coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == idagente).findFirst().get().getPendiente();
+    }
+
+    @Override
+    public Resumen obtenerResumen(int idagente) {
+        return coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == idagente).findFirst().get();
+    }
+
+    @Override
+    public void RemoverResumen(int idagente) {
+        coremailservicio.getListaresumen().remove(obtenerResumen(idagente));
+    }
+
+    @Override
+    public void modificarPendientes(int idagente, int opcion) {
+        MongoOperations mongoops = clientemongoservicio.clienteMongo();
+        coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == idagente).findFirst().get().setPendiente(opcion);
+        mongoops.updateFirst(new Query(Criteria.where("agente").is(idagente)), new Update().set("pendiente", opcion), Resumen.class);
+    }
+
+    @Override
+    public void modificarEstado(int idagente, int estado) {
+        MongoOperations mongoops = clientemongoservicio.clienteMongo();
+        coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == idagente).findFirst().get().setEstadoagente(estado);
+        mongoops.updateFirst(new Query(Criteria.where("agente").is(idagente)), new Update().set("estadoagente", estado), Resumen.class);
     }
 
 }

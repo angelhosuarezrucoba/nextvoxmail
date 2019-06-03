@@ -6,12 +6,15 @@
 package com.netvox.mail.Api;
 
 import com.netvox.mail.configuraciones.WebSocket;
+import com.netvox.mail.entidades.Resumen;
 import com.netvox.mail.entidadesfront.Mensaje;
 import com.netvox.mail.servicios.ResumenServicio;
-import java.text.SimpleDateFormat;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,7 +26,6 @@ import org.springframework.web.bind.annotation.RestController;
 @CrossOrigin(origins = "*", methods = {RequestMethod.GET, RequestMethod.POST})
 public class ApiResumen {
 
-    SimpleDateFormat formato = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     @Autowired
     @Qualifier("websocket")
@@ -35,10 +37,18 @@ public class ApiResumen {
 
     @PostMapping("/pausar")
     public void pausar(@RequestBody Mensaje mensaje) {
-        resumenservicio.pausar(mensaje);
-        if (mensaje.isPausasupervisor()) {//esto es para comprobar si el supervisor me esta pidiendo pausar al agente, solo en disponible
-            mensaje.setEvento("PAUSA");
-            websocket.enviarMensajeParaUnUsuario(mensaje, mensaje.getIdagente());
-        }
+        resumenservicio.pausar(mensaje);  
     }
+
+    @PostMapping("/resumen")//este metodo solo sirve para ver la memoria actual;
+    public List<Resumen> verResumen() {
+        return resumenservicio.obtenerListaResumen();
+    }
+    
+    
+    @GetMapping("resumen/modificarestado/{idagente}/{estado}")//este metodo solo sirve para ver la memoria actual;
+    public void verResumen(@PathVariable("idagente") int idagente,@PathVariable("estado") int estado) {
+        resumenservicio.modificarEstado(idagente, estado);
+    }
+
 }

@@ -24,6 +24,8 @@ import com.netvox.mail.entidadesfront.Mensaje;
 import com.netvox.mail.entidadesfront.Tipificacion;
 import com.netvox.mail.servicios.ClienteMongoServicio;
 import com.netvox.mail.servicios.MailServicio;
+import com.netvox.mail.servicios.PausaServicio;
+import com.netvox.mail.servicios.ResumenServicio;
 import com.netvox.mail.utilidades.FormatoDeFechas;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -57,6 +59,8 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.xml.bind.DatatypeConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Sort;
@@ -101,6 +105,16 @@ public class MailServicioImpl implements MailServicio {
     @Autowired
     @Qualifier("resumendiarioservicio")
     ResumenDiarioServicioImpl resumendiarioservicio;
+
+    @Autowired
+    @Qualifier("resumenservicio")
+    ResumenServicio resumenservicio;
+
+    @Autowired
+    @Qualifier("pausaservicio")
+    PausaServicio pausaservicio;
+
+    Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Override
     public List<MailInbox> listarCorreos(Mensaje mensaje) {
@@ -147,8 +161,7 @@ public class MailServicioImpl implements MailServicio {
     }
 
     @Override
-    public List<MailInbox> listarCorreosEnCola(Mensaje mensaje
-    ) {
+    public List<MailInbox> listarCorreosEnCola(Mensaje mensaje) {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
         List<MailSalida> listacorreosencola = mongoops.find(
                 new Query(Criteria.where("id_cola").in(mensaje.getColas()).and("estado").is(0).and("usuario").is(0)).with(new Sort(new Order(Direction.DESC, "idcorreo"))),
@@ -176,24 +189,19 @@ public class MailServicioImpl implements MailServicio {
 
     @Override
     public void autoAsignarse(Mensaje mensaje) {//deberia enviar un 500 si es que no se puede, y garantizar el query con estado 1
-        Connection conexion;
-        CallableStatement procedimientoalmacenado = null;
         MongoOperations mongoops;
         Resumen usuarioresumen = getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).findFirst().get();
         try {
-            conexion = clientemysqlservicio.obtenerConexion();
             mongoops = clientemongoservicio.clienteMongo();
-            mongoops.updateFirst(new Query(Criteria.where("agente").is(usuarioresumen.getAgente())), new Update().//aumento los pendientes en la coleccion resumen
-                    set("estadoagente", 2).set("pendiente", usuarioresumen.getPendiente() + 1), Resumen.class);
-            getListaresumen().stream().filter((agente) -> agente.getAgente() == usuarioresumen.getAgente()).//aqui hago lo mismo pero en memoria
-                    forEach((agente) -> {
-                        agente.setEstadoagente(2);
-                        agente.setPendiente(usuarioresumen.getPendiente() + 1);
-                    });
+            if (usuarioresumen.getEstadoagente() == 1 || usuarioresumen.getEstadoagente() == 4) {
+                resumenservicio.modificarEstado(usuarioresumen.getAgente(), 2);
+                if (usuarioresumen.getEstadoagente() == 4) {
+                    pausaservicio.despausar(usuarioresumen.getAgente());
+                }
+                resumendiarioservicio.actualizarEstado(usuarioresumen.getAgente(), 2, 0);
+            }
+            resumenservicio.modificarPendientes(usuarioresumen.getAgente(), usuarioresumen.getPendiente() + 1);
             resumendiarioservicio.actualizarPendientes(1, usuarioresumen.getAgente());
-            resumendiarioservicio.actualizarEstado(usuarioresumen.getAgente(), 2, 2);
-            mongoops.updateFirst(new Query(Criteria.where("agente").is(usuarioresumen.getAgente())), new Update().set("estado", 2), Resumen.class);
-
             Mail mail = mongoops.findOne(new Query(Criteria.where("idcorreo").is(mensaje.getIdcorreoasignado())), Mail.class);  //obtengo esto para tener la fecha de ingreso
             mongoops.updateFirst(new Query(Criteria.where("idcorreo").is(mail.getIdcorreo())), new Update()
                     .set("estado", 1)
@@ -208,22 +216,13 @@ public class MailServicioImpl implements MailServicio {
                             websocket.enviarMensajeParaUnUsuario(mensaje, resumen.getAgente());
                         }
                     });
-            procedimientoalmacenado = conexion.prepareCall("call sp_actualiza_resumen_servicio_en_cola(?,?,?)");
-            procedimientoalmacenado.setInt(1, mail.getCampana());
-            procedimientoalmacenado.setInt(2, 2);
-            procedimientoalmacenado.setBoolean(3, false);
-            procedimientoalmacenado.execute();
-            procedimientoalmacenado.close();
-            conexion.close();
-        } catch (SQLException | ParseException ex) {
+        } catch (ParseException ex) {
             ex.printStackTrace();
         }
     }
 
     @Override
     public MailInbox crearCorreo(MailSalida mailsalida) {
-        System.out.println("Entre a crearCorreo");
-        System.out.println(mailsalida.toString());
         MailSalida nuevomail = null;
         MailInbox respuestamail;
         File directorio;
@@ -515,38 +514,29 @@ public class MailServicioImpl implements MailServicio {
 
     @Override
     public void tipificarCorreo(MailSalida mailsalida) {
-
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
         try {
             Query querymailaresponder = new Query(Criteria.where("idcorreo").is(mailsalida.getId()));
             querymailaresponder.fields().include("idcorreo").include("tipificacion").include("usuario").include("campana").include("id_cola");
             MailSalida mailaresponder = mongoops.findOne(querymailaresponder, MailSalida.class);
-
+            Resumen usuarioresumen = resumenservicio.obtenerResumen(mailaresponder.getId_agente());
             if (mailaresponder.getTipificacion() == 0) {//esto es para evitar que reduzca los pendientes de correos ya tipificados
-                coremailservicio.getListaresumen().stream().filter(
-                        (agente) -> agente.getCampana() == mailaresponder.getId_campana()
-                        && agente.getAgente() == mailaresponder.getId_agente()).forEach((agente) -> {
-                            agente.setPendiente(agente.getPendiente() - 1);
-                        });
-                resumendiarioservicio.actualizarAtendidosPorCola(mailaresponder.getId_agente(), mailaresponder.getId_campana(), mailaresponder.getCola());
-                Resumen resumen = coremailservicio.getListaresumen().stream().filter(
-                        (agente) -> agente.getCampana() == mailaresponder.getId_campana()
-                        && agente.getAgente() == mailaresponder.getId_agente()).findFirst().get();
-
-                Update update = new Update().inc("pendiente", -1);
-                if (resumen.getPendiente() == 0) {
-                    update.set("estado", 1);
-                    resumendiarioservicio.actualizarEstado(resumen.getAgente(), 1, 1);
-                    coremailservicio.getListaresumen().stream().filter(
-                            (agente) -> agente.getCampana() == mailaresponder.getId_campana()
-                            && agente.getAgente() == mailaresponder.getId_agente()).forEach((agente) -> {
-                                agente.setEstadoagente(1);
-                            });
-                }
-                mongoops.updateFirst(new Query(Criteria.where("agente").is(mailaresponder.getId_agente())), update, Resumen.class);
+                resumenservicio.modificarPendientes(mailaresponder.getId_agente(), usuarioresumen.getPendiente() - 1);
                 resumendiarioservicio.actualizarPendientes(-1, mailaresponder.getId_agente());
-            }
+                resumendiarioservicio.actualizarAtendidosPorCola(mailaresponder.getId_agente(), mailaresponder.getId_campana(), mailaresponder.getCola());
+                if (usuarioresumen.getPendiente() == 0) {
+                    if (usuarioresumen.getPedido_pausa() == 1) {//el estado es 2 si o si
+                        resumenservicio.modificarEstado(usuarioresumen.getAgente(), 4);
+                        resumenservicio.modificarPedidoPausa(usuarioresumen.getAgente(), 0);
+                    } else {
+                        if (usuarioresumen.getEstadoagente() == 2) {
+                            resumenservicio.modificarEstado(usuarioresumen.getAgente(), 1);
 
+                        }
+                    }
+                    resumendiarioservicio.actualizarEstado(usuarioresumen.getAgente(), resumenservicio.obtenerEstado(usuarioresumen.getAgente()), 0);
+                }
+            }
             MailSalida mail = mongoops.findOne(new Query(Criteria.where("idcorreo").is(mailsalida.getId())), MailSalida.class);
             mongoops.updateFirst(new Query(Criteria.where("idcorreo").is(mailsalida.getId())),
                     new Update().set("descripcion_tipificacion", mailsalida.getDescripcion_tipificacion()).set("tipificacion", mailsalida.getTipificacion())
@@ -583,35 +573,26 @@ public class MailServicioImpl implements MailServicio {
             Query querymailaresponder = new Query(Criteria.where("idcorreo").is(mailsalida.getId()));
             querymailaresponder.fields().include("idcorreo").include("tipificacion").include("usuario").include("campana").include("id_cola");
             MailSalida mailaresponder = mongoops.findOne(querymailaresponder, MailSalida.class);
-
+            Resumen usuarioresumen = resumenservicio.obtenerResumen(mailaresponder.getId_agente());
             if (mailaresponder.getTipificacion() == 0) {//esto es para evitar que reduzca los pendientes de correos ya tipificados
-                resumendiarioservicio.actualizarAtendidosPorCola(mailaresponder.getId_agente(), mailaresponder.getId_campana(), mailaresponder.getCola());
-                coremailservicio.getListaresumen().stream().filter(
-                        (agente) -> agente.getCampana() == mailaresponder.getId_campana()
-                        && agente.getAgente() == mailaresponder.getId_agente()).forEach((agente) -> {
-                            agente.setPendiente(agente.getPendiente() - 1);
-                        });
-
-                Resumen resumen = coremailservicio.getListaresumen().stream().filter(
-                        (agente) -> agente.getCampana() == mailaresponder.getId_campana()
-                        && agente.getAgente() == mailaresponder.getId_agente()).findFirst().get();
-
-                Update update = new Update().inc("pendiente", -1);
-                if (resumen.getPendiente() == 0) {
-                    update.set("estado", 1);
-                    resumendiarioservicio.actualizarEstado(resumen.getAgente(), 1, 1);
-                    coremailservicio.getListaresumen().stream().filter(
-                            (agente) -> agente.getCampana() == mailaresponder.getId_campana()
-                            && agente.getAgente() == mailaresponder.getId_agente()).forEach((agente) -> {
-                                agente.setEstadoagente(1);
-                            });
-                }
-                mongoops.updateFirst(new Query(Criteria.where("agente").is(mailaresponder.getId_agente())), new Update().inc("pendiente", -1), Resumen.class);
+                resumenservicio.modificarPendientes(mailaresponder.getId_agente(), usuarioresumen.getPendiente() - 1);
                 resumendiarioservicio.actualizarPendientes(-1, mailaresponder.getId_agente());
+                resumendiarioservicio.actualizarAtendidosPorCola(mailaresponder.getId_agente(), mailaresponder.getId_campana(), mailaresponder.getCola());
+                if (usuarioresumen.getPendiente() == 0) {
+                    if (usuarioresumen.getPedido_pausa() == 1) {//el estado es 2 si o si
+                        resumenservicio.modificarEstado(usuarioresumen.getAgente(), 4);
+                        resumenservicio.modificarPedidoPausa(usuarioresumen.getAgente(), 0);
+
+                    } else {
+                        if (usuarioresumen.getEstadoagente() == 2) {
+                            resumenservicio.modificarEstado(usuarioresumen.getAgente(), 1);
+
+                        }
+                    }
+                    resumendiarioservicio.actualizarEstado(usuarioresumen.getAgente(), resumenservicio.obtenerEstado(usuarioresumen.getAgente()), 0);
+                }
             }
-
             mongoops.updateFirst(new Query(Criteria.where("idcorreo").is(mailsalida.getId())), new Update().set("descripcion_tipificacion", mailsalida.getDescripcion_tipificacion()).set("tipificacion", mailsalida.getTipificacion()), MailSalida.class);
-
             mailsalida.setId(coremailservicio.generadorId());
             mailsalida.setFecha_ingreso(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA));
             mailsalida.setFechainiciogestion(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA));
@@ -636,9 +617,8 @@ public class MailServicioImpl implements MailServicio {
                         MailSalida.class);
             }
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("entre al error de generarcorreo");
+        } catch (ParseException e) {
+            log.error("error al generar el correo", e.getCause());
         }
         return mailsalida;
     }
@@ -1189,8 +1169,4 @@ public class MailServicioImpl implements MailServicio {
         return lista;
     }
 
-    @Override
-    public void pausaSupervisor(Contenido contenido) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
 }

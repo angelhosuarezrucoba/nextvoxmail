@@ -361,26 +361,15 @@ public class CoreMailServicioImpl {
 
     public void asignarMailAgente(Resumen usuarioresumen, Mail mail) {
         /* 1 disponible 2 atendiendo 4 pausa 5 timbrando*/
-        Connection conexion;
-        CallableStatement procedimientoalmacenado = null;
         MongoOperations mongoops;
         try {
-            conexion = clientemysqlservicio.obtenerConexion();
             mongoops = clientemongoservicio.clienteMongo();
-            mongoops.updateFirst(new Query(
-                    Criteria.where("campana").is(usuarioresumen.getCampana()).and("agente").is(usuarioresumen.getAgente())),
-                    new Update().set("estadoagente", 2).set("pendiente", usuarioresumen.getPendiente() + 1),
-                    Resumen.class);
-
-            getListaresumen().stream().filter(
-                    (agente) -> agente.getCampana() == usuarioresumen.getCampana()
-                    && agente.getAgente() == usuarioresumen.getAgente()).forEach((agente) -> {
-                        agente.setEstadoagente(2);
-                        agente.setPendiente(usuarioresumen.getPendiente() + 1);
-                    });
+            resumenservicio.modificarPendientes(usuarioresumen.getAgente(), usuarioresumen.getPendiente() + 1);
             resumendiarioservicio.actualizarPendientes(1, usuarioresumen.getAgente());
-            resumendiarioservicio.actualizarEstado(usuarioresumen.getAgente(), 2, 2);
-            mongoops.updateFirst(new Query(Criteria.where("agente").is(usuarioresumen.getAgente())), new Update().set("estado", 2), Resumen.class);
+            if (resumenservicio.obtenerEstado(usuarioresumen.getEstadoagente()) == 1) {
+                resumenservicio.modificarEstado(usuarioresumen.getAgente(), 2);
+                resumendiarioservicio.actualizarEstado(usuarioresumen.getAgente(), 2, 0);
+            }
             mongoops.updateFirst(new Query(
                     Criteria.where("idcorreo").is(mail.getIdcorreo())),
                     new Update()
@@ -401,29 +390,15 @@ public class CoreMailServicioImpl {
             mailinbox.setAdjuntos(mail.getListadeadjuntos());
             mailinbox.setIdhilo(mail.getIdhilo());
             mailinbox.setId_cola(mail.getId_cola());
-            mailinbox.setCc("");//esto es para notificar 
-            //este envia a todos.
+            mailinbox.setCc("");
+            mensaje.setEvento("CORREOASIGNADO");
             getListaresumen().stream().filter((resumen) -> resumen.getListacolas().contains(mail.getId_cola())) // aqui le envio al resto
                     .forEach((resumen) -> {
-                        mensaje.setEvento("CORREOASIGNADO");
                         mensaje.setIdcorreoasignado(mail.getIdcorreo());
                         websocket.enviarMensajeParaUnUsuario(mensaje, resumen.getAgente());
                     });
-
-            mensaje.setEvento("CORREOASIGNADO");
             mensaje.setNew_mail(mailinbox);
             websocket.enviarMensajeParaUnUsuario(mensaje, usuarioresumen.getAgente());//aqui envio el mensaje a un usuario asignado
-
-//esto debe borrarse no me sirve.
-            procedimientoalmacenado = conexion.prepareCall("call sp_actualiza_resumen_servicio_en_cola(?,?,?)");
-            procedimientoalmacenado.setInt(1, mail.getCampana());
-            procedimientoalmacenado.setInt(2, SERVICIO_MAIL);
-            procedimientoalmacenado.setBoolean(3, false);
-            procedimientoalmacenado.execute();
-            procedimientoalmacenado.close();
-            conexion.close();
-        } catch (SQLException ex) {
-            ex.printStackTrace();
         } catch (ParseException ex) {
             ex.printStackTrace();
         }
@@ -463,7 +438,7 @@ public class CoreMailServicioImpl {
                 return resumen.getAgente() == mensaje.getIdagente();
             })) {
                 int mailspendienteporcola = obtenerCantidadPendientesPorCola(mensaje.getIdagente(), mensaje.getCampana(), mensaje.getColas());
-                Resumen resumen = new Resumen(mensaje.getCampana(), mensaje.getIdagente(), mensaje.getAgente(), mailspendienteporcola, mensaje.getColas(), pausa ? 4 : (mailspendienteporcola == 0) ? 1 : 2);
+                Resumen resumen = new Resumen(mensaje.getCampana(), mensaje.getIdagente(), mensaje.getAgente(), mailspendienteporcola, mensaje.getColas(), pausa ? 4 : (mailspendienteporcola == 0) ? 1 : 2, 0);
                 getListaresumen().add(resumen);
                 if (mensaje.getEstado_mail() == 4) { // esto es la validacion para la pausa     
                     resttemplate.postForObject("http://localhost:8084/mail/apis/pausar", mensaje, Mensaje.class);

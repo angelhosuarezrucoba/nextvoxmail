@@ -1,8 +1,10 @@
 package com.netvox.mail.ServiciosImpl;
 
 import com.netvox.mail.Api.entidadessupervisor.Pausa;
+import com.netvox.mail.configuraciones.WebSocket;
 import com.netvox.mail.entidades.Resumen;
 import com.netvox.mail.entidadesfront.MailSalida;
+import com.netvox.mail.entidadesfront.Mensaje;
 import com.netvox.mail.utilidades.FormatoDeFechas;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -29,6 +31,10 @@ public class ResumenDiarioServicioImpl {
     @Autowired
     @Qualifier("clientemongoservicio")
     ClienteMongoServicioImpl clientemongoservicio;
+
+    @Autowired
+    @Qualifier("websocket")
+    WebSocket websocket;
 
     public void insertarConexion(Resumen resumen) {
         try {
@@ -148,33 +154,40 @@ public class ResumenDiarioServicioImpl {
         }
     }
 
-    public void actualizarEstado(int idagente, int estadonuevo, int estadoanterior) {
+    public void actualizarEstado(int idagente, int estadonuevo, int pedido_pausa) {
         Connection conexion;
         try {
             conexion = clientemysqlservicio.obtenerConexion();
             int duracion;
-            String sql;
-
+            String sql = "";
+            duracion = tiempoEnPausa(idagente);
             switch (estadonuevo) {
-                case 4:
-                    sql = ("update resumen_diario_correo set"
-                            + " hora_inicio_estado='" + formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)
-                            + "', hora_inicio_pausa='" + formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)
-                         //   +"',estado="+4
-                            + ", pedido_pausa=" + (estadoanterior == 2 ? 1 : 0)
-                            + " where agente=" + idagente);
-                    break;
-                default:
-                    duracion = tiempoEnPausa(idagente);
+                case 1:
 
                     sql = ("update resumen_diario_correo set estado=" + estadonuevo
                             + ", hora_inicio_estado='" + formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)
-                            + "', pedido_pausa=" + 0
+                            + "', pedido_pausa=" + pedido_pausa
                             + ", tiempo_acumulado_pausa=" + duracion
                             + " where agente=" + idagente);
                     break;
-            }
+                case 2:
+                    sql = ("update resumen_diario_correo set estado=" + estadonuevo
+                            + ", hora_inicio_estado='" + formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)
+                            + "', tiempo_acumulado_pausa=" + duracion
+                            + ", pedido_pausa=" + pedido_pausa
+                            + " where agente=" + idagente);
+                    break;
+                case 4:
+                    sql = ("update resumen_diario_correo set estado=" + estadonuevo
+                            + ",hora_inicio_estado='" + formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)
+                            + "', hora_inicio_pausa='" + formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)
+                            + "', pedido_pausa=" + pedido_pausa
+                            + " where agente=" + idagente);
+                    break;
+                default:
+                    break;
 
+            }
             conexion.createStatement().execute(sql);
             conexion.close();
         } catch (Exception e) {

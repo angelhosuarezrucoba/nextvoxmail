@@ -21,21 +21,25 @@ public class Mensaje {
     private int tiempo_pausa;
     private int pedido_pausa;
     private boolean pausasupervisor; //esto sirve para que  el supervisor mande la pausa y el cliente se entere por websocket
-    
+
     public Mensaje() {
     }
 
-    
     public Mensaje(int idagente) { //este constructor solo lo uso para los websockets de conexion y desconexion
         this.idagente = idagente;
-    }   
-        
+    }
+
     public String getEvento() {
         return evento;
     }
 
     public void setEvento(String evento) {
         this.evento = evento;
+    }
+
+    @Override
+    public String toString() {
+        return "Mensaje{" + "evento=" + evento + ", idagente=" + idagente + ", campana=" + campana + ", colas=" + colas + ", estado_mail=" + estado_mail + ", agente=" + agente + ", acumulado_mail=" + acumulado_mail + ", cantidad_cola_mail=" + cantidad_cola_mail + ", new_mail=" + new_mail + ", listacorreos=" + listacorreos + ", peso_maximo_adjunto=" + peso_maximo_adjunto + ", idcorreoasignado=" + idcorreoasignado + ", firma=" + firma + ", identificador=" + identificador + ", tiempo_pausa=" + tiempo_pausa + ", pedido_pausa=" + pedido_pausa + ", pausasupervisor=" + pausasupervisor + '}';
     }
 
     public int getIdagente() {
@@ -165,8 +169,5 @@ public class Mensaje {
     public void setPausasupervisor(boolean pausasupervisor) {
         this.pausasupervisor = pausasupervisor;
     }
-
- 
-  
 
 }

@@ -18,6 +18,7 @@ public class IndexControlador {
     @GetMapping("/")
     public ModelAndView index() {
         ModelAndView modelo = new ModelAndView("index");
+        
         return modelo;
     }
 

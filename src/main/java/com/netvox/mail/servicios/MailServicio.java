@@ -64,6 +64,5 @@ public interface MailServicio {
 
     public List<AtendidosPorCola> atendidosPorCola(Contenido contenido);
 
-    public void pausaSupervisor(Contenido contenido);
 
 }

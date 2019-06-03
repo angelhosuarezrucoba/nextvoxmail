@@ -20,7 +20,6 @@ public class HiloAsignacionServicio implements Runnable {
     @Qualifier("coremailservicio")
     CoreMailServicioImpl coremailservicio;
 
-
     private boolean activo = true;
 
     @Override
@@ -57,7 +56,7 @@ public class HiloAsignacionServicio implements Runnable {
     public Resumen obtenerUsuarioDelResumen(List<Resumen> listaresumen, int maximopendiente, int cola) {
         Resumen resumenelegido = null;
         int menor = 1000000;
-        List<Resumen> listaporcola = listaresumen.stream().filter((resumen) -> resumen.getEstadoagente() != 4 && resumen.getListacolas().contains(cola)).collect(Collectors.toList());
+        List<Resumen> listaporcola = listaresumen.stream().filter((resumen) -> resumen.getEstadoagente() != 4 && resumen.getPedido_pausa() != 1 && resumen.getListacolas().contains(cola)).collect(Collectors.toList());
         if (listaporcola.size() > 0) {
             System.out.println("----------------------------------------------------------------------------------------");
             System.out.println("******ELIGIENDO A USUARIOS*********");
