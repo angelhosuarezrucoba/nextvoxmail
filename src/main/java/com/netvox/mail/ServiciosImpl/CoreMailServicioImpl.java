@@ -18,6 +18,7 @@ import com.netvox.mail.entidadesfront.MailFront;
 import com.netvox.mail.entidadesfront.MailInbox;
 import com.netvox.mail.entidadesfront.Mensaje;
 import com.netvox.mail.servicios.ClienteMongoServicio;
+import com.netvox.mail.servicios.PausaServicio;
 import com.netvox.mail.servicios.ResumenServicio;
 import com.netvox.mail.utilidades.FormatoDeFechas;
 import java.sql.CallableStatement;
@@ -47,19 +48,19 @@ import org.springframework.web.client.RestTemplate;
 
 @Service("coremailservicio")
 public class CoreMailServicioImpl {
-
+    
     @Autowired
     @Qualifier("clientemysqlservicio")
     ClienteMysqlServicioImpl clientemysqlservicio;
-
+    
     @Autowired
     @Qualifier("clientemongoservicio")
     ClienteMongoServicio clientemongoservicio;
-
+    
     @Autowired
     @Qualifier("hiloentradaservicio")
     HiloEntradaServicio hiloentradaservicio;
-
+    
     @Autowired
     @Qualifier("hiloasignacionservicio")
     HiloAsignacionServicio hiloasignacionservicio;
@@ -68,31 +69,35 @@ public class CoreMailServicioImpl {
     @Autowired
     @Qualifier("executor")
     ThreadPoolExecutor taskExecutor;
-
+    
     @Autowired
     @Qualifier("utilidades")
     Utilidades utilidades;
-
+    
     @Autowired
     @Qualifier("websocket")
     WebSocket websocket;
-
+    
     @Autowired
     @Qualifier("resumenservicio")
     ResumenServicio resumenservicio;
-
+    
     @Autowired
     @Qualifier("logconexionesservicio")
     LogConexionesServicio logconexionesservicio;
-
+    
     @Autowired
     @Qualifier("formatodefechas")
     FormatoDeFechas formatodefechas;
-
+    
     @Autowired
     @Qualifier("resumendiarioservicio")
     ResumenDiarioServicioImpl resumendiarioservicio;
-
+    
+    @Autowired
+    @Qualifier("pausaservicio")
+    PausaServicio pausaservicio;
+    
     private static Configuraciones configuraciones;
     private static List<Resumen> listaresumen = new ArrayList<>();
     private final int SERVICIO_MAIL = 2;
@@ -100,10 +105,9 @@ public class CoreMailServicioImpl {
     private static String RUTA_OUT;
     private static String path_entrada;
     private static String path_salida;
-    RestTemplate resttemplate = new RestTemplate();
-
+    
     Logger log = LoggerFactory.getLogger(this.getClass());
-
+    
     public void cargarRutas() {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
         Rutas rutas = mongoops.find(new Query(), Rutas.class).get(0); //este toma el unico resultado que hay en la base
@@ -112,13 +116,13 @@ public class CoreMailServicioImpl {
         path_entrada = rutas.getPath_entrada();
         path_salida = rutas.getPath_salida();
     }
-
+    
     public List<CuentaDeCorreo> obtenerCuentasDeCorreo() {
         Connection conexion = clientemysqlservicio.obtenerConexion();
         ResultSet resultado = null;
         List<CuentaDeCorreo> lista = new ArrayList<>();
         try {
-
+            
             String sql = "select "
                     + "cola.idCola as id_cola, "
                     + "email_configuracion.usuario as usuario, "
@@ -133,7 +137,7 @@ public class CoreMailServicioImpl {
                     + "from email_configuracion "
                     + "inner join cola on cola.idCola = email_configuracion.queue "
                     + "where cola.service_mail = 1 and cola.campana <> 0";
-
+            
             resultado = conexion.createStatement().executeQuery(sql);
             while (resultado.next()) {
                 lista.add(new CuentaDeCorreo(
@@ -156,7 +160,7 @@ public class CoreMailServicioImpl {
         }
         return lista;
     }
-
+    
     public Mail insertarNuevoMail(int idconfiguracion, int idcola, String nombre_cola, int id_campana, String asunto, String remitente, String destino) {//  mongo, tipomail es entrada o salida
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
         Mail nuevomail = null;
@@ -173,7 +177,7 @@ public class CoreMailServicioImpl {
     public MailConfiguracion ObtenerMailConfiguracion(int idconfiguracion) {
         MailConfiguracion mailconfiguracion = new MailConfiguracion();
         Connection conexion = null;
-
+        
         try {
             conexion = clientemysqlservicio.obtenerConexion();
             String sql = "SELECT \n"
@@ -221,10 +225,10 @@ public class CoreMailServicioImpl {
         } catch (Exception ex) {
             log.error("error en el metodo ObtenerMailConfiguracion", ex.getCause());
         }
-
+        
         return mailconfiguracion;
     }
-
+    
     public Mail ActualizarMail(Mail mail) {
         Connection conexion = null;
         ResultSet resultado = null;
@@ -251,7 +255,7 @@ public class CoreMailServicioImpl {
                     .set("hilocerrado", false)
                     .set("idhilo", mail.getIdcorreo())
                     .set("tiempo_atencion", 0);
-
+            
             nuevomail = mongoops.findAndModify(new Query(Criteria.where("idcorreo").is(mail.getIdcorreo())), update, opciones, Mail.class);
 //todo esto sigue sin tener sentido para el uso del mail
             procedimientoalmacenado = conexion.prepareCall("call sp_actualiza_resumen_servicio_en_cola(?,?,?)");
@@ -259,14 +263,14 @@ public class CoreMailServicioImpl {
             procedimientoalmacenado.setInt(2, SERVICIO_MAIL);
             procedimientoalmacenado.setBoolean(3, true);
             procedimientoalmacenado.execute();
-
+            
             String sql = "insert into servicios_cola_online set id = ?, campana = ?, servicio = 2, fecha_cola = now()";
             preparedstatement = conexion.prepareStatement(sql);
             preparedstatement.setInt(1, mail.getIdcorreo());
             preparedstatement.setInt(2, mail.getCampana());
             preparedstatement.execute();
             preparedstatement.close();
-
+            
             procedimientoalmacenado.close();
             conexion.close();
         } catch (SQLException ex) {
@@ -312,7 +316,7 @@ public class CoreMailServicioImpl {
     }
 
 //hay que moverlo a memoria en algun momento y solo grabar en bd cuando sea necesario y no volver a consultarle a la bd
-    public int obtenerCantidadNoAsignadosPorColas(List<Integer> listacolas) {
+    public int obtenerCantidadSinAsignarPorColas(List<Integer> listacolas) {
         int cantidad = 0;
         MongoOperations mongoops;
         try {
@@ -341,7 +345,7 @@ public class CoreMailServicioImpl {
         }
         return listado;
     }
-
+    
     public void asignarMailAgente(Resumen usuarioresumen, Mail mail) {
         /* 1 disponible 2 atendiendo 4 pausa 5 timbrando*/
         MongoOperations mongoops;
@@ -383,20 +387,16 @@ public class CoreMailServicioImpl {
             mensaje.setNew_mail(mailinbox);
             websocket.enviarMensajeParaUnUsuario(mensaje, usuarioresumen.getAgente());//aqui envio el mensaje a un usuario asignado
         } catch (ParseException ex) {
-
+            
             log.error("error en el metodo asignarMailAgente", ex.getCause());
         }
     }
 
-    public Mensaje obtenerRespuestaDeLogin(Mensaje mensaje) {
-        Connection conexion = clientemysqlservicio.obtenerConexion();
-        Connection conexionfirma = clientemysqlservicio.obtenerConexion();
-
+    //este metodo trae los correos que se usan en todas las campañas
+    public List<MailFront> obtenerCorreos(Mensaje mensaje) {
         List<MailFront> correos = new ArrayList<>();
-        boolean pausa = false;
         try {
-            MongoOperations mongoops;
-            int mailspendiente = 0;
+            Connection conexion = clientemysqlservicio.obtenerConexion();
             Statement statement = conexion.createStatement();
             ResultSet resultset = statement.executeQuery("select queue,usuario from email_configuracion");
             while (resultset.next()) {
@@ -406,52 +406,63 @@ public class CoreMailServicioImpl {
             statement.close();
             resultset.close();
             conexion.close();
-
+        } catch (Exception e) {
+            log.error("error en el metodo obtenerCorreos", e.getCause());
+        }
+        return correos;
+    }
+    
+    public String obtenerFirma(int idagente) {
+        String firma = "";
+        try {
+            Connection conexionfirma = clientemysqlservicio.obtenerConexion();
             PreparedStatement preparedstatement = conexionfirma.prepareStatement("select firma_mail from usuario where idUsuario=?");
-            preparedstatement.setInt(1, mensaje.getIdagente());
+            preparedstatement.setInt(1, idagente);
             ResultSet resultsetfirma = preparedstatement.executeQuery();
             while (resultsetfirma.next()) {
-                mensaje.setFirma(resultsetfirma.getString("firma_mail"));
+                firma = resultsetfirma.getString("firma_mail");
             }
             resultsetfirma.close();
+            preparedstatement.close();
             conexionfirma.close();
-
-            mongoops = clientemongoservicio.clienteMongo();
-
-            if (!getListaresumen().stream().anyMatch((Resumen resumen) -> {
-                return resumen.getAgente() == mensaje.getIdagente();
-            })) {
+        } catch (Exception e) {
+            log.error("error en el metodo obtenerFirma", e.getCause());
+        }
+        return firma;
+    }
+    
+    public Mensaje obtenerRespuestaDeLogin(Mensaje mensaje) {
+        boolean pausa = false;
+        try {
+            MongoOperations mongoops = clientemongoservicio.clienteMongo();
+            mensaje.setFirma(obtenerFirma(mensaje.getIdagente()));
+            if (!resumenservicio.hayResumen(mensaje.getIdagente())) {
                 int mailspendienteporcola = obtenerCantidadPendientesPorCola(mensaje.getIdagente(), mensaje.getCampana(), mensaje.getColas());
                 Resumen resumen = new Resumen(mensaje.getCampana(), mensaje.getIdagente(), mensaje.getAgente(), mailspendienteporcola, mensaje.getColas(), pausa ? 4 : (mailspendienteporcola == 0) ? 1 : 2, 0);
                 getListaresumen().add(resumen);
                 if (mensaje.getEstado_mail() == 4) { // esto es la validacion para la pausa     
-                    resttemplate.postForObject("http://localhost:8084/mail/apis/pausar", mensaje, Mensaje.class);
+                    pausaservicio.pausar(mensaje.getIdagente());
                 }
                 mongoops.insert(resumen);
                 logconexionesservicio.grabarConexion(resumen);
             }
-
             if (mensaje.getEstado_mail() == 4) { // esto es la validacion para la pausa     
                 pausa = true;
             }
-
-            mailspendiente = getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).findFirst().get().getPendiente(); // es la misma variable que mailspendienteporcola pero aqui lo uso para memoria porque si no siempre consultaria a la bd , de este modo solo se consulta la bd una vez con cada login
-            mensaje.setAcumulado_mail(mailspendiente);// se le puso por nombre acumulado mail solo para coordinar con el front, esto es la suma de mails pendiente.
-            mensaje.setEstado_mail(pausa ? 4 : (mailspendiente == 0) ? 1 : 2);//disponible si tiene 0 pendientes,2 si tiene pendientes,es decir atendiendo
-            mensaje.setPedido_pausa(pausa ? ((mailspendiente == 0) ? 0 : 1) : 0);
-            mensaje.setCantidad_cola_mail(obtenerCantidadNoAsignadosPorColas(mensaje.getColas())); // todos los mails que estan sin asignar dependiendo de la cola
+            mensaje.setAcumulado_mail(resumenservicio.obtenerPendientes(mensaje.getIdagente()));// se le puso por nombre acumulado mail solo para coordinar con el front, esto es la suma de mails pendiente.
+            mensaje.setEstado_mail(pausa ? 4 : (resumenservicio.obtenerPendientes(mensaje.getIdagente()) == 0) ? 1 : 2);//disponible si tiene 0 pendientes,2 si tiene pendientes,es decir atendiendo
+            mensaje.setPedido_pausa(pausa ? ((resumenservicio.obtenerPendientes(mensaje.getIdagente()) == 0) ? 0 : 1) : 0);
+            mensaje.setCantidad_cola_mail(obtenerCantidadSinAsignarPorColas(mensaje.getColas())); // todos los mails que estan sin asignar dependiendo de la cola
             mensaje.setEvento("LOGINRESPONSE");
-            mensaje.setListacorreos(correos);
+            mensaje.setListacorreos(obtenerCorreos(mensaje));
             mensaje.setTiempo_pausa(resumendiarioservicio.tiempoEnPausa(mensaje.getIdagente()));
             mensaje.setPeso_maximo_adjunto(getConfiguraciones().getPeso_maximo_adjunto());
-
         } catch (Exception e) {
             log.error("error en el metodo obtenerRespuestaDeLogin", e.getCause());
         }
-
         return mensaje;
     }
-
+    
     public void cargarConfiguraciones() {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
         try {
@@ -460,27 +471,27 @@ public class CoreMailServicioImpl {
             log.error("error en el metodo cargarConfiguraciones", e.getCause());
         }
     }
-
+    
     public int generadorId() {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
         FindAndModifyOptions opciones = new FindAndModifyOptions();
         opciones.returnNew(true);
         return mongoops.findAndModify(new Query(Criteria.where("id").is(1)), new Update().inc("idcorreo", 1), opciones, Configuraciones.class).getIdcorreo();
     }
-
+    
     public void borrarListaResumen(int idagente) {
         getListaresumen().removeIf((resumen) -> resumen.getAgente() == idagente);
     }
-
+    
     public void ejecutarHiloEntrada() {
         resumenservicio.borrarResumenTotal();
         taskExecutor.submit(hiloentradaservicio);
     }
-
+    
     public void ejecutarHiloAsignacion() {
         taskExecutor.submit(hiloasignacionservicio);
     }
-
+    
     public void grabarFirma(Mensaje mensaje) {
         Connection conexion = clientemysqlservicio.obtenerConexion();
         PreparedStatement preparedstatement = null;
@@ -494,55 +505,55 @@ public class CoreMailServicioImpl {
         } catch (Exception e) {
             log.error("error en el metodo listarMailsEnCola", e.getCause());
         }
-
+        
     }
-
+    
     public static String getRUTA_IN() {
         return RUTA_IN;
     }
-
+    
     public static void setRUTA_IN(String aCARPETA_IN) {
         RUTA_IN = aCARPETA_IN;
     }
-
+    
     public static String getRUTA_OUT() {
         return RUTA_OUT;
     }
-
+    
     public static void setRUTA_OUT(String aCARPETA_OUT) {
         RUTA_OUT = aCARPETA_OUT;
     }
-
+    
     public static List<Resumen> getListaresumen() {
         return listaresumen;
     }
-
+    
     public static void setListaresumen(List<Resumen> aListaresumen) {
         listaresumen = aListaresumen;
     }
-
+    
     public static Configuraciones getConfiguraciones() {
         return configuraciones;
     }
-
+    
     public static void setConfiguraciones(Configuraciones aConfiguraciones) {
         configuraciones = aConfiguraciones;
     }
-
+    
     public static String getPath_entrada() {
         return path_entrada;
     }
-
+    
     public static void setPath_entrada(String aPath_entrada) {
         path_entrada = aPath_entrada;
     }
-
+    
     public static String getPath_salida() {
         return path_salida;
     }
-
+    
     public static void setPath_salida(String aPath_salida) {
         path_salida = aPath_salida;
     }
-
+    
 }

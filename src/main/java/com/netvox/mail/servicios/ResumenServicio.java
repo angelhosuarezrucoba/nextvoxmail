@@ -28,6 +28,8 @@ public interface ResumenServicio {
 
     public Resumen obtenerResumen(int idagente);
   
-    public void RemoverResumen(int idagente);
+    public void removerResumen(int idagente);
+    
+    public boolean hayResumen(int idagente);
 
 }

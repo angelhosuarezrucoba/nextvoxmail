@@ -12,6 +12,7 @@ import com.netvox.mail.ServiciosImpl.VerificadorDeSesionServicioImpl;
 import com.netvox.mail.entidadesfront.Agente;
 import com.netvox.mail.entidadesfront.MapaAgentes;
 import com.netvox.mail.entidadesfront.Mensaje;
+import com.netvox.mail.servicios.PausaServicio;
 import com.netvox.mail.servicios.ResumenServicio;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -20,7 +21,6 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -45,7 +45,9 @@ public class WebSocket extends TextWebSocketHandler {
     @Qualifier("verificadordesesionservicio")
     VerificadorDeSesionServicioImpl verificadordesesionservicio;
 
-    RestTemplate resttemplate = new RestTemplate();
+    @Autowired
+    @Qualifier("pausaservicio")
+    PausaServicio pausaservicio;
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
@@ -69,9 +71,8 @@ public class WebSocket extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        
+
         //esto debe migrar a un metodo para ser llamado luego del login y no exactamente despues de conseguir la conexion
-        
         System.out.println("Conectando agente " + session.getAttributes().get("idagente") + " SessionID " + session.getId());
         int idagente = Integer.parseInt((String) session.getAttributes().get("idagente"));
         Agente agente = new Agente(idagente, session);
@@ -94,9 +95,7 @@ public class WebSocket extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status)
-            throws Exception { // remueve la sesion de la lista de sesiones que tiene un agente
-
-        
+            throws Exception { // remueve la sesion de la lista de sesiones que tiene un agente        
         //deberia validarse en caso de que nunca se haya conseguido el inicio de sesion , que es el caso de un login invalido, por lo general no sucedera.
         System.out.println("cerr lasesion " + session.getId());
         List<Agente> lista = MapaAgentes.getMapa().values().stream()
@@ -115,13 +114,12 @@ public class WebSocket extends TextWebSocketHandler {
 
         if (lista.isEmpty()) {
             logconexionesservcio.grabarDesconexion(listaidagente.get(0).getIdagente());
-            if (coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == listaidagente.get(0).getIdagente()).findFirst().get().getEstadoagente() == 4) {
-                resttemplate.postForObject("http://localhost:8084/mail/apis/pausar", new Mensaje(listaidagente.get(0).getIdagente()), Mensaje.class);
+            if (resumenservicio.obtenerEstado(listaidagente.get(0).getIdagente()) == 4) {
+                pausaservicio.despausar(listaidagente.get(0).getIdagente());
             }
             MapaAgentes.getMapa().remove(listaidagente.get(0).getIdagente());
             resumenservicio.borrarResumenBaseDatos(listaidagente.get(0).getIdagente());
             coremailservicio.borrarListaResumen(listaidagente.get(0).getIdagente());//en memoria
-
         }
 
     }

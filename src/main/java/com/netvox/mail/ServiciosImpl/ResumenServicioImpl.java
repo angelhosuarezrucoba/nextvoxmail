@@ -1,5 +1,6 @@
 package com.netvox.mail.ServiciosImpl;
 
+import static com.netvox.mail.ServiciosImpl.CoreMailServicioImpl.getListaresumen;
 import com.netvox.mail.configuraciones.WebSocket;
 import com.netvox.mail.entidades.Resumen;
 import com.netvox.mail.entidadesfront.Mensaje;
@@ -130,7 +131,7 @@ public class ResumenServicioImpl implements ResumenServicio {
     }
 
     @Override
-    public void RemoverResumen(int idagente) {
+    public void removerResumen(int idagente) {
         coremailservicio.getListaresumen().remove(obtenerResumen(idagente));
     }
 
@@ -146,6 +147,13 @@ public class ResumenServicioImpl implements ResumenServicio {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
         coremailservicio.getListaresumen().stream().filter((resumen) -> resumen.getAgente() == idagente).findFirst().get().setEstadoagente(estado);
         mongoops.updateFirst(new Query(Criteria.where("agente").is(idagente)), new Update().set("estadoagente", estado), Resumen.class);
+    }
+
+    @Override
+    public boolean hayResumen(int idagente) {
+        return getListaresumen().stream().anyMatch((Resumen resumen) -> {
+            return resumen.getAgente() == idagente;
+        });
     }
 
 }
