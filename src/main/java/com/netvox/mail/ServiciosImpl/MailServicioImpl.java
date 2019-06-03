@@ -528,10 +528,10 @@ public class MailServicioImpl implements MailServicio {
                     if (usuarioresumen.getPedido_pausa() == 1) {//el estado es 2 si o si
                         resumenservicio.modificarEstado(usuarioresumen.getAgente(), 4);
                         resumenservicio.modificarPedidoPausa(usuarioresumen.getAgente(), 0);
+                        pausaservicio.pausar(usuarioresumen.getAgente());
                     } else {
                         if (usuarioresumen.getEstadoagente() == 2) {
                             resumenservicio.modificarEstado(usuarioresumen.getAgente(), 1);
-
                         }
                     }
                     resumendiarioservicio.actualizarEstado(usuarioresumen.getAgente(), resumenservicio.obtenerEstado(usuarioresumen.getAgente()), 0);
@@ -582,11 +582,10 @@ public class MailServicioImpl implements MailServicio {
                     if (usuarioresumen.getPedido_pausa() == 1) {//el estado es 2 si o si
                         resumenservicio.modificarEstado(usuarioresumen.getAgente(), 4);
                         resumenservicio.modificarPedidoPausa(usuarioresumen.getAgente(), 0);
-
+                        pausaservicio.pausar(usuarioresumen.getAgente());
                     } else {
                         if (usuarioresumen.getEstadoagente() == 2) {
                             resumenservicio.modificarEstado(usuarioresumen.getAgente(), 1);
-
                         }
                     }
                     resumendiarioservicio.actualizarEstado(usuarioresumen.getAgente(), resumenservicio.obtenerEstado(usuarioresumen.getAgente()), 0);

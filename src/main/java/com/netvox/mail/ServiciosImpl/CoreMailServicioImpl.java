@@ -366,7 +366,7 @@ public class CoreMailServicioImpl {
             mongoops = clientemongoservicio.clienteMongo();
             resumenservicio.modificarPendientes(usuarioresumen.getAgente(), usuarioresumen.getPendiente() + 1);
             resumendiarioservicio.actualizarPendientes(1, usuarioresumen.getAgente());
-            if (resumenservicio.obtenerEstado(usuarioresumen.getEstadoagente()) == 1) {
+            if (resumenservicio.obtenerEstado(usuarioresumen.getAgente()) == 1) {
                 resumenservicio.modificarEstado(usuarioresumen.getAgente(), 2);
                 resumendiarioservicio.actualizarEstado(usuarioresumen.getAgente(), 2, 0);
             }

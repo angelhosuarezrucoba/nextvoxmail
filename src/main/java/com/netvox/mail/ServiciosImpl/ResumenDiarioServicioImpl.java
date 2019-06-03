@@ -174,7 +174,7 @@ public class ResumenDiarioServicioImpl {
                     sql = ("update resumen_diario_correo set estado=" + estadonuevo
                             + ", hora_inicio_estado='" + formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)
                             + "', tiempo_acumulado_pausa=" + duracion
-                            + ", pedido_pausa=" + pedido_pausa
+                        + ", pedido_pausa=" + pedido_pausa
                             + " where agente=" + idagente);
                     break;
                 case 4:

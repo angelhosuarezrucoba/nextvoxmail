@@ -2,7 +2,6 @@ $("#btnver").click(function () {
     var tablaresumen;
     try {
         $('#tablaresumen').DataTable().destroy();
-        $('#tablaresumen').empty();
     } catch (e) {
         console.log(e);
     }
