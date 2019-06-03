@@ -7,6 +7,7 @@
  */
 package com.netvox.mail.ServiciosImpl;
 
+import com.netvox.mail.entidades.MailConfiguracion;
 import com.netvox.mail.configuraciones.WebSocket;
 import com.netvox.mail.entidades.Configuraciones;
 import com.netvox.mail.entidades.Rutas;
@@ -37,6 +38,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Update;
@@ -99,6 +102,8 @@ public class CoreMailServicioImpl {
     private static String path_salida;
     RestTemplate resttemplate = new RestTemplate();
 
+    Logger log = LoggerFactory.getLogger(this.getClass());
+
     public void cargarRutas() {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
         Rutas rutas = mongoops.find(new Query(), Rutas.class).get(0); //este toma el unico resultado que hay en la base
@@ -147,7 +152,7 @@ public class CoreMailServicioImpl {
             resultado.close();
             conexion.close();
         } catch (SQLException ex) {
-            ex.printStackTrace();
+            log.error("error en el metodo obtenerCuentasDeCorreo", ex.getCause());
         }
         return lista;
     }
@@ -159,7 +164,7 @@ public class CoreMailServicioImpl {
             nuevomail = new Mail(generadorId(), 0, "entrada", formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA), idconfiguracion, idcola, nombre_cola, id_campana, asunto, remitente, destino);
             mongoops.insert(nuevomail);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.error("error en el metodo insertarNuevoMail", ex.getCause());
         }
         return nuevomail;
     }
@@ -214,31 +219,10 @@ public class CoreMailServicioImpl {
             resultado.close();
             conexion.close();
         } catch (Exception ex) {
-            utilidades.printException(ex);
+            log.error("error en el metodo ObtenerMailConfiguracion", ex.getCause());
         }
 
         return mailconfiguracion;
-    }
-
-    //esto se debe revalidar , 
-    public boolean eliminarEmailOnline(int idemail) {
-        Connection conexion = null;
-        boolean elimino = false;
-        try {
-            conexion = clientemysqlservicio.obtenerConexion();
-            String sql = "DELETE FROM `log_mail_online` where id = ?";
-            PreparedStatement preparedstatement = conexion.prepareStatement(sql);
-            preparedstatement.setInt(1, idemail);
-            preparedstatement.executeUpdate();
-            elimino = true;
-            preparedstatement.close();
-            conexion.close();
-        } catch (Exception ex) {
-            utilidades.printException(ex);
-            elimino = false;
-        }
-
-        return elimino;
     }
 
     public Mail ActualizarMail(Mail mail) {
@@ -286,8 +270,7 @@ public class CoreMailServicioImpl {
             procedimientoalmacenado.close();
             conexion.close();
         } catch (SQLException ex) {
-            utilidades.printException(ex);
-            ex.printStackTrace();
+            log.error("error en el metodo ActualizarMail", ex.getCause());
         }
         return nuevomail;
     }
@@ -323,7 +306,7 @@ public class CoreMailServicioImpl {
                     new Query(Criteria.where("usuario").is(idUsuario).
                             and("campana").is(idCampana).and("estado").is(1).and("tipificacion").is(0).and("id_cola").in(listacolas)), Mail.class);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.error("error en el metodo obtenerCantidadPendientesPorCola", ex.getCause());
         }
         return cantidad;
     }
@@ -337,7 +320,7 @@ public class CoreMailServicioImpl {
             cantidad = (int) mongoops.count(
                     new Query(Criteria.where("estado").is(0).and("id_cola").in(listacolas)), Mail.class);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.error("error en el metodo obtenerCantidadNoAsignadosPorColas", ex.getCause());
         }
         return cantidad;
     }
@@ -354,7 +337,7 @@ public class CoreMailServicioImpl {
                     include("asunto").include("idconfiguracion").include("id_cola").include("remitente").include("nombre_cola").include("nombre_campana").include("destino");
             listado = mongoops.find(query, Mail.class);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error en el metodo listarMailsEnCola", e.getCause());
         }
         return listado;
     }
@@ -400,7 +383,8 @@ public class CoreMailServicioImpl {
             mensaje.setNew_mail(mailinbox);
             websocket.enviarMensajeParaUnUsuario(mensaje, usuarioresumen.getAgente());//aqui envio el mensaje a un usuario asignado
         } catch (ParseException ex) {
-            ex.printStackTrace();
+
+            log.error("error en el metodo asignarMailAgente", ex.getCause());
         }
     }
 
@@ -462,7 +446,7 @@ public class CoreMailServicioImpl {
             mensaje.setPeso_maximo_adjunto(getConfiguraciones().getPeso_maximo_adjunto());
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error en el metodo obtenerRespuestaDeLogin", e.getCause());
         }
 
         return mensaje;
@@ -473,7 +457,7 @@ public class CoreMailServicioImpl {
         try {
             configuraciones = mongoops.findOne(new Query(), Configuraciones.class);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error en el metodo cargarConfiguraciones", e.getCause());
         }
     }
 
@@ -508,7 +492,7 @@ public class CoreMailServicioImpl {
             preparedstatement.close();
             conexion.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error en el metodo listarMailsEnCola", e.getCause());
         }
 
     }

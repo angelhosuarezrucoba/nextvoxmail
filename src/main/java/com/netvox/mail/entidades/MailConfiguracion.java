@@ -1,4 +1,4 @@
-package com.netvox.mail.ServiciosImpl;
+package com.netvox.mail.entidades;
 
 /**
  *

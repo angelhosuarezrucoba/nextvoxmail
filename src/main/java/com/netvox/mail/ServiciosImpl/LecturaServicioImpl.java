@@ -12,6 +12,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service("lecturaservicio")
@@ -20,22 +22,21 @@ public class LecturaServicioImpl {
     private FileReader fr;
     private BufferedReader br;
     private File file;
-    // private List<String> lista;
     private String cad;
+    Logger log = LoggerFactory.getLogger(this.getClass());
 
     public LecturaServicioImpl() {
         try {
-            file = new File("C:\\Users\\desarrollo5\\Desktop\\netvox\\configuracion.txt");
+            //file = new File("C:\\Users\\desarrollo5\\Desktop\\netvox\\configuracion.txt");
+            file = new File("/usr/local/Tomcat8.0/webapps/configuracion.txt");
             fr = new FileReader(file);
             br = new BufferedReader(fr);
         } catch (FileNotFoundException ex) {
-            System.out.println(ex.getMessage());
+            log.error("error en el metodo LecturaServicioImpl", ex.getCause());
         }
-        
     }
 
     public List<String> obtenerConfiguraciones() {
-       
         List<String> lista = new ArrayList<>();
         try {
             while ((cad = br.readLine()) != null) {
@@ -44,10 +45,8 @@ public class LecturaServicioImpl {
             br.close();
             fr.close();
         } catch (IOException ex) {
-            System.out.println(ex.getMessage());
-            System.out.println("error de lectura");
+            log.error("error en el metodo obtenerConfiguraciones , clase LecturaServicioImpl", ex.getCause());
         }
-
         return lista;
     }
 }

@@ -24,9 +24,7 @@ public class Interceptor extends HttpSessionHandshakeInterceptor {
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes)
             throws Exception {
         Map<String, String> mapauri = URI_TEMPLATE.match(request.getURI().getPath());
-
         attributes.put("idagente", mapauri.get("idagente"));
-
         return super.beforeHandshake(request, response, wsHandler, attributes);
     }
 

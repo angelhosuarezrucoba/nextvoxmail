@@ -5,6 +5,7 @@
  */
 package com.netvox.mail.ServiciosImpl;
 
+import com.netvox.mail.entidades.MailConfiguracion;
 import com.netvox.mail.Api.entidadessupervisor.AtendidosPorCola;
 import com.netvox.mail.Api.entidadessupervisor.Contenido;
 import com.netvox.mail.Api.entidadessupervisor.FiltroIndividual;
@@ -33,7 +34,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -194,10 +194,10 @@ public class MailServicioImpl implements MailServicio {
         try {
             mongoops = clientemongoservicio.clienteMongo();
             if (usuarioresumen.getEstadoagente() == 1 || usuarioresumen.getEstadoagente() == 4) {
-                resumenservicio.modificarEstado(usuarioresumen.getAgente(), 2);
                 if (usuarioresumen.getEstadoagente() == 4) {
                     pausaservicio.despausar(usuarioresumen.getAgente());
                 }
+                resumenservicio.modificarEstado(usuarioresumen.getAgente(), 2);
                 resumendiarioservicio.actualizarEstado(usuarioresumen.getAgente(), 2, 0);
             }
             resumenservicio.modificarPendientes(usuarioresumen.getAgente(), usuarioresumen.getPendiente() + 1);
@@ -217,7 +217,7 @@ public class MailServicioImpl implements MailServicio {
                         }
                     });
         } catch (ParseException ex) {
-            ex.printStackTrace();
+            log.error("error en el metodo autoAsignarse", ex.getCause());
         }
     }
 
@@ -255,20 +255,8 @@ public class MailServicioImpl implements MailServicio {
             mailsalida.setIdhilo(mailsalida.getId());
             mongoops.insert(mailsalida);
 
-            ///este pedazo de codigo era para cuando alguien manda un correo , no puedo atarlos a un hilo
-//             me quedaria pensar que puedo unirlo siempre que la tipificacion sea -1 
-//            List<Mail> hilomail = mongoops.find(
-//                    new Query(Criteria.where("remitente").is(mailsalida.getRemitente()).
-//                            and("destino").is(mailsalida.getDestino()).and("tipificacion").is(1). 
-//                            and("hilocerrado").is(false)), Mail.class);
-//
-//            if (hilomail.size() > 0) {
-//                update.set("idhilo", hilomail.get(0).getIdhilo());
-//            } else {
-//                update.set("idhilo", mail.getIdcorreo());
-//            }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error en el metodo generarNuevoCorreo", e.getCause());
         }
         return mailsalida;
     }
@@ -293,16 +281,14 @@ public class MailServicioImpl implements MailServicio {
             mongoops.updateFirst(new Query(Criteria.where("idcorreo").is(idcorreo)),
                     new Update().push("listadeadjuntos", new Adjunto(archivo.getOriginalFilename(), (int) archivo.getSize(), nuevoarchivo.getAbsolutePath())), Mail.class);
         } catch (FileNotFoundException ex) {
-            ex.printStackTrace();
+            log.error("error en el metodo adjuntarcorreo", ex.getCause());
         } catch (IOException ex) {
-            ex.printStackTrace();
+            log.error("error en el metodo adjuntarcorreo", ex.getCause());
         }
     }
 
     @Override
     public void enviarcorreo(MailSalida mailsalida) {
-        System.out.println("ENTRE A ENVIAR CORREO ");
-
         MongoOperations mongoops;
         MailSalida nuevomail = null;
         FileOutputStream archivosalidastream = null;
@@ -323,10 +309,8 @@ public class MailServicioImpl implements MailServicio {
             archivosalidastream.close();
 
         } catch (IOException ex) {
-            System.out.println("ERRROR EN EL ENVIAR CORREO");
-            ex.printStackTrace();
+            log.error("error en el metodo enviarcorreo", ex.getCause());
         }
-
         prepararMensaje(nuevomail);
     }
 
@@ -337,7 +321,7 @@ public class MailServicioImpl implements MailServicio {
             bodypartmensaje.setContent(mensaje, "text/html; charset=\"UTF-8\"");
             multipart.addBodyPart(bodypartmensaje);
         } catch (MessagingException e) {
-            e.printStackTrace();
+            log.error("error en el metodo agregarCuerpoDelMensaje", e.getCause());
         }
         return multipart;
     }
@@ -354,7 +338,7 @@ public class MailServicioImpl implements MailServicio {
                     mimebodypartembebido.attachFile(archivo);
                     multipart.addBodyPart(mimebodypartembebido);
                 } catch (IOException | MessagingException e) {
-                    e.printStackTrace();
+                    log.error("error en el metodo agregarEmbebidosAlMensaje", e.getCause());
                 }
             }
         }
@@ -373,7 +357,7 @@ public class MailServicioImpl implements MailServicio {
                     mimebodypart.setFileName(archivo.getName());
                     multipart.addBodyPart(mimebodypart);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("error en el metodo agregarAdjuntosAlMensaje", e.getCause());
                 }
             }
         }
@@ -394,7 +378,7 @@ public class MailServicioImpl implements MailServicio {
             resultset.close();
             conexion.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error en el metodo obtenerConfiguracionMail", e.getCause());
         }
         return mailconfiguracion;
     }
@@ -405,8 +389,8 @@ public class MailServicioImpl implements MailServicio {
             for (String destinoencopia : listadedestinosencopia) {
                 try {
                     mimemensaje.addRecipient(Message.RecipientType.CC, new InternetAddress(destinoencopia));
-                } catch (Exception ex) {
-                    ex.printStackTrace();
+                } catch (MessagingException ex) {
+                    log.error("error en el metodo agregarDestinatariosEnCopia", ex.getCause());
                 }
             }
         }
@@ -414,14 +398,6 @@ public class MailServicioImpl implements MailServicio {
     }
 
     public void prepararMensaje(MailSalida mailsalida) {
-
-        System.out.println("ESTOY EN EL prepararMensaje");
-        try {
-            System.out.println(mailsalida.toString());
-        } catch (Exception e) {
-            System.out.println("error al leer el mailsalida");
-        }
-
         MimeMultipart multipart = agregarCuerpoDelMensaje(mailsalida.getMensaje());//cuerpo mensaje
         multipart = agregarEmbebidosAlMensaje(multipart, mailsalida.getId());//archivos embebidos
         multipart = agregarAdjuntosAlMensaje(multipart, mailsalida.getId());//archivos adjuntos
@@ -436,8 +412,7 @@ public class MailServicioImpl implements MailServicio {
             mimemensaje = agregarDestinatariosEnCopia(mimemensaje, mailsalida.getCopia());
             Transport.send(mimemensaje);
         } catch (MessagingException ex) {
-
-            ex.printStackTrace();
+            log.error("error en el metodo prepararMensaje", ex.getCause());
         }
     }
 
@@ -488,7 +463,7 @@ public class MailServicioImpl implements MailServicio {
             outputStream.write(dataBytes);
 
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("error en el metodo guardarEmbebido", e.getCause());
         }
         return nombre_final;
     }
@@ -544,8 +519,8 @@ public class MailServicioImpl implements MailServicio {
                             .set("fechafingestion", formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA))
                             .set("hilocerrado", true),
                     MailSalida.class);//estoy usando esta clase solo por lo conveniente que es ya que tiene id y tipificacion
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        } catch (ParseException ex) {
+            log.error("error en el metodo tipificarCorreo", ex.getCause());
         }
     }
 
@@ -561,8 +536,8 @@ public class MailServicioImpl implements MailServicio {
             }
             resultset.close();
             conexion.close();
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (SQLException e) {
+            log.error("error en el metodo listarTipificaciones", e.getCause());
         }
         return listatipificaciones;
     }
@@ -628,19 +603,16 @@ public class MailServicioImpl implements MailServicio {
         List<MailSalida> lista = null;
         try {
             mongoops = clientemongoservicio.clienteMongo();
-            lista
-                    = mongoops.find(
-                            new Query(new Criteria().andOperator(
-                                    Criteria.where("fecha_ingreso").gte(filtro.getFecha_inicio()),
-                                    Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin()))
-                                    .and("estado").is(1).and("usuario").in(filtro.getListadeagentes())
-                                    .and("id_cola").in(filtro.getListadecolas())),
-                            MailSalida.class
-                    );
-
+            lista = mongoops.find(
+                    new Query(new Criteria().andOperator(
+                            Criteria.where("fecha_ingreso").gte(filtro.getFecha_inicio()),
+                            Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin()))
+                            .and("estado").is(1).and("usuario").in(filtro.getListadeagentes())
+                            .and("id_cola").in(filtro.getListadecolas())),
+                    MailSalida.class
+            );
             for (MailSalida mail : lista) {
-                mail.setHora(
-                        formatodefechas.cambiarFormatoFechas(mail.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_HORA));
+                mail.setHora(formatodefechas.cambiarFormatoFechas(mail.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_HORA));
                 mail.setEstadoatencion(mail.getEstado() == 1 ? "ATENDIENDO" : "FINALIZADO");
                 mail.setValidacion(mail.getTipificacion() == 1 ? "INVALIDO" : "VALIDO");
                 mail.setTiempo_cola(mail.getTiempoencola() == 0 ? "00:00:00" : formatodefechas.convertirSegundosAFecha(mail.getTiempoencola()));
@@ -667,8 +639,8 @@ public class MailServicioImpl implements MailServicio {
                 }
             }
 
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (ParseException e) {
+            log.error("error en el metodo listarCorreosPendientes", e.getCause());
         }
         return lista;
     }
@@ -716,8 +688,8 @@ public class MailServicioImpl implements MailServicio {
                     }
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (ParseException e) {
+            log.error("error en el metodo listarCorreoInvalidos", e.getCause());
         }
         return lista;
     }
@@ -765,8 +737,8 @@ public class MailServicioImpl implements MailServicio {
                     }
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (ParseException e) {
+            log.error("error en el metodo listarCorreos", e.getCause());
         }
         return lista;
     }
@@ -792,7 +764,7 @@ public class MailServicioImpl implements MailServicio {
                 pausa.setDuracionpausa(formatodefechas.convertirSegundosAFechaNormal(pausa.getDuracion()));
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error en el metodo detalleTiemposeEnPausa", e.getCause());
         }
         return lista;
     }
@@ -836,7 +808,7 @@ public class MailServicioImpl implements MailServicio {
             lista = resultado.getMappedResults();
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error en el metodo detalleGrupalDeCorreosPorDias", e.getCause());
         }
         return lista;
     }
@@ -876,12 +848,11 @@ public class MailServicioImpl implements MailServicio {
                             sum(condicioninvalidos).as("invalidos").
                             sum(condicionfinalizados).as("finalizados")
             );
-            AggregationResults<ReporteGrupal> resultado = mongoops.aggregate(agregacion, "mail", ReporteGrupal.class
-            );
+            AggregationResults<ReporteGrupal> resultado = mongoops.aggregate(agregacion, "mail", ReporteGrupal.class);
             lista = resultado.getMappedResults();
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error en el metodo detalleGrupalDeCorreosPorHoras", e.getCause());
         }
         return lista;
     }
@@ -938,11 +909,11 @@ public class MailServicioImpl implements MailServicio {
                     resultados.setTiempo_atencion(formatodefechas.convertirSegundosAFechaNormal(resultados.getTiempo_atencion_int()));
                     resultados.setTiempo_promedio_atencion(formatodefechas.convertirSegundosAFechaNormal((int) resultados.getTiempo_promedio_atencion_double()));
                 } catch (ParseException ex) {
-                    ex.printStackTrace();
+                    log.error("error en el metodo detalleGrupalDeCorreosPorAgente", ex.getCause());
                 }
             });
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error en el metodo listarMailsEnCola", e.getCause());
         }
         return lista;
     }
@@ -951,7 +922,6 @@ public class MailServicioImpl implements MailServicio {
     public List<MailSalida> detalleGrupalDeCorreosPorCola(FiltroIndividual filtro) {
         MongoOperations mongoops;
         List<MailSalida> lista = null;
-
         try {
             mongoops = clientemongoservicio.clienteMongo();
             Aggregation agregacion = Aggregation.newAggregation(
@@ -975,7 +945,7 @@ public class MailServicioImpl implements MailServicio {
             lista = resultado.getMappedResults();
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error en el metodo detalleGrupalDeCorreosPorCola", e.getCause());
         }
         return lista;
     }
@@ -1066,7 +1036,7 @@ public class MailServicioImpl implements MailServicio {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error en el metodo graficoMultiCanal", e.getCause());
         }
 
         return grafico;
@@ -1120,7 +1090,7 @@ public class MailServicioImpl implements MailServicio {
             });
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error en el metodo reporteMensual", e.getCause());
         }
 
         return grafico;
@@ -1162,7 +1132,7 @@ public class MailServicioImpl implements MailServicio {
             lista = resultado.getMappedResults();
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error en el metodo atendidosPorCola", e.getCause());
         }
 
         return lista;

@@ -28,6 +28,8 @@ import com.netvox.mail.utilidades.Utilidades;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service("hiloentradaservicio")
 public class HiloEntradaServicio implements Runnable {
@@ -58,16 +60,17 @@ public class HiloEntradaServicio implements Runnable {
     private Session sesion;
     private List<Message> listacorreosnoleidos;
     private boolean activo = true;
+    Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Override
     public void run() {
         while (isActivo()) {
             try {
-                System.out.println("----------------------------------------------------------------------------------------");
-                System.out.println("LEYENDO CUENTAS DE CORREO");
+                log.info("----------------------------------------------------------------------------------------");
+                log.info("LEYENDO CUENTAS DE CORREO");
                 List<CuentaDeCorreo> listadecuentasdecorreo = coremailservicio.obtenerCuentasDeCorreo();
                 for (CuentaDeCorreo cuentadecorreo : listadecuentasdecorreo) {
-                    System.out.println("cuentadecorreo : " + cuentadecorreo.getUsuario());
+                    log.info("cuentadecorreo : " + cuentadecorreo.getUsuario());
                     props = ObtenerPropiedades(cuentadecorreo.getHost(), cuentadecorreo.getPuerto());
                     sesion = obtenerSesion(props, cuentadecorreo.getUsuario(), cuentadecorreo.getClave());
                     store = sesion.getStore(cuentadecorreo.getStore());
@@ -78,7 +81,7 @@ public class HiloEntradaServicio implements Runnable {
                     for (Message mensaje : listacorreosnoleidos) {
                         String remitente = obtenerRemitente(mensaje);
                         if (remitente.equals("")) {
-                            System.out.println("REMITENTE NO CAPTURADO");
+                            log.info("REMITENTE NO CAPTURADO");
                         } else {
                             Mail mail = coremailservicio.insertarNuevoMail(
                                     cuentadecorreo.getIdconfiguracion(),
@@ -90,12 +93,11 @@ public class HiloEntradaServicio implements Runnable {
                                     cuentadecorreo.getUsuario()/*esto es el destino*/
                             );
                             if (!utilidades.createFileHTML(mensaje, mail, cuentadecorreo.getMaximo_adjunto())) {//aqui ya le tengo puesto el mensaje y los adjuntos
-                                System.out.println("FALLO EN EL CREATE HTML");
+                                log.info("FALLO EN EL CREATE HTML");
                             } else {
                                 if (mail.getPeso_adjunto() > cuentadecorreo.getMaximo_adjunto()) {
                                     FileUtils.deleteDirectory(new File(mail.getRuta()));
                                     mailautomatico.enviarEmail(mail);
-                                    coremailservicio.eliminarEmailOnline(mail.getIdcorreo());
                                 } else {
                                     Mail nuevomail = coremailservicio.ActualizarMail(mail);
                                     coremailservicio.notificarCorreoNuevoEnCola(nuevomail);
@@ -106,12 +108,11 @@ public class HiloEntradaServicio implements Runnable {
                     }
                     cerrarFolderYstore(folder, store);
                 }
-                System.out.println("FIN LECTURA DE CUENTAS");
-                System.out.println("----------------------------------------------------------------------------------------");
+                log.info("FIN LECTURA DE CUENTAS");
+                log.info("----------------------------------------------------------------------------------------");
                 Thread.sleep(1000 * 5);
             } catch (Exception ex) {
-                utilidades.printException(ex);
-                ex.printStackTrace();
+                log.error("error en el HiloEntradaServicio", ex.getCause());
             }
         }
     }
@@ -148,11 +149,7 @@ public class HiloEntradaServicio implements Runnable {
                 lista = lista.stream().limit(limitecorreos).collect(Collectors.toList());
             }
         } catch (MessagingException ex) {
-            ex.printStackTrace();
-            utilidades.printException(ex);
-        } catch (Exception e) {
-            e.printStackTrace();
-
+            log.error("error en el metodo obtenerCorreosNoLeidos", ex.getCause());
         }
         return lista;
     }
@@ -166,8 +163,7 @@ public class HiloEntradaServicio implements Runnable {
                 store.close();
             }
         } catch (MessagingException ex) {
-            utilidades.printException(ex);
-            ex.printStackTrace();
+            log.error("error en el metodo cerrarFolderYstore", ex.getCause());
         }
     }
 
@@ -193,7 +189,7 @@ public class HiloEntradaServicio implements Runnable {
                 remitente = remitente.replace("\n", "");
             }
         } catch (MessagingException ex) {
-            ex.printStackTrace();
+            log.error("error en el metodo obtenerRemitente", ex.getCause());
         }
         return remitente;
     }

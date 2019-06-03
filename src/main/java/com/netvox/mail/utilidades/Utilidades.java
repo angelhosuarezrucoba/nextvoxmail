@@ -33,6 +33,8 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import com.netvox.mail.entidadesfront.Adjunto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service("utilidades")
 public class Utilidades {
@@ -45,14 +47,7 @@ public class Utilidades {
     @Qualifier("clientemongoservicio")
     ClienteMongoServicio clientemongoservicio;
 
-    public void printException(Exception ex) {
-        
-        System.out.println("MSG:" + ex.getMessage() + " ,EXP:" + ex.toString());
-        for (int i = 0; i < ex.getStackTrace().length; i++) {
-            System.out.println(ex.getStackTrace()[i]);
-        }
-        ex.printStackTrace();
-    }
+    Logger log = LoggerFactory.getLogger(this.getClass());
 
     public boolean createFileHTML(Message mensaje, Mail mail, int peso_maximo_adjunto) {
         boolean created = false;
@@ -119,14 +114,14 @@ public class Utilidades {
                         pw = new PrintWriter(fichero);
                         pw.println(contenidodelmensaje);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        log.error("error en el createFileHTML", e.getCause());
                     } finally {
                         try {
                             if (null != fichero) {
                                 fichero.close();
                             }
                         } catch (Exception e2) {
-                            e2.printStackTrace();
+                            log.error("error en el createFileHTML", e2.getCause());
                         }
                     }
                     texto = (String) contenidodelmensaje + " \n";
@@ -265,8 +260,7 @@ public class Utilidades {
             mongoops.updateFirst(new Query(Criteria.where("idcorreo").is(id)), new Update().set("mensaje", mail.getMensaje()), Mail.class);
             created = true;
         } catch (IOException | MessagingException ex) {
-            ex.printStackTrace();
-            printException(ex);
+            log.error("error en el createFileHTML", ex.getCause());
         }
         System.out.println("CREADO: " + created);
         return created;
@@ -280,12 +274,12 @@ public class Utilidades {
             write1 = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(unidad.getAbsolutePath() + "/" + id + "/" + id + ".txt"), "UTF-8"));
             write1.write(cuerpoMensaje);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error en el crearArchivoHtml", e.getCause());
         } finally {
             try {
                 write1.close();
             } catch (Exception e2) {
-                e2.printStackTrace();
+                log.error("error en el crearArchivoHtml", e2.getCause());
             }
         }
     }
@@ -366,14 +360,14 @@ public class Utilidades {
                                 }
 
                             } catch (Exception ex) {
-                                printException(ex);
+                                log.error("error en el metodo analizaParteDeMensaje", ex.getCause());
                             } finally {
                                 fichero.close();
                                 imagen.close();
                             }
 
                         } catch (Exception ex) {
-                            printException(ex);
+                            log.error("error en el metodo analizaParteDeMensaje", ex.getCause());
                         }
 
                     } else if (unaParte.isMimeType("AUDIO/*")) {
@@ -408,8 +402,8 @@ public class Utilidades {
             int peso_adjunto = Integer.parseInt(String.valueOf(file.length())) / (1024 * 1024);
             mail.setPeso_adjunto(mail.getPeso_adjunto() + peso_adjunto);
             System.out.println("PESO ADJUNTO " + peso_adjunto + "  .PESO PERMITIDO" + limite);
-        } catch (Exception ex) {
-            printException(ex);
+        } catch (NumberFormatException ex) {
+            log.error("error en el metodo sumarAdjuntos ", ex.getCause());
         }
 
     }

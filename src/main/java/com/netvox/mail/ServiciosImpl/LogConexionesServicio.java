@@ -4,6 +4,8 @@ import com.netvox.mail.entidades.LogConexiones;
 import com.netvox.mail.entidades.Resumen;
 import com.netvox.mail.utilidades.FormatoDeFechas;
 import java.util.Date;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.mongodb.core.MongoOperations;
@@ -27,13 +29,13 @@ public class LogConexionesServicio {
     @Qualifier("resumendiarioservicio")
     ResumenDiarioServicioImpl resumendiarioservicio;
 
+    Logger log = LoggerFactory.getLogger(this.getClass());
+
     public void grabarConexion(Resumen resumen) {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
-
         try {
             LogConexiones log = mongoops.findOne(new Query(Criteria.where("agente").is(resumen.getAgente())
                     .and("fechaconexion").regex(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA))), LogConexiones.class);
-
             if (log == null) {
                 mongoops.insert(
                         new LogConexiones(
@@ -50,7 +52,7 @@ public class LogConexionesServicio {
                 resumendiarioservicio.actualizaHoraLogueo(resumen);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error en el metodo grabarConexion", e.getCause());
         }
     }
 
@@ -61,7 +63,7 @@ public class LogConexionesServicio {
                     .and("fechaconexion").regex(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA))),
                     new Update().set("fechadesconexion", formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)), LogConexiones.class);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error en el metodo grabarDesconexion", e.getCause());
         }
     }
 

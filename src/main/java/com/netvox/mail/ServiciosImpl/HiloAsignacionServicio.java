@@ -5,10 +5,13 @@
  */
 package com.netvox.mail.ServiciosImpl;
 
+import com.netvox.mail.entidades.MailConfiguracion;
 import com.netvox.mail.entidades.Mail;
 import com.netvox.mail.entidades.Resumen;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -21,34 +24,35 @@ public class HiloAsignacionServicio implements Runnable {
     CoreMailServicioImpl coremailservicio;
 
     private boolean activo = true;
+    Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Override
     public void run() {
         while (isActivo()) {
             try {
-                System.out.println("----------------------------------------------------------------------------------------");
-                System.out.println("Hilo de Asignacion");
+                log.info("----------------------------------------------------------------------------------------");
+                log.info("Hilo de Asignacion");
                 List<Mail> mails = coremailservicio.listarMailsEnCola();//las colas representan el correo que se agrega a la campaña , si hay 2 => son dos colas.
                 if (!mails.isEmpty()) {
-                    System.out.println("mensajes sin asignar : " + mails.size());
+                    log.info("mensajes sin asignar : " + mails.size());
                     mails.forEach((mail) -> {
                         MailConfiguracion mailconfiguracion = coremailservicio.ObtenerMailConfiguracion(mail.getIdconfiguracion());
                         Resumen usuarioresumen = obtenerUsuarioDelResumen(coremailservicio.getListaresumen(), mailconfiguracion.getMaximo_pendiente(), mail.getId_cola());
                         if (usuarioresumen != null) {
                             coremailservicio.asignarMailAgente(usuarioresumen, mail);
-                            System.out.println("se asigno al agente : " + usuarioresumen.getNombre() + " id: " + usuarioresumen.getAgente());
+                            log.info("se asigno al agente : " + usuarioresumen.getNombre() + " id: " + usuarioresumen.getAgente());
                         } else {
-                            System.out.println("No se pudo asignar a un Agente");
+                            log.info("No se pudo asignar a un Agente");
                         }
                     });
                 } else {
-                    System.out.println("Sin mensajes por asignar");
+                    log.info("Sin mensajes por asignar");
                 }
-                System.out.println("Fin Hilo asignacion");
-                System.out.println("----------------------------------------------------------------------------------------");
+                log.info("Fin Hilo asignacion");
+                log.info("----------------------------------------------------------------------------------------");
                 Thread.sleep(5000);
             } catch (Exception ex) {
-                ex.printStackTrace();
+                log.error("error en el HiloAsignacionServicio", ex.getCause());
             }
         }
     }
@@ -58,16 +62,16 @@ public class HiloAsignacionServicio implements Runnable {
         int menor = 1000000;
         List<Resumen> listaporcola = listaresumen.stream().filter((resumen) -> resumen.getEstadoagente() != 4 && resumen.getPedido_pausa() != 1 && resumen.getListacolas().contains(cola)).collect(Collectors.toList());
         if (listaporcola.size() > 0) {
-            System.out.println("----------------------------------------------------------------------------------------");
-            System.out.println("******ELIGIENDO A USUARIOS*********");
-            System.out.println("NOMBRE\t PENDIENTES\t MAXPENDIENTES \tCOLA");
+            log.info("----------------------------------------------------------------------------------------");
+            log.info("******ELIGIENDO A USUARIOS*********");
+            log.info("NOMBRE\t PENDIENTES\t MAXPENDIENTES \tCOLA");
             for (Resumen candidato : listaporcola) {
-                System.out.println(candidato.getNombre() + "\t " + candidato.getPendiente() + "\t " + maximopendiente + "\t" + candidato.getListacolas());
+                log.info(candidato.getNombre() + "\t " + candidato.getPendiente() + "\t " + maximopendiente + "\t" + candidato.getListacolas());
                 if (candidato.getPendiente() < menor && maximopendiente > candidato.getPendiente()) {
                     resumenelegido = candidato;
                     menor = candidato.getPendiente();
                 }
-                System.out.println("----------------------------------------------------------------------------------------");
+                log.info("----------------------------------------------------------------------------------------");
             }
         }
         return resumenelegido;

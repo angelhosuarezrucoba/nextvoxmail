@@ -51,7 +51,7 @@ public class ResumenServicioImpl implements ResumenServicio {
         try {
             mongoops.remove(new Query(Criteria.where("agente").is(idagente)), Resumen.class);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error en el metodo borrarResumenBaseDatos", e.getCause());
         }
     }
 
@@ -61,7 +61,7 @@ public class ResumenServicioImpl implements ResumenServicio {
         try {
             mongoops.remove(new Query(), Resumen.class);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error en el metodo borrarResumenTotal", e.getCause());
         }
     }
 

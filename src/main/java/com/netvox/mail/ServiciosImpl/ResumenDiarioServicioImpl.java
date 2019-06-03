@@ -3,13 +3,14 @@ package com.netvox.mail.ServiciosImpl;
 import com.netvox.mail.Api.entidadessupervisor.Pausa;
 import com.netvox.mail.configuraciones.WebSocket;
 import com.netvox.mail.entidades.Resumen;
-import com.netvox.mail.entidadesfront.MailSalida;
-import com.netvox.mail.entidadesfront.Mensaje;
 import com.netvox.mail.utilidades.FormatoDeFechas;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Date;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.mongodb.core.MongoOperations;
@@ -35,6 +36,8 @@ public class ResumenDiarioServicioImpl {
     @Autowired
     @Qualifier("websocket")
     WebSocket websocket;
+
+    Logger log = LoggerFactory.getLogger(this.getClass());
 
     public void insertarConexion(Resumen resumen) {
         try {
@@ -82,7 +85,6 @@ public class ResumenDiarioServicioImpl {
             preparedstatement.setInt(5, resumen.getPendiente());
             preparedstatement.setInt(6, resumen.getEstadoagente());
             preparedstatement.setString(7, formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA));
-            //int atendidos = (int) mongoops.count(new Query(Criteria.where("usuario").is(resumen.getAgente()).and("estado").is(1).and("tipificacion").ne(0).and("hilocerrado").is(true).and("fechainiciogestion").regex(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA))), MailSalida.class);
             preparedstatement.setInt(8, 0);
             preparedstatement.setString(9, primer_logueo);
             preparedstatement.setString(10, session);
@@ -91,9 +93,8 @@ public class ResumenDiarioServicioImpl {
             resultado.close();
             preparedstatement.close();
             conexion.close();
-        } catch (Exception e) {
-            System.out.println("No funciono el grabado del logueo en la tabla resumen diario correo");
-            e.printStackTrace();
+        } catch (SQLException e) {
+            log.error("error en el metodo insertarConexion", e.getCause());
         }
     }
 
@@ -110,8 +111,7 @@ public class ResumenDiarioServicioImpl {
             preparedstatement.execute();
             conexion.close();
         } catch (Exception e) {
-            System.out.println("No se actualizo los atendidosporcola");
-            e.printStackTrace();
+            log.error("error en el metodo actualizarAtendidosPorCola", e.getCause());
         }
     }
 
@@ -125,9 +125,8 @@ public class ResumenDiarioServicioImpl {
                 conexion.createStatement().execute(sqlatendidos);
             }
             conexion.close();
-        } catch (Exception e) {
-            System.out.println("No se actualizo los pendientes");
-            e.printStackTrace();
+        } catch (SQLException e) {
+            log.error("error en el metodo actualizarPendientes", e.getCause());
         }
     }
 
@@ -149,8 +148,7 @@ public class ResumenDiarioServicioImpl {
             conexion.close();
 
         } catch (Exception e) {
-            System.out.println("No se actualizo la hora de logueo");
-            e.printStackTrace();
+            log.error("error en el metodo actualizaHoraLogueo", e.getCause());
         }
     }
 
@@ -174,7 +172,7 @@ public class ResumenDiarioServicioImpl {
                     sql = ("update resumen_diario_correo set estado=" + estadonuevo
                             + ", hora_inicio_estado='" + formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)
                             + "', tiempo_acumulado_pausa=" + duracion
-                        + ", pedido_pausa=" + pedido_pausa
+                            + ", pedido_pausa=" + pedido_pausa
                             + " where agente=" + idagente);
                     break;
                 case 4:
@@ -190,9 +188,8 @@ public class ResumenDiarioServicioImpl {
             }
             conexion.createStatement().execute(sql);
             conexion.close();
-        } catch (Exception e) {
-            System.out.println("No se actualizo el estado");
-            e.printStackTrace();
+        } catch (SQLException e) {
+            log.error("error en el metodo actualizarEstado", e.getCause());
         }
     }
 

@@ -6,8 +6,9 @@
 package com.netvox.mail.ServiciosImpl;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import javax.sql.DataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -20,12 +21,14 @@ public class ClienteMysqlServicioImpl {
     @Qualifier("datasource")
     DataSource datasource;
 
+    Logger log = LoggerFactory.getLogger(this.getClass());
+
     public Connection obtenerConexion() {
         Connection conexion = null;
         try {
             conexion = datasource.getConnection();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error en el metodo obtenerConexion , mysql", e.getCause());
         }
         return conexion;
     }
