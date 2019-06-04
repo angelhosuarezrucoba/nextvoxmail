@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class InicioHilos {
-    
+
     @Autowired
     @Qualifier("coremailservicio")
     CoreMailServicioImpl coremailservicio; //esto tiene la logica de las operaciones sobre los correos.
@@ -24,12 +24,11 @@ public class InicioHilos {
 
     ///esto ejecuta un hilo en cuanto inicia la web.
     @PostConstruct
-    public void init() {        
-        log.info("hola");
+    public void init() {
         coremailservicio.cargarRutas();
         coremailservicio.cargarConfiguraciones();
         coremailservicio.ejecutarHiloEntrada();
         coremailservicio.ejecutarHiloAsignacion();
     }
-    
+
 }

@@ -10,8 +10,8 @@ public class Mensaje {
     private List<Integer> colas;
     private int estado_mail; // estado del agente
     private String agente;
-    private int acumulado_mail;
-    private int cantidad_cola_mail;
+    private int acumulado_mail; // pendientes.
+    private int cantidad_cola_mail;//cantidad de correos en cola
     private MailInbox new_mail;
     private List<MailFront> listacorreos;
     private int peso_maximo_adjunto;
@@ -37,12 +37,7 @@ public class Mensaje {
         this.evento = evento;
     }
 
-    @Override
-    public String toString() {
-        return "Mensaje{" + "evento=" + evento + ", idagente=" + idagente + ", campana=" + campana + ", colas=" + colas + ", estado_mail=" + estado_mail + ", agente=" + agente + ", acumulado_mail=" + acumulado_mail + ", cantidad_cola_mail=" + cantidad_cola_mail + ", new_mail=" + new_mail + ", listacorreos=" + listacorreos + ", peso_maximo_adjunto=" + peso_maximo_adjunto + ", idcorreoasignado=" + idcorreoasignado + ", firma=" + firma + ", identificador=" + identificador + ", tiempo_pausa=" + tiempo_pausa + ", pedido_pausa=" + pedido_pausa + ", pausasupervisor=" + pausasupervisor + '}';
-    }
-
-    public int getIdagente() {
+     public int getIdagente() {
         return idagente;
     }
 
@@ -170,4 +165,11 @@ public class Mensaje {
         this.pausasupervisor = pausasupervisor;
     }
 
+    @Override
+    public String toString() {
+        return "Mensaje{" + "estado_mail=" + estado_mail + ", acumulado_mail=" + acumulado_mail + ", pedido_pausa=" + pedido_pausa + '}';
+    }
+
+    
+    
 }

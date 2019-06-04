@@ -16,6 +16,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -47,8 +49,10 @@ public class ApiMail {
     @Qualifier("verificadordesesionservicio")
     VerificadorDeSesionServicioImpl verificadordesesionservicio;
 
+    Logger log = LoggerFactory.getLogger(this.getClass());
+
     @PostMapping("/crearcorreo")
-    public MailInbox crearcorreo(@RequestBody MailSalida mailsalida, @RequestHeader String identificador, HttpServletResponse response) {
+    public MailInbox crearCorreo(@RequestBody MailSalida mailsalida, @RequestHeader String identificador, HttpServletResponse response) {
         MailInbox mail = new MailInbox();
         if (verificadordesesionservicio.sesionvalida(identificador)) {
             response.setStatus(HttpServletResponse.SC_OK);
@@ -121,26 +125,30 @@ public class ApiMail {
     }
 
     @PostMapping("/enviarcorreo")
-    public void enviarCorreo(@RequestBody MailSalida mailsalida,
-            @RequestHeader String identificador, HttpServletResponse response) {  
+    public Mensaje enviarCorreo(@RequestBody MailSalida mailsalida,
+            @RequestHeader String identificador, HttpServletResponse response) {
+        Mensaje mensaje = new Mensaje();
         if (verificadordesesionservicio.sesionvalida(identificador)) {
             response.setStatus(HttpServletResponse.SC_OK);
-            mailservicio.enviarcorreo(mailsalida);
+            mensaje = mailservicio.enviarcorreo(mailsalida);
         } else {
             response.setStatus(HttpServletResponse.SC_CONFLICT);
         }
+        return mensaje;
     }
 
     @PostMapping("/tipificarcorreo")
-    public void tipificarCorreo(@RequestBody MailSalida mailsalida,
+    public Mensaje tipificarCorreo(@RequestBody MailSalida mailsalida,
             @RequestHeader String identificador, HttpServletResponse response) {
+
+        Mensaje mensaje = new Mensaje();
         if (verificadordesesionservicio.sesionvalida(identificador)) {
             response.setStatus(HttpServletResponse.SC_OK);
-            mailservicio.tipificarCorreo(mailsalida);
+            mensaje = mailservicio.tipificarCorreo(mailsalida);
         } else {
             response.setStatus(HttpServletResponse.SC_CONFLICT);
         }
-
+        return mensaje;
     }
 
     @PostMapping("/listartipificaciones")

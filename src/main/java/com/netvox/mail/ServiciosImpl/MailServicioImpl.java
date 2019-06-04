@@ -288,7 +288,9 @@ public class MailServicioImpl implements MailServicio {
     }
 
     @Override
-    public void enviarcorreo(MailSalida mailsalida) {
+    public Mensaje enviarcorreo(MailSalida mailsalida) {
+        Resumen usuarioresumen;
+        Mensaje mensaje = new Mensaje();
         MongoOperations mongoops;
         MailSalida nuevomail = null;
         FileOutputStream archivosalidastream = null;
@@ -307,11 +309,15 @@ public class MailServicioImpl implements MailServicio {
             buferdesalida.write(nuevomail.getMensaje().getBytes());
             buferdesalida.close();
             archivosalidastream.close();
-
+            usuarioresumen = resumenservicio.obtenerResumen(nuevomail.getId_agente());
+            mensaje.setEstado_mail(resumenservicio.obtenerEstado(usuarioresumen.getAgente()));
+            mensaje.setAcumulado_mail(resumenservicio.obtenerPendientes(usuarioresumen.getAgente()));
+            mensaje.setPedido_pausa(resumenservicio.obtenerPedidoPausa(usuarioresumen.getAgente()));
         } catch (IOException ex) {
             log.error("error en el metodo enviarcorreo", ex.getCause());
         }
         prepararMensaje(nuevomail);
+        return mensaje;
     }
 
     public MimeMultipart agregarCuerpoDelMensaje(Object mensaje) {
@@ -488,13 +494,15 @@ public class MailServicioImpl implements MailServicio {
     }
 
     @Override
-    public void tipificarCorreo(MailSalida mailsalida) {
+    public Mensaje tipificarCorreo(MailSalida mailsalida) {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
+        Mensaje mensaje = new Mensaje();
+        Resumen usuarioresumen;
         try {
             Query querymailaresponder = new Query(Criteria.where("idcorreo").is(mailsalida.getId()));
             querymailaresponder.fields().include("idcorreo").include("tipificacion").include("usuario").include("campana").include("id_cola");
             MailSalida mailaresponder = mongoops.findOne(querymailaresponder, MailSalida.class);
-            Resumen usuarioresumen = resumenservicio.obtenerResumen(mailaresponder.getId_agente());
+            usuarioresumen = resumenservicio.obtenerResumen(mailaresponder.getId_agente());
             if (mailaresponder.getTipificacion() == 0) {//esto es para evitar que reduzca los pendientes de correos ya tipificados
                 resumenservicio.modificarPendientes(mailaresponder.getId_agente(), usuarioresumen.getPendiente() - 1);
                 resumendiarioservicio.actualizarPendientes(-1, mailaresponder.getId_agente());
@@ -519,9 +527,13 @@ public class MailServicioImpl implements MailServicio {
                             .set("fechafingestion", formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA))
                             .set("hilocerrado", true),
                     MailSalida.class);//estoy usando esta clase solo por lo conveniente que es ya que tiene id y tipificacion
+            mensaje.setEstado_mail(resumenservicio.obtenerEstado(usuarioresumen.getAgente()));
+            mensaje.setAcumulado_mail(resumenservicio.obtenerPendientes(usuarioresumen.getAgente()));
+            mensaje.setPedido_pausa(resumenservicio.obtenerPedidoPausa(usuarioresumen.getAgente()));
         } catch (ParseException ex) {
             log.error("error en el metodo tipificarCorreo", ex.getCause());
         }
+        return mensaje;
     }
 
     @Override

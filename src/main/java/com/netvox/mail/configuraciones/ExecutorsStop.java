@@ -37,8 +37,6 @@ public class ExecutorsStop extends ContextLoaderListener {
 
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
-
-        System.out.println("estoy cerrando");
         hiloentradaservicio.setActivo(false);
         hiloasignacionservicio.setActivo(false);
         taskExecutor.shutdownNow();

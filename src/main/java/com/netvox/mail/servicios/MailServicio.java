@@ -36,9 +36,9 @@ public interface MailServicio {
 
     public void adjuntarcorreo(MultipartFile archivo, int idagente);
 
-    public void enviarcorreo(MailSalida mailsalida);
+    public Mensaje enviarcorreo(MailSalida mailsalida);
 
-    public void tipificarCorreo(MailSalida mailsalida);
+    public Mensaje tipificarCorreo(MailSalida mailsalida);
 
     public List<Tipificacion> listarTipificaciones();
 

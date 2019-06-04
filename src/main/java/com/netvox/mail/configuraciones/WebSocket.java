@@ -115,7 +115,7 @@ public class WebSocket extends TextWebSocketHandler {
         if (lista.isEmpty()) {
             logconexionesservcio.grabarDesconexion(listaidagente.get(0).getIdagente());
             if (resumenservicio.obtenerEstado(listaidagente.get(0).getIdagente()) == 4) {
-                pausaservicio.despausar(listaidagente.get(0).getIdagente());
+                pausaservicio.despausar(listaidagente.get(0).getIdagente());                
             }
             MapaAgentes.getMapa().remove(listaidagente.get(0).getIdagente());
             resumenservicio.borrarResumenBaseDatos(listaidagente.get(0).getIdagente());
