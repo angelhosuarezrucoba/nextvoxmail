@@ -112,7 +112,7 @@ public class HiloEntradaServicio implements Runnable {
                 log.info("----------------------------------------------------------------------------------------");
                 Thread.sleep(1000 * 5);
             } catch (Exception ex) {
-                log.error("error en el HiloEntradaServicio", ex.getCause());
+                log.error("error en el HiloEntradaServicio", ex);
             }
         }
     }
@@ -149,7 +149,7 @@ public class HiloEntradaServicio implements Runnable {
                 lista = lista.stream().limit(limitecorreos).collect(Collectors.toList());
             }
         } catch (MessagingException ex) {
-            log.error("error en el metodo obtenerCorreosNoLeidos", ex.getCause());
+            log.error("error en el metodo obtenerCorreosNoLeidos", ex);
         }
         return lista;
     }
@@ -163,7 +163,7 @@ public class HiloEntradaServicio implements Runnable {
                 store.close();
             }
         } catch (MessagingException ex) {
-            log.error("error en el metodo cerrarFolderYstore", ex.getCause());
+            log.error("error en el metodo cerrarFolderYstore", ex);
         }
     }
 
@@ -189,7 +189,7 @@ public class HiloEntradaServicio implements Runnable {
                 remitente = remitente.replace("\n", "");
             }
         } catch (MessagingException ex) {
-            log.error("error en el metodo obtenerRemitente", ex.getCause());
+            log.error("error en el metodo obtenerRemitente", ex);
         }
         return remitente;
     }

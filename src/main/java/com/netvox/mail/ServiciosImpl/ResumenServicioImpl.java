@@ -52,7 +52,7 @@ public class ResumenServicioImpl implements ResumenServicio {
         try {
             mongoops.remove(new Query(Criteria.where("agente").is(idagente)), Resumen.class);
         } catch (Exception e) {
-            log.error("error en el metodo borrarResumenBaseDatos", e.getCause());
+            log.error("error en el metodo borrarResumenBaseDatos", e);
         }
     }
 
@@ -62,7 +62,7 @@ public class ResumenServicioImpl implements ResumenServicio {
         try {
             mongoops.remove(new Query(), Resumen.class);
         } catch (Exception e) {
-            log.error("error en el metodo borrarResumenTotal", e.getCause());
+            log.error("error en el metodo borrarResumenTotal", e);
         }
     }
 
@@ -97,7 +97,7 @@ public class ResumenServicioImpl implements ResumenServicio {
                 log.info("El agente " + usuarioresumen.getNombre() + " entro en pausa");
             }
         } catch (Exception e) {
-            log.error("Error al pausar", e.getCause());
+            log.error("Error al pausar", e);
         }
     }
 

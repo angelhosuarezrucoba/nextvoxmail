@@ -28,7 +28,7 @@ public class ClienteMysqlServicioImpl {
         try {
             conexion = datasource.getConnection();
         } catch (Exception e) {
-            log.error("error en el metodo obtenerConexion , mysql", e.getCause());
+            log.error("error en el metodo obtenerConexion , mysql", e);
         }
         return conexion;
     }

@@ -94,7 +94,7 @@ public class ResumenDiarioServicioImpl {
             preparedstatement.close();
             conexion.close();
         } catch (SQLException e) {
-            log.error("error en el metodo insertarConexion", e.getCause());
+            log.error("error en el metodo insertarConexion", e);
         }
     }
 
@@ -111,7 +111,7 @@ public class ResumenDiarioServicioImpl {
             preparedstatement.execute();
             conexion.close();
         } catch (Exception e) {
-            log.error("error en el metodo actualizarAtendidosPorCola", e.getCause());
+            log.error("error en el metodo actualizarAtendidosPorCola", e);
         }
     }
 
@@ -126,7 +126,7 @@ public class ResumenDiarioServicioImpl {
             }
             conexion.close();
         } catch (SQLException e) {
-            log.error("error en el metodo actualizarPendientes", e.getCause());
+            log.error("error en el metodo actualizarPendientes", e);
         }
     }
 
@@ -148,7 +148,7 @@ public class ResumenDiarioServicioImpl {
             conexion.close();
 
         } catch (Exception e) {
-            log.error("error en el metodo actualizaHoraLogueo", e.getCause());
+            log.error("error en el metodo actualizaHoraLogueo", e);
         }
     }
 
@@ -189,7 +189,7 @@ public class ResumenDiarioServicioImpl {
             conexion.createStatement().execute(sql);
             conexion.close();
         } catch (SQLException e) {
-            log.error("error en el metodo actualizarEstado", e.getCause());
+            log.error("error en el metodo actualizarEstado", e);
         }
     }
 

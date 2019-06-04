@@ -52,7 +52,7 @@ public class LogConexionesServicio {
                 resumendiarioservicio.actualizaHoraLogueo(resumen);
             }
         } catch (Exception e) {
-            log.error("error en el metodo grabarConexion", e.getCause());
+            log.error("error en el metodo grabarConexion", e);
         }
     }
 
@@ -63,7 +63,7 @@ public class LogConexionesServicio {
                     .and("fechaconexion").regex(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA))),
                     new Update().set("fechadesconexion", formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)), LogConexiones.class);
         } catch (Exception e) {
-            log.error("error en el metodo grabarDesconexion", e.getCause());
+            log.error("error en el metodo grabarDesconexion", e);
         }
     }
 

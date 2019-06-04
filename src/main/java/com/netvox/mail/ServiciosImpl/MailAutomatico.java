@@ -77,7 +77,7 @@ public class MailAutomatico {
             Transport.send(message);
             System.out.println("SE ENVIO EMAIL DE AUTORESPUESTA");
         } catch (MessagingException ex) {
-            log.error("error en el metodo enviarEmail , clase MailAutomatico", ex.getCause());
+            log.error("error en el metodo enviarEmail , clase MailAutomatico", ex);
         }
     }
 }

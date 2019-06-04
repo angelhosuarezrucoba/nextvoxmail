@@ -50,7 +50,7 @@ public class PausaServicioImpl implements PausaServicio {
                     and("finpausa").is(null)),
                     new Update().set("finpausa", pausa.getFinpausa()).set("duracion", pausa.getDuracion()), Pausa.class);
         } catch (Exception e) {
-            log.error("Error en el despausar", e.getCause());
+            log.error("Error en el despausar", e);
         }
 
     }

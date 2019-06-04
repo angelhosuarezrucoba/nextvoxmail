@@ -217,7 +217,7 @@ public class MailServicioImpl implements MailServicio {
                         }
                     });
         } catch (ParseException ex) {
-            log.error("error en el metodo autoAsignarse", ex.getCause());
+            log.error("error en el metodo autoAsignarse", ex);
         }
     }
 
@@ -256,7 +256,7 @@ public class MailServicioImpl implements MailServicio {
             mongoops.insert(mailsalida);
 
         } catch (Exception e) {
-            log.error("error en el metodo generarNuevoCorreo", e.getCause());
+            log.error("error en el metodo generarNuevoCorreo", e);
         }
         return mailsalida;
     }
@@ -281,9 +281,9 @@ public class MailServicioImpl implements MailServicio {
             mongoops.updateFirst(new Query(Criteria.where("idcorreo").is(idcorreo)),
                     new Update().push("listadeadjuntos", new Adjunto(archivo.getOriginalFilename(), (int) archivo.getSize(), nuevoarchivo.getAbsolutePath())), Mail.class);
         } catch (FileNotFoundException ex) {
-            log.error("error en el metodo adjuntarcorreo", ex.getCause());
+            log.error("error en el metodo adjuntarcorreo", ex);
         } catch (IOException ex) {
-            log.error("error en el metodo adjuntarcorreo", ex.getCause());
+            log.error("error en el metodo adjuntarcorreo", ex);
         }
     }
 
@@ -314,7 +314,7 @@ public class MailServicioImpl implements MailServicio {
             mensaje.setAcumulado_mail(resumenservicio.obtenerPendientes(usuarioresumen.getAgente()));
             mensaje.setPedido_pausa(resumenservicio.obtenerPedidoPausa(usuarioresumen.getAgente()));
         } catch (IOException ex) {
-            log.error("error en el metodo enviarcorreo", ex.getCause());
+            log.error("error en el metodo enviarcorreo", ex);
         }
         prepararMensaje(nuevomail);
         return mensaje;
@@ -327,7 +327,7 @@ public class MailServicioImpl implements MailServicio {
             bodypartmensaje.setContent(mensaje, "text/html; charset=\"UTF-8\"");
             multipart.addBodyPart(bodypartmensaje);
         } catch (MessagingException e) {
-            log.error("error en el metodo agregarCuerpoDelMensaje", e.getCause());
+            log.error("error en el metodo agregarCuerpoDelMensaje", e);
         }
         return multipart;
     }
@@ -344,7 +344,7 @@ public class MailServicioImpl implements MailServicio {
                     mimebodypartembebido.attachFile(archivo);
                     multipart.addBodyPart(mimebodypartembebido);
                 } catch (IOException | MessagingException e) {
-                    log.error("error en el metodo agregarEmbebidosAlMensaje", e.getCause());
+                    log.error("error en el metodo agregarEmbebidosAlMensaje", e);
                 }
             }
         }
@@ -363,7 +363,7 @@ public class MailServicioImpl implements MailServicio {
                     mimebodypart.setFileName(archivo.getName());
                     multipart.addBodyPart(mimebodypart);
                 } catch (Exception e) {
-                    log.error("error en el metodo agregarAdjuntosAlMensaje", e.getCause());
+                    log.error("error en el metodo agregarAdjuntosAlMensaje", e);
                 }
             }
         }
@@ -384,7 +384,7 @@ public class MailServicioImpl implements MailServicio {
             resultset.close();
             conexion.close();
         } catch (Exception e) {
-            log.error("error en el metodo obtenerConfiguracionMail", e.getCause());
+            log.error("error en el metodo obtenerConfiguracionMail", e);
         }
         return mailconfiguracion;
     }
@@ -396,7 +396,7 @@ public class MailServicioImpl implements MailServicio {
                 try {
                     mimemensaje.addRecipient(Message.RecipientType.CC, new InternetAddress(destinoencopia));
                 } catch (MessagingException ex) {
-                    log.error("error en el metodo agregarDestinatariosEnCopia", ex.getCause());
+                    log.error("error en el metodo agregarDestinatariosEnCopia", ex);
                 }
             }
         }
@@ -418,7 +418,7 @@ public class MailServicioImpl implements MailServicio {
             mimemensaje = agregarDestinatariosEnCopia(mimemensaje, mailsalida.getCopia());
             Transport.send(mimemensaje);
         } catch (MessagingException ex) {
-            log.error("error en el metodo prepararMensaje", ex.getCause());
+            log.error("error en el metodo prepararMensaje", ex);
         }
     }
 
@@ -469,7 +469,7 @@ public class MailServicioImpl implements MailServicio {
             outputStream.write(dataBytes);
 
         } catch (IOException e) {
-            log.error("error en el metodo guardarEmbebido", e.getCause());
+            log.error("error en el metodo guardarEmbebido", e);
         }
         return nombre_final;
     }
@@ -531,7 +531,7 @@ public class MailServicioImpl implements MailServicio {
             mensaje.setAcumulado_mail(resumenservicio.obtenerPendientes(usuarioresumen.getAgente()));
             mensaje.setPedido_pausa(resumenservicio.obtenerPedidoPausa(usuarioresumen.getAgente()));
         } catch (ParseException ex) {
-            log.error("error en el metodo tipificarCorreo", ex.getCause());
+            log.error("error en el metodo tipificarCorreo", ex);
         }
         return mensaje;
     }
@@ -549,7 +549,7 @@ public class MailServicioImpl implements MailServicio {
             resultset.close();
             conexion.close();
         } catch (SQLException e) {
-            log.error("error en el metodo listarTipificaciones", e.getCause());
+            log.error("error en el metodo listarTipificaciones", e);
         }
         return listatipificaciones;
     }
@@ -604,7 +604,7 @@ public class MailServicioImpl implements MailServicio {
             }
 
         } catch (ParseException e) {
-            log.error("error al generar el correo", e.getCause());
+            log.error("error al generar el correo", e);
         }
         return mailsalida;
     }
@@ -652,7 +652,7 @@ public class MailServicioImpl implements MailServicio {
             }
 
         } catch (ParseException e) {
-            log.error("error en el metodo listarCorreosPendientes", e.getCause());
+            log.error("error en el metodo listarCorreosPendientes", e);
         }
         return lista;
     }
@@ -701,7 +701,7 @@ public class MailServicioImpl implements MailServicio {
                 }
             }
         } catch (ParseException e) {
-            log.error("error en el metodo listarCorreoInvalidos", e.getCause());
+            log.error("error en el metodo listarCorreoInvalidos", e);
         }
         return lista;
     }
@@ -750,7 +750,7 @@ public class MailServicioImpl implements MailServicio {
                 }
             }
         } catch (ParseException e) {
-            log.error("error en el metodo listarCorreos", e.getCause());
+            log.error("error en el metodo listarCorreos", e);
         }
         return lista;
     }
@@ -776,7 +776,7 @@ public class MailServicioImpl implements MailServicio {
                 pausa.setDuracionpausa(formatodefechas.convertirSegundosAFechaNormal(pausa.getDuracion()));
             }
         } catch (Exception e) {
-            log.error("error en el metodo detalleTiemposeEnPausa", e.getCause());
+            log.error("error en el metodo detalleTiemposeEnPausa", e);
         }
         return lista;
     }
@@ -820,7 +820,7 @@ public class MailServicioImpl implements MailServicio {
             lista = resultado.getMappedResults();
 
         } catch (Exception e) {
-            log.error("error en el metodo detalleGrupalDeCorreosPorDias", e.getCause());
+            log.error("error en el metodo detalleGrupalDeCorreosPorDias", e);
         }
         return lista;
     }
@@ -864,7 +864,7 @@ public class MailServicioImpl implements MailServicio {
             lista = resultado.getMappedResults();
 
         } catch (Exception e) {
-            log.error("error en el metodo detalleGrupalDeCorreosPorHoras", e.getCause());
+            log.error("error en el metodo detalleGrupalDeCorreosPorHoras", e);
         }
         return lista;
     }
@@ -921,11 +921,11 @@ public class MailServicioImpl implements MailServicio {
                     resultados.setTiempo_atencion(formatodefechas.convertirSegundosAFechaNormal(resultados.getTiempo_atencion_int()));
                     resultados.setTiempo_promedio_atencion(formatodefechas.convertirSegundosAFechaNormal((int) resultados.getTiempo_promedio_atencion_double()));
                 } catch (ParseException ex) {
-                    log.error("error en el metodo detalleGrupalDeCorreosPorAgente", ex.getCause());
+                    log.error("error en el metodo detalleGrupalDeCorreosPorAgente", ex);
                 }
             });
         } catch (Exception e) {
-            log.error("error en el metodo listarMailsEnCola", e.getCause());
+            log.error("error en el metodo listarMailsEnCola", e);
         }
         return lista;
     }
@@ -957,7 +957,7 @@ public class MailServicioImpl implements MailServicio {
             lista = resultado.getMappedResults();
 
         } catch (Exception e) {
-            log.error("error en el metodo detalleGrupalDeCorreosPorCola", e.getCause());
+            log.error("error en el metodo detalleGrupalDeCorreosPorCola", e);
         }
         return lista;
     }
@@ -1048,7 +1048,7 @@ public class MailServicioImpl implements MailServicio {
             }
 
         } catch (Exception e) {
-            log.error("error en el metodo graficoMultiCanal", e.getCause());
+            log.error("error en el metodo graficoMultiCanal", e);
         }
 
         return grafico;
@@ -1102,7 +1102,7 @@ public class MailServicioImpl implements MailServicio {
             });
 
         } catch (Exception e) {
-            log.error("error en el metodo reporteMensual", e.getCause());
+            log.error("error en el metodo reporteMensual", e);
         }
 
         return grafico;
@@ -1144,7 +1144,7 @@ public class MailServicioImpl implements MailServicio {
             lista = resultado.getMappedResults();
 
         } catch (Exception e) {
-            log.error("error en el metodo atendidosPorCola", e.getCause());
+            log.error("error en el metodo atendidosPorCola", e);
         }
 
         return lista;

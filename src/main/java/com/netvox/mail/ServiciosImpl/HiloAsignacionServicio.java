@@ -52,7 +52,7 @@ public class HiloAsignacionServicio implements Runnable {
                 log.info("----------------------------------------------------------------------------------------");
                 Thread.sleep(5000);
             } catch (Exception ex) {
-                log.error("error en el HiloAsignacionServicio", ex.getCause());
+                log.error("error en el HiloAsignacionServicio", ex);
             }
         }
     }

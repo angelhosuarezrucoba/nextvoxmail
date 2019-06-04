@@ -156,7 +156,7 @@ public class CoreMailServicioImpl {
             resultado.close();
             conexion.close();
         } catch (SQLException ex) {
-            log.error("error en el metodo obtenerCuentasDeCorreo", ex.getCause());
+            log.error("error en el metodo obtenerCuentasDeCorreo", ex);
         }
         return lista;
     }
@@ -168,7 +168,7 @@ public class CoreMailServicioImpl {
             nuevomail = new Mail(generadorId(), 0, "entrada", formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA), idconfiguracion, idcola, nombre_cola, id_campana, asunto, remitente, destino);
             mongoops.insert(nuevomail);
         } catch (Exception ex) {
-            log.error("error en el metodo insertarNuevoMail", ex.getCause());
+            log.error("error en el metodo insertarNuevoMail", ex);
         }
         return nuevomail;
     }
@@ -223,7 +223,7 @@ public class CoreMailServicioImpl {
             resultado.close();
             conexion.close();
         } catch (Exception ex) {
-            log.error("error en el metodo ObtenerMailConfiguracion", ex.getCause());
+            log.error("error en el metodo ObtenerMailConfiguracion", ex);
         }
 
         return mailconfiguracion;
@@ -274,7 +274,7 @@ public class CoreMailServicioImpl {
             procedimientoalmacenado.close();
             conexion.close();
         } catch (SQLException ex) {
-            log.error("error en el metodo ActualizarMail", ex.getCause());
+            log.error("error en el metodo ActualizarMail", ex);
         }
         return nuevomail;
     }
@@ -310,7 +310,7 @@ public class CoreMailServicioImpl {
                     new Query(Criteria.where("usuario").is(idUsuario).
                             and("campana").is(idCampana).and("estado").is(1).and("tipificacion").is(0).and("id_cola").in(listacolas)), Mail.class);
         } catch (Exception ex) {
-            log.error("error en el metodo obtenerCantidadPendientesPorCola", ex.getCause());
+            log.error("error en el metodo obtenerCantidadPendientesPorCola", ex);
         }
         return cantidad;
     }
@@ -324,7 +324,7 @@ public class CoreMailServicioImpl {
             cantidad = (int) mongoops.count(
                     new Query(Criteria.where("estado").is(0).and("id_cola").in(listacolas)), Mail.class);
         } catch (Exception ex) {
-            log.error("error en el metodo obtenerCantidadNoAsignadosPorColas", ex.getCause());
+            log.error("error en el metodo obtenerCantidadNoAsignadosPorColas", ex);
         }
         return cantidad;
     }
@@ -341,7 +341,7 @@ public class CoreMailServicioImpl {
                     include("asunto").include("idconfiguracion").include("id_cola").include("remitente").include("nombre_cola").include("nombre_campana").include("destino");
             listado = mongoops.find(query, Mail.class);
         } catch (Exception e) {
-            log.error("error en el metodo listarMailsEnCola", e.getCause());
+            log.error("error en el metodo listarMailsEnCola", e);
         }
         return listado;
     }
@@ -388,7 +388,7 @@ public class CoreMailServicioImpl {
             websocket.enviarMensajeParaUnUsuario(mensaje, usuarioresumen.getAgente());//aqui envio el mensaje a un usuario asignado
         } catch (ParseException ex) {
 
-            log.error("error en el metodo asignarMailAgente", ex.getCause());
+            log.error("error en el metodo asignarMailAgente", ex);
         }
     }
 
@@ -407,7 +407,7 @@ public class CoreMailServicioImpl {
             resultset.close();
             conexion.close();
         } catch (Exception e) {
-            log.error("error en el metodo obtenerCorreos", e.getCause());
+            log.error("error en el metodo obtenerCorreos", e);
         }
         return correos;
     }
@@ -426,7 +426,7 @@ public class CoreMailServicioImpl {
             preparedstatement.close();
             conexionfirma.close();
         } catch (Exception e) {
-            log.error("error en el metodo obtenerFirma", e.getCause());
+            log.error("error en el metodo obtenerFirma", e);
         }
         return firma;
     }
@@ -464,7 +464,7 @@ public class CoreMailServicioImpl {
             mensaje.setTiempo_pausa(resumendiarioservicio.tiempoEnPausa(mensaje.getIdagente()));
             mensaje.setPeso_maximo_adjunto(getConfiguraciones().getPeso_maximo_adjunto());
         } catch (Exception e) {
-            log.error("error en el metodo obtenerRespuestaDeLogin", e.getCause());
+            log.error("error en el metodo obtenerRespuestaDeLogin", e);
         }
         return mensaje;
     }
@@ -474,7 +474,7 @@ public class CoreMailServicioImpl {
         try {
             configuraciones = mongoops.findOne(new Query(), Configuraciones.class);
         } catch (Exception e) {
-            log.error("error en el metodo cargarConfiguraciones", e.getCause());
+            log.error("error en el metodo cargarConfiguraciones", e);
         }
     }
 
@@ -509,7 +509,7 @@ public class CoreMailServicioImpl {
             preparedstatement.close();
             conexion.close();
         } catch (Exception e) {
-            log.error("error en el metodo listarMailsEnCola", e.getCause());
+            log.error("error en el metodo listarMailsEnCola", e);
         }
 
     }

@@ -32,7 +32,7 @@ public class LecturaServicioImpl {
             fr = new FileReader(file);
             br = new BufferedReader(fr);
         } catch (FileNotFoundException ex) {
-            log.error("error en el metodo LecturaServicioImpl", ex.getCause());
+            log.error("error en el metodo LecturaServicioImpl", ex);
         }
     }
 
@@ -45,7 +45,7 @@ public class LecturaServicioImpl {
             br.close();
             fr.close();
         } catch (IOException ex) {
-            log.error("error en el metodo obtenerConfiguraciones , clase LecturaServicioImpl", ex.getCause());
+            log.error("error en el metodo obtenerConfiguraciones , clase LecturaServicioImpl", ex);
         }
         return lista;
     }

@@ -114,7 +114,7 @@ public class Utilidades {
                         pw = new PrintWriter(fichero);
                         pw.println(contenidodelmensaje);
                     } catch (Exception e) {
-                        log.error("error en el createFileHTML", e.getCause());
+                        log.error("error en el createFileHTML", e);
                     } finally {
                         try {
                             if (null != fichero) {
@@ -260,7 +260,7 @@ public class Utilidades {
             mongoops.updateFirst(new Query(Criteria.where("idcorreo").is(id)), new Update().set("mensaje", mail.getMensaje()), Mail.class);
             created = true;
         } catch (IOException | MessagingException ex) {
-            log.error("error en el createFileHTML", ex.getCause());
+            log.error("error en el createFileHTML", ex);
         }
         System.out.println("CREADO: " + created);
         return created;
@@ -274,7 +274,7 @@ public class Utilidades {
             write1 = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(unidad.getAbsolutePath() + "/" + id + "/" + id + ".txt"), "UTF-8"));
             write1.write(cuerpoMensaje);
         } catch (Exception e) {
-            log.error("error en el crearArchivoHtml", e.getCause());
+            log.error("error en el crearArchivoHtml", e);
         } finally {
             try {
                 write1.close();
@@ -360,14 +360,14 @@ public class Utilidades {
                                 }
 
                             } catch (Exception ex) {
-                                log.error("error en el metodo analizaParteDeMensaje", ex.getCause());
+                                log.error("error en el metodo analizaParteDeMensaje", ex);
                             } finally {
                                 fichero.close();
                                 imagen.close();
                             }
 
                         } catch (Exception ex) {
-                            log.error("error en el metodo analizaParteDeMensaje", ex.getCause());
+                            log.error("error en el metodo analizaParteDeMensaje", ex);
                         }
 
                     } else if (unaParte.isMimeType("AUDIO/*")) {
@@ -403,7 +403,7 @@ public class Utilidades {
             mail.setPeso_adjunto(mail.getPeso_adjunto() + peso_adjunto);
             System.out.println("PESO ADJUNTO " + peso_adjunto + "  .PESO PERMITIDO" + limite);
         } catch (NumberFormatException ex) {
-            log.error("error en el metodo sumarAdjuntos ", ex.getCause());
+            log.error("error en el metodo sumarAdjuntos ", ex);
         }
 
     }
