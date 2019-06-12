@@ -437,7 +437,7 @@ public class CoreMailServicioImpl {
             mensaje.setFirma(obtenerFirma(mensaje.getIdagente()));
             if (!resumenservicio.hayResumen(mensaje.getIdagente())) {
                 int mailspendienteporcola = obtenerCantidadPendientesPorCola(mensaje.getIdagente(), mensaje.getCampana(), mensaje.getColas());
-                Resumen resumen = new Resumen(mensaje.getCampana(), mensaje.getIdagente(), mensaje.getAgente(), mailspendienteporcola, mensaje.getColas(), mensaje.getEstado_mail() == 4 ? 4 : (mailspendienteporcola == 0) ? 1 : 2, 0);
+                Resumen resumen = new Resumen(mensaje.getCampana(), mensaje.getIdagente(), mensaje.getAgente(), mailspendienteporcola, mensaje.getColas(), mensaje.getEstado_mail() == 4 ? 4 : (mailspendienteporcola == 0) ? 1 : 2, mensaje.getPedido_pausa());
                 getListaresumen().add(resumen);
                 if (mensaje.getEstado_mail() == 4) { // esto es la validacion para la pausa   
                     resumenservicio.modificarEstado(mensaje.getIdagente(), 4);
@@ -455,7 +455,8 @@ public class CoreMailServicioImpl {
             } else {//caso 1 , o 2 sin pausa.
                 mensaje.setEstado_mail(resumenservicio.obtenerPendientes(mensaje.getIdagente()) == 0 ? 1 : 2);//disponible si tiene 0 pendientes,2 si tiene pendientes,es decir atendiendo
                 mensaje.setPedido_pausa(0);
-            }
+            }          
+            
 
             mensaje.setAcumulado_mail(resumenservicio.obtenerPendientes(mensaje.getIdagente()));// se le puso por nombre acumulado mail solo para coordinar con el front, esto es la suma de mails pendiente.
             mensaje.setCantidad_cola_mail(obtenerCantidadSinAsignarPorColas(mensaje.getColas())); // todos los mails que estan sin asignar dependiendo de la cola

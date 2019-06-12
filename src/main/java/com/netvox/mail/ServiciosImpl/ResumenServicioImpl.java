@@ -71,18 +71,18 @@ public class ResumenServicioImpl implements ResumenServicio {
         Resumen usuarioresumen = obtenerResumen(mensaje.getIdagente());
         try {
             if (usuarioresumen.getEstadoagente() == 4) {//despausar
-                log.info("entre al primer if");
+                log.warn("entre al primer if");
                 modificarEstado(usuarioresumen.getAgente(), 1);
                 pausaservicio.despausar(usuarioresumen.getAgente());
                 resumendiarioservicio.actualizarEstado(usuarioresumen.getAgente(), 1, 0);// aqui si se termina una pausa real y se contabiliza
                 log.info("El agente " + usuarioresumen.getNombre() + " salio de la pausa");
             } else if (usuarioresumen.getPedido_pausa() == 1) { //despausar  
-                 log.info("entre al primer else if");
+                log.warn("entre al primer else if");
                 modificarPedidoPausa(usuarioresumen.getAgente(), 0);
                 resumendiarioservicio.actualizarEstado(usuarioresumen.getAgente(), 2, 0);// en este caso se tiene que cambiar el pedido de pausa.
                 log.info("El agente " + usuarioresumen.getNombre() + " salio de la pausa");
             } else {//pausar              
-                 log.info("entre al else");
+                log.warn("entre al else");
                 if (usuarioresumen.getEstadoagente() == 1) {//si esta en 1 se pausa y se cuenta el tiempo,  si esta en 2 se da el "pedido_pausa"
                     modificarEstado(usuarioresumen.getAgente(), 4);
                     if (mensaje.isPausasupervisor()) {

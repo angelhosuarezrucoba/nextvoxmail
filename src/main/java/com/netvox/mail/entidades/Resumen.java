@@ -29,6 +29,7 @@ public class Resumen {
         this.pendiente = pendiente;
         this.listacolas = listacolas;
         this.estadoagente = estadoagente;
+        this.pedido_pausa=pedido_pausa;
     }
 
     public int getCampana() {

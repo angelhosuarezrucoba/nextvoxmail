@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -49,6 +51,8 @@ public class WebSocket extends TextWebSocketHandler {
     @Qualifier("pausaservicio")
     PausaServicio pausaservicio;
 
+    Logger log = LoggerFactory.getLogger(this.getClass());
+
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         Mensaje mensaje = new Gson().fromJson(message.getPayload(), Mensaje.class);
@@ -71,9 +75,8 @@ public class WebSocket extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-
         //esto debe migrar a un metodo para ser llamado luego del login y no exactamente despues de conseguir la conexion
-        System.out.println("Conectando agente " + session.getAttributes().get("idagente") + " SessionID " + session.getId());
+        log.warn("Conectando agente " + session.getAttributes().get("idagente") + " SessionID " + session.getId());
         int idagente = Integer.parseInt((String) session.getAttributes().get("idagente"));
         Agente agente = new Agente(idagente, session);
         if (MapaAgentes.getMapa().containsKey(idagente)) {
@@ -83,21 +86,20 @@ public class WebSocket extends TextWebSocketHandler {
             lista.add(agente);
             MapaAgentes.getMapa().put(idagente, lista);
         }
-
-        System.out.println("Al conectarme ");
-        MapaAgentes.getMapa().forEach((id_agente, listasesiones) -> {
-            System.out.println("Id agente : " + idagente);
-            listasesiones.forEach((sesion) -> {
-                System.out.println("       sesion: " + sesion.getSesion().getId());
-            });
-        });
+//
+//        MapaAgentes.getMapa().forEach((id_agente, listasesiones) -> {
+//            System.out.println("Id agente : " + idagente);
+//            listasesiones.forEach((sesion) -> {
+//                System.out.println("       sesion: " + sesion.getSesion().getId());
+//            });
+//        });
     } //coloca un id de agente a cada sesion y las agrupa para que se visualice en cada pantalla
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status)
             throws Exception { // remueve la sesion de la lista de sesiones que tiene un agente        
         //deberia validarse en caso de que nunca se haya conseguido el inicio de sesion , que es el caso de un login invalido, por lo general no sucedera.
-        System.out.println("cerr lasesion " + session.getId());
+        log.warn("cerre la sesion " + session.getId());
         List<Agente> lista = MapaAgentes.getMapa().values().stream()
                 .filter((listadeagentes) -> {
                     return listadeagentes.stream().filter((agente) -> {
@@ -115,7 +117,7 @@ public class WebSocket extends TextWebSocketHandler {
         if (lista.isEmpty()) {
             logconexionesservcio.grabarDesconexion(listaidagente.get(0).getIdagente());
             if (resumenservicio.obtenerEstado(listaidagente.get(0).getIdagente()) == 4) {
-                pausaservicio.despausar(listaidagente.get(0).getIdagente());                
+                pausaservicio.despausar(listaidagente.get(0).getIdagente());
             }
             MapaAgentes.getMapa().remove(listaidagente.get(0).getIdagente());
             resumenservicio.borrarResumenBaseDatos(listaidagente.get(0).getIdagente());
@@ -131,7 +133,7 @@ public class WebSocket extends TextWebSocketHandler {
                 try {
                     sesion.getSesion().sendMessage(new TextMessage(new Gson().toJson(mensaje)));
                 } catch (IOException ex) {
-                    ex.printStackTrace();
+                    log.error("enviarMensajeParaUnUsuario", ex);
                 }
             }
         });

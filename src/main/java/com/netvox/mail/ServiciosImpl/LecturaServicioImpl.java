@@ -31,7 +31,7 @@ public class LecturaServicioImpl {
             //  file = new File("/usr/local/Tomcat8.0/webapps/configuracion.txt");
             fr = new FileReader(file);
             br = new BufferedReader(fr);
-        } catch (FileNotFoundException ex) {
+        } catch (FileNotFoundException ex) {            
             log.error("error en el metodo LecturaServicioImpl", ex);
         }
     }
