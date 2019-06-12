@@ -22,7 +22,6 @@ public class MailInbox {
     private String cc;//copia
     private String mensaje;//comentario de tipificacion
     private String fecha_ingreso;
-    private String fecha_respuesta;
     private int tiempo_cola;//tiempo que estuvo en una cola;
     private int tipificacion;
     private List<Adjunto> adjuntos = new ArrayList<>();
@@ -73,13 +72,7 @@ public class MailInbox {
         this.fecha_ingreso = fecha_ingreso;
     }
 
-    public String getFecha_respuesta() {
-        return fecha_respuesta;
-    }
-
-    public void setFecha_respuesta(String fecha_respuesta) {
-        this.fecha_respuesta = fecha_respuesta;
-    }
+ 
 
     public int getTipificacion() {
         return tipificacion;

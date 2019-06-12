@@ -17,13 +17,10 @@ public class Mail {
     private String remitente;
     private String destino;
     private String asunto;//subject;  
-    private int usuario;
     private String mensaje;
     private int id_cola;
     private String tipomail;//tipo de entrada o salida;
     private int campana;
-    private String nombre;
-    private String apellido;
     private String nombre_campana;
     private int peso_adjunto;
     private String ruta;
@@ -37,7 +34,7 @@ public class Mail {
     private int tiempo_atencion;
     private String nombre_cola;
 
-    public Mail(int idcorreo, int estado, String tipomail, String fecha_ingreso, int idconfiguracion, int id_cola, String nombre_cola, int id_campana, String asunto, String remitente,String destino) {
+    public Mail(int idcorreo, int estado, String tipomail, String fecha_ingreso, int idconfiguracion, int id_cola, String nombre_cola, int id_campana, String asunto, String remitente, String destino) {
         this.idcorreo = idcorreo;
         this.tipomail = tipomail;
         this.estado = estado;
@@ -49,7 +46,7 @@ public class Mail {
         this.campana = id_campana;
         this.asunto = asunto;
         this.remitente = remitente;
-        this.destino=destino;
+        this.destino = destino;
 
     }
 
@@ -81,14 +78,6 @@ public class Mail {
         this.asunto = asunto;
     }
 
-    public int getUsuario() {
-        return usuario;
-    }
-
-    public void setUsuario(int usuario) {
-        this.usuario = usuario;
-    }
-
     public int getId_cola() {
         return id_cola;
     }
@@ -111,22 +100,6 @@ public class Mail {
 
     public void setCampana(int campana) {
         this.campana = campana;
-    }
-
-    public String getNombre() {
-        return nombre;
-    }
-
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
-
-    public String getApellido() {
-        return apellido;
-    }
-
-    public void setApellido(String apellido) {
-        this.apellido = apellido;
     }
 
     public String getNombre_campana() {

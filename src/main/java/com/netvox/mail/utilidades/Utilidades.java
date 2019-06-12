@@ -249,12 +249,12 @@ public class Utilidades {
                 //CREACION HTML
                 crearArchivoHtml(unidad, cuerpoMensaje, id);
             }
-            if (index_nombre_apellido.containsKey("[Nombre*] :")) {
-                mail.setNombre(index_nombre_apellido.get("[Nombre*] :"));
-            }
-            if (index_nombre_apellido.containsKey("[Apellido*] :")) {
-                mail.setApellido(index_nombre_apellido.get("[Apellido*] :"));
-            }
+//            if (index_nombre_apellido.containsKey("[Nombre*] :")) {
+//                mail.setNombre(index_nombre_apellido.get("[Nombre*] :"));
+//            } nunca se uso
+//            if (index_nombre_apellido.containsKey("[Apellido*] :")) {
+//                mail.setApellido(index_nombre_apellido.get("[Apellido*] :"));
+//            }nunca se uso
 
             mail.setMensaje(cuerpoMensaje);
             mongoops.updateFirst(new Query(Criteria.where("idcorreo").is(id)), new Update().set("mensaje", mail.getMensaje()), Mail.class);
