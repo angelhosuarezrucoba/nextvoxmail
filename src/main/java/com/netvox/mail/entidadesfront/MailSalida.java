@@ -89,6 +89,8 @@ public class MailSalida {
 
     @Field(value = "tiempo_atencion")
     private int tiempo_atencion;//
+    
+    private String nombre_cola;
 
     //////////variables para el reporte
     private String hora;
@@ -338,5 +340,13 @@ public class MailSalida {
 
     public void setFechafingestion(String fechafingestion) {
         this.fechafingestion = fechafingestion;
+    }
+
+    public String getNombre_cola() {
+        return nombre_cola;
+    }
+
+    public void setNombre_cola(String nombre_cola) {
+        this.nombre_cola = nombre_cola;
     }
 }

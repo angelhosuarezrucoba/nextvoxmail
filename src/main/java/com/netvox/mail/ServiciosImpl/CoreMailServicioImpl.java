@@ -377,6 +377,7 @@ public class CoreMailServicioImpl {
             mailinbox.setAdjuntos(mail.getListadeadjuntos());
             mailinbox.setIdhilo(mail.getIdhilo());
             mailinbox.setId_cola(mail.getId_cola());
+            mailinbox.setNombre_cola(mail.getNombre_cola());
             mailinbox.setCc("");
             mensaje.setEvento("CORREOASIGNADO");
             getListaresumen().stream().filter((resumen) -> resumen.getListacolas().contains(mail.getId_cola())) // aqui le envio al resto
@@ -461,7 +462,7 @@ public class CoreMailServicioImpl {
             mensaje.setAcumulado_mail(resumenservicio.obtenerPendientes(mensaje.getIdagente()));// se le puso por nombre acumulado mail solo para coordinar con el front, esto es la suma de mails pendiente.
             mensaje.setCantidad_cola_mail(obtenerCantidadSinAsignarPorColas(mensaje.getColas())); // todos los mails que estan sin asignar dependiendo de la cola
             mensaje.setEvento("LOGINRESPONSE");
-            mensaje.setListacorreos(obtenerCorreos(mensaje));
+            mensaje.setListacorreos(obtenerCorreos(mensaje));// estos son para eneviar mensaje.
             mensaje.setTiempo_pausa(resumendiarioservicio.tiempoEnPausa(mensaje.getIdagente()));
             mensaje.setPeso_maximo_adjunto(getConfiguraciones().getPeso_maximo_adjunto());
         } catch (Exception e) {

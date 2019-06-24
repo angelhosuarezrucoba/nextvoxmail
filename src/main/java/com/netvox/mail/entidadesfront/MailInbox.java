@@ -30,6 +30,12 @@ public class MailInbox {
     private int idhilo;
     private boolean hilocerrado;
     private int id_cola;
+    private String nombre_cola;
+
+    @Override
+    public String toString() {
+        return "MailInbox{" + "id=" + id + ", estado=" + estado + ", remitente=" + remitente + ", destino=" + destino + ", asunto=" + asunto + ", cc=" + cc + ", mensaje=" + mensaje + ", fecha_ingreso=" + fecha_ingreso + ", tiempo_cola=" + tiempo_cola + ", tipificacion=" + tipificacion + ", adjuntos=" + adjuntos + ", tipo=" + tipo + ", descripcion_tipificacion=" + descripcion_tipificacion + ", idhilo=" + idhilo + ", hilocerrado=" + hilocerrado + ", id_cola=" + id_cola + '}';
+    }
      
     
     public int getId() {
@@ -160,5 +166,13 @@ public class MailInbox {
 
     public void setId_cola(int id_cola) {
         this.id_cola = id_cola;
+    }
+
+    public String getNombre_cola() {
+        return nombre_cola;
+    }
+
+    public void setNombre_cola(String nombre_cola) {
+        this.nombre_cola = nombre_cola;
     }
 }
