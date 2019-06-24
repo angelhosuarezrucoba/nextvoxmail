@@ -102,14 +102,16 @@ public class ApiMail {
     }
 
     @PostMapping("/asignarcorreo")
-    public void asignarCorreo(@RequestBody Mensaje mensaje, @RequestHeader String identificador,
+    public String asignarCorreo(@RequestBody Mensaje mensaje, @RequestHeader String identificador,
             HttpServletResponse response) {
+        String nuevomensaje = "";
         if (verificadordesesionservicio.sesionvalida(identificador)) {
             response.setStatus(HttpServletResponse.SC_OK);
-            mailservicio.autoAsignarse(mensaje);
+            nuevomensaje = mailservicio.autoAsignarse(mensaje);
         } else {
             response.setStatus(HttpServletResponse.SC_CONFLICT);
         }
+        return nuevomensaje;
     }
 
     @PostMapping("/adjuntararchivo")

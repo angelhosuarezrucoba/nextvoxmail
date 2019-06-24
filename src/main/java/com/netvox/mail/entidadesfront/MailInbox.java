@@ -31,6 +31,9 @@ public class MailInbox {
     private boolean hilocerrado;
     private int id_cola;
     private String nombre_cola;
+    private String fechainiciogestion;
+    private String fechafingestion;
+    
 
     @Override
     public String toString() {
@@ -174,5 +177,21 @@ public class MailInbox {
 
     public void setNombre_cola(String nombre_cola) {
         this.nombre_cola = nombre_cola;
+    }
+
+    public String getFechainiciogestion() {
+        return fechainiciogestion;
+    }
+
+    public void setFechainiciogestion(String fechainiciogestion) {
+        this.fechainiciogestion = fechainiciogestion;
+    }
+
+    public String getFechafingestion() {
+        return fechafingestion;
+    }
+
+    public void setFechafingestion(String fechafingestion) {
+        this.fechafingestion = fechafingestion;
     }
 }

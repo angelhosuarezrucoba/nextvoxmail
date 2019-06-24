@@ -34,6 +34,7 @@ public class Mail {
     private int tiempo_atencion;
     private String nombre_cola;
     private int usuario;
+        private String fechainiciogestion;
 
     public Mail(int idcorreo, int estado, String tipomail, String fecha_ingreso, int idconfiguracion, int id_cola, String nombre_cola, int id_campana, String asunto, String remitente, String destino) {
         this.idcorreo = idcorreo;
@@ -221,6 +222,14 @@ public class Mail {
 
     public void setUsuario(int usuario) {
         this.usuario = usuario;
+    }
+
+    public String getFechainiciogestion() {
+        return fechainiciogestion;
+    }
+
+    public void setFechainiciogestion(String fechainiciogestion) {
+        this.fechainiciogestion = fechainiciogestion;
     }
 
 }

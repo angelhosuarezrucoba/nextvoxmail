@@ -30,7 +30,7 @@ public interface MailServicio {
 
     public List<MailInbox> listarCorreosEnCola(Mensaje mensaje);
 
-    public void autoAsignarse(Mensaje mensaje);
+    public String autoAsignarse(Mensaje mensaje);
 
     public MailInbox crearCorreo(MailSalida mailsalida);
 

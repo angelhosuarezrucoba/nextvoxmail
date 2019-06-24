@@ -353,11 +353,13 @@ public class CoreMailServicioImpl {
             mongoops = clientemongoservicio.clienteMongo();
             resumenservicio.modificarPendientes(usuarioresumen.getAgente(), usuarioresumen.getPendiente() + 1);
             resumendiarioservicio.actualizarPendientes(1, usuarioresumen.getAgente());
+            FindAndModifyOptions opciones = new FindAndModifyOptions();
+            opciones.returnNew(true);
             if (resumenservicio.obtenerEstado(usuarioresumen.getAgente()) == 1) {
                 resumenservicio.modificarEstado(usuarioresumen.getAgente(), 2);
                 resumendiarioservicio.actualizarEstado(usuarioresumen.getAgente(), 2, 0);
             }
-            mongoops.updateFirst(new Query(
+            Mail nuevomail = mongoops.findAndModify(new Query(
                     Criteria.where("idcorreo").is(mail.getIdcorreo())),
                     new Update()
                             .set("estado", 1)
@@ -365,7 +367,7 @@ public class CoreMailServicioImpl {
                             .set("usuario", usuarioresumen.getAgente())
                             .set("nombre", usuarioresumen.getNombre())
                             .set("fechainiciogestion", formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)),
-                    Mail.class);
+                    opciones, Mail.class);
             Mensaje mensaje = new Mensaje();
             MailInbox mailinbox = new MailInbox();
             mailinbox.setId(mail.getIdcorreo());
@@ -385,6 +387,7 @@ public class CoreMailServicioImpl {
                         mensaje.setIdcorreoasignado(mail.getIdcorreo());
                         websocket.enviarMensajeParaUnUsuario(mensaje, resumen.getAgente());
                     });
+            mailinbox.setFechainiciogestion(formatodefechas.cambiarFormatoFechas(nuevomail.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_HORA_SLASH));
             mensaje.setNew_mail(mailinbox);
             websocket.enviarMensajeParaUnUsuario(mensaje, usuarioresumen.getAgente());//aqui envio el mensaje a un usuario asignado
         } catch (ParseException ex) {
@@ -456,8 +459,7 @@ public class CoreMailServicioImpl {
             } else {//caso 1 , o 2 sin pausa.
                 mensaje.setEstado_mail(resumenservicio.obtenerPendientes(mensaje.getIdagente()) == 0 ? 1 : 2);//disponible si tiene 0 pendientes,2 si tiene pendientes,es decir atendiendo
                 mensaje.setPedido_pausa(0);
-            }          
-            
+            }
 
             mensaje.setAcumulado_mail(resumenservicio.obtenerPendientes(mensaje.getIdagente()));// se le puso por nombre acumulado mail solo para coordinar con el front, esto es la suma de mails pendiente.
             mensaje.setCantidad_cola_mail(obtenerCantidadSinAsignarPorColas(mensaje.getColas())); // todos los mails que estan sin asignar dependiendo de la cola

@@ -81,41 +81,41 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service("mailservicio")
 public class MailServicioImpl implements MailServicio {
-    
+
     @Autowired
     @Qualifier("clientemongoservicio")
     ClienteMongoServicio clientemongoservicio;
-    
+
     @Autowired
     @Qualifier("clientemysqlservicio")
     ClienteMysqlServicioImpl clientemysqlservicio;
-    
+
     @Autowired
     @Qualifier("websocket")
     WebSocket websocket;
-    
+
     @Autowired
     @Qualifier("coremailservicio")
     CoreMailServicioImpl coremailservicio;
-    
+
     @Autowired
     @Qualifier("formatodefechas")
     FormatoDeFechas formatodefechas;
-    
+
     @Autowired
     @Qualifier("resumendiarioservicio")
     ResumenDiarioServicioImpl resumendiarioservicio;
-    
+
     @Autowired
     @Qualifier("resumenservicio")
     ResumenServicio resumenservicio;
-    
+
     @Autowired
     @Qualifier("pausaservicio")
     PausaServicio pausaservicio;
-    
+
     Logger log = LoggerFactory.getLogger(this.getClass());
-    
+
     @Override
     public List<MailInbox> listarCorreos(Mensaje mensaje) {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
@@ -143,7 +143,7 @@ public class MailServicioImpl implements MailServicio {
         });
         return listamailinbox;
     }
-    
+
     @Override
     public String abrirCorreo(MailInbox mailconsultainbox) {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
@@ -160,7 +160,7 @@ public class MailServicioImpl implements MailServicio {
         }
         return mensajefinal;
     }
-    
+
     @Override
     public List<MailInbox> listarCorreosEnCola(Mensaje mensaje) {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
@@ -186,14 +186,17 @@ public class MailServicioImpl implements MailServicio {
             listamailinbox.add(mailinbox);
             System.out.println(listamailinbox.toString());
         });
-        
+
         return listamailinbox;
     }
-    
+
     @Override
-    public void autoAsignarse(Mensaje mensaje) {//deberia enviar un 500 si es que no se puede, y garantizar el query con estado 1
+    public String autoAsignarse(Mensaje mensaje) {//deberia enviar un 500 si es que no se puede, y garantizar el query con estado 1
         MongoOperations mongoops;
         Resumen usuarioresumen = getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).findFirst().get();
+        FindAndModifyOptions opciones = new FindAndModifyOptions();
+        opciones.returnNew(true);
+        Mail nuevomail = null;
         try {
             mongoops = clientemongoservicio.clienteMongo();
             if (usuarioresumen.getEstadoagente() == 1 || usuarioresumen.getEstadoagente() == 4) {
@@ -206,12 +209,12 @@ public class MailServicioImpl implements MailServicio {
             resumenservicio.modificarPendientes(usuarioresumen.getAgente(), usuarioresumen.getPendiente() + 1);
             resumendiarioservicio.actualizarPendientes(1, usuarioresumen.getAgente());
             Mail mail = mongoops.findOne(new Query(Criteria.where("idcorreo").is(mensaje.getIdcorreoasignado())), Mail.class);  //obtengo esto para tener la fecha de ingreso
-            mongoops.updateFirst(new Query(Criteria.where("idcorreo").is(mail.getIdcorreo())), new Update()
+            nuevomail = mongoops.findAndModify(new Query(Criteria.where("idcorreo").is(mail.getIdcorreo())), new Update()
                     .set("estado", 1)
                     .set("tiempoencola", formatodefechas.restaDeFechasEnSegundos(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA), mail.getFecha_ingreso()))
                     .set("usuario", usuarioresumen.getAgente())
                     .set("nombre", usuarioresumen.getNombre())
-                    .set("fechainiciogestion", formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)), Mail.class);
+                    .set("fechainiciogestion", formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)), opciones, Mail.class);
             getListaresumen().stream().filter((resumen) -> resumen.getListacolas().contains(mail.getId_cola())) // aqui le envio al resto
                     .forEach((resumen) -> {
                         if (usuarioresumen.getAgente() != resumen.getAgente()) {
@@ -222,8 +225,9 @@ public class MailServicioImpl implements MailServicio {
         } catch (ParseException ex) {
             log.error("error en el metodo autoAsignarse", ex);
         }
+        return formatodefechas.cambiarFormatoFechas(nuevomail.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_HORA_SLASH);
     }
-    
+
     @Override
     public MailInbox crearCorreo(MailSalida mailsalida) {
         MailSalida nuevomail = null;
@@ -243,7 +247,7 @@ public class MailServicioImpl implements MailServicio {
         respuestamail.setId(nuevomail.getId());
         return respuestamail;
     }
-    
+
     public MailSalida generarNuevoCorreo(MailSalida mailsalida) {
         MongoOperations mongoops;
         try {
@@ -257,13 +261,13 @@ public class MailServicioImpl implements MailServicio {
             mailsalida.setId(coremailservicio.generadorId());
             mailsalida.setIdhilo(mailsalida.getId());
             mongoops.insert(mailsalida);
-            
+
         } catch (Exception e) {
             log.error("error en el metodo generarNuevoCorreo", e);
         }
         return mailsalida;
     }
-    
+
     @Override
     public void adjuntarcorreo(MultipartFile archivo, int idcorreo) {
         FileOutputStream archivosalidastream = null;
@@ -289,7 +293,7 @@ public class MailServicioImpl implements MailServicio {
             log.error("error en el metodo adjuntarcorreo", ex);
         }
     }
-    
+
     @Override
     public Mensaje enviarcorreo(MailSalida mailsalida) {
         Resumen usuarioresumen;
@@ -306,23 +310,27 @@ public class MailServicioImpl implements MailServicio {
             nuevomail = mongoops.findAndModify(new Query(Criteria.where("idcorreo").is(mailsalida.getId())),
                     new Update().set("mensaje", reemplazarImagenesEnBase64(mailsalida)), opciones, MailSalida.class);
             archivo = new File(coremailservicio.getRUTA_OUT() + "/" + nuevomail.getId() + "/" + nuevomail.getId() + ".txt");
-            
+            MailInbox nuevomailsalida = mongoops.find(new Query(Criteria.where("idhilo").is(nuevomail.getIdhilo())).with(new Sort(Direction.ASC, "idcorreo")), MailInbox.class).get(0);
+            nuevomailsalida.setFechainiciogestion(formatodefechas.cambiarFormatoFechas(nuevomailsalida.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_HORA_SLASH));
+            nuevomailsalida.setFechafingestion(formatodefechas.cambiarFormatoFechas(nuevomailsalida.getFechafingestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_HORA_SLASH));
             archivosalidastream = new FileOutputStream(archivo);
             buferdesalida = new BufferedOutputStream(archivosalidastream);
             buferdesalida.write(nuevomail.getMensaje().getBytes());
             buferdesalida.close();
             archivosalidastream.close();
+
             usuarioresumen = resumenservicio.obtenerResumen(nuevomail.getId_agente());
             mensaje.setEstado_mail(resumenservicio.obtenerEstado(usuarioresumen.getAgente()));
             mensaje.setAcumulado_mail(resumenservicio.obtenerPendientes(usuarioresumen.getAgente()));
             mensaje.setPedido_pausa(resumenservicio.obtenerPedidoPausa(usuarioresumen.getAgente()));
+            mensaje.setNew_mail(nuevomailsalida);
         } catch (IOException ex) {
             log.error("error en el metodo enviarcorreo", ex);
         }
         prepararMensaje(nuevomail);
         return mensaje;
     }
-    
+
     public MimeMultipart agregarCuerpoDelMensaje(Object mensaje) {
         MimeMultipart multipart = new MimeMultipart("related");// mensaje en general.          
         BodyPart bodypartmensaje = new MimeBodyPart();
@@ -334,7 +342,7 @@ public class MailServicioImpl implements MailServicio {
         }
         return multipart;
     }
-    
+
     public MimeMultipart agregarEmbebidosAlMensaje(MimeMultipart multipart, int idcorreo) {
         String rutaembebidos = coremailservicio.getRUTA_OUT() + "/" + idcorreo;  //embebidos
         File directorioembebidos = new File(rutaembebidos);
@@ -353,7 +361,7 @@ public class MailServicioImpl implements MailServicio {
         }
         return multipart;
     }
-    
+
     public MimeMultipart agregarAdjuntosAlMensaje(MimeMultipart multipart, int idcorreo) {
         String ruta = coremailservicio.getRUTA_OUT() + "/" + idcorreo + "/adjuntos";
         File adjuntos = new File(ruta);
@@ -372,7 +380,7 @@ public class MailServicioImpl implements MailServicio {
         }
         return multipart;
     }
-    
+
     public MailConfiguracion obtenerConfiguracionMail(String remitente) {
         MailConfiguracion mailconfiguracion = new MailConfiguracion();
         try {
@@ -391,7 +399,7 @@ public class MailServicioImpl implements MailServicio {
         }
         return mailconfiguracion;
     }
-    
+
     public MimeMessage agregarDestinatariosEnCopia(MimeMessage mimemensaje, String copia) {
         if (!copia.equals("")) {
             String listadedestinosencopia[] = copia.split(";");
@@ -405,7 +413,7 @@ public class MailServicioImpl implements MailServicio {
         }
         return mimemensaje;
     }
-    
+
     public void prepararMensaje(MailSalida mailsalida) {
         MimeMultipart multipart = agregarCuerpoDelMensaje(mailsalida.getMensaje());//cuerpo mensaje
         multipart = agregarEmbebidosAlMensaje(multipart, mailsalida.getId());//archivos embebidos
@@ -424,7 +432,7 @@ public class MailServicioImpl implements MailServicio {
             log.error("error en el metodo prepararMensaje", ex);
         }
     }
-    
+
     public String reemplazarImagenesEnBase64(MailSalida mailsalida) {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
         String mensajefinal = mailsalida.getMensaje();
@@ -457,7 +465,7 @@ public class MailServicioImpl implements MailServicio {
         }
         return mensajefinal;
     }
-    
+
     public String guardarEmbebido(String name, String data, int idcorreo) {
         String nombre_final = name;
         String[] b64 = data.split(",");
@@ -470,15 +478,15 @@ public class MailServicioImpl implements MailServicio {
         try {
             OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(file));
             outputStream.write(dataBytes);
-            
+
         } catch (IOException e) {
             log.error("error en el metodo guardarEmbebido", e);
         }
         return nombre_final;
     }
-    
+
     public Session obtenerSesion(MailConfiguracion mailconfiguracion) {
-        
+
         Properties props = new Properties();
         props.setProperty("mail.transport.protocol", "smtp");
         props.setProperty("mail.host", mailconfiguracion.getSmtp());
@@ -487,7 +495,7 @@ public class MailServicioImpl implements MailServicio {
         props.setProperty("mail.smtp.starttls.enable", "true");
         props.setProperty("mail.password", mailconfiguracion.getPass());
         props.setProperty("mail.smtp.auth", "true");
-        
+
         return Session.getInstance(props, new Authenticator() {
             @Override
             protected PasswordAuthentication getPasswordAuthentication() {
@@ -495,12 +503,14 @@ public class MailServicioImpl implements MailServicio {
             }
         });
     }
-    
+
     @Override
     public Mensaje tipificarCorreo(MailSalida mailsalida) {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
         Mensaje mensaje = new Mensaje();
         Resumen usuarioresumen;
+        FindAndModifyOptions opciones = new FindAndModifyOptions();
+        opciones.returnNew(true);
         try {
             Query querymailaresponder = new Query(Criteria.where("idcorreo").is(mailsalida.getId()));
             querymailaresponder.fields().include("idcorreo").include("tipificacion").include("usuario").include("campana").include("id_cola");
@@ -524,12 +534,16 @@ public class MailServicioImpl implements MailServicio {
                 }
             }
             MailSalida mail = mongoops.findOne(new Query(Criteria.where("idcorreo").is(mailsalida.getId())), MailSalida.class);
-            mongoops.updateFirst(new Query(Criteria.where("idcorreo").is(mailsalida.getId())),
+            MailSalida nuevomailsalida = mongoops.findAndModify(new Query(Criteria.where("idcorreo").is(mailsalida.getId())),
                     new Update().set("descripcion_tipificacion", mailsalida.getDescripcion_tipificacion()).set("tipificacion", mailsalida.getTipificacion())
                             .set("tiempo_atencion", formatodefechas.restaDeFechasEnSegundos(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA), mail.getFechainiciogestion()))
                             .set("fechafingestion", formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA))
-                            .set("hilocerrado", true),
+                            .set("hilocerrado", true), opciones,
                     MailSalida.class);//estoy usando esta clase solo por lo conveniente que es ya que tiene id y tipificacion
+            MailInbox nuevomail = new MailInbox(); //esto lo hago para darle las fechas al front;
+            nuevomail.setFechainiciogestion(formatodefechas.cambiarFormatoFechas(mail.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_HORA_SLASH));
+            nuevomail.setFechafingestion(formatodefechas.cambiarFormatoFechas(nuevomailsalida.getFechafingestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_HORA_SLASH));
+            mensaje.setNew_mail(nuevomail);
             mensaje.setEstado_mail(resumenservicio.obtenerEstado(usuarioresumen.getAgente()));
             mensaje.setAcumulado_mail(resumenservicio.obtenerPendientes(usuarioresumen.getAgente()));
             mensaje.setPedido_pausa(resumenservicio.obtenerPedidoPausa(usuarioresumen.getAgente()));
@@ -538,7 +552,7 @@ public class MailServicioImpl implements MailServicio {
         }
         return mensaje;
     }
-    
+
     @Override
     public List<Tipificacion> listarTipificaciones() {
         Connection conexion = clientemysqlservicio.obtenerConexion();
@@ -556,7 +570,7 @@ public class MailServicioImpl implements MailServicio {
         }
         return listatipificaciones;
     }
-    
+
     private MailSalida generarCorreo(MailSalida mailsalida) {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
         try {
@@ -588,7 +602,7 @@ public class MailServicioImpl implements MailServicio {
             mailsalida.setTipo("salida");
             mailsalida.setEstado(2);//correo enviado            
             mongoops.insert(mailsalida);
-            
+
             if (mailsalida.getReenvio() != 1) {//esto es para evitar el reenvio
                 mongoops.updateMulti(new Query(Criteria.where("idhilo").is(mailsalida.getIdhilo())),
                         new Update().set("hilocerrado", true).
@@ -605,13 +619,13 @@ public class MailServicioImpl implements MailServicio {
                                 .set("fechafingestion", maximo.getFechainiciogestion()),
                         MailSalida.class);
             }
-            
+
         } catch (ParseException e) {
             log.error("error al generar el correo", e);
         }
         return mailsalida;
     }
-    
+
     @Override
     public List<MailSalida> listarCorreosPendientes(FiltroIndividual filtro) {
         MongoOperations mongoops;
@@ -653,13 +667,13 @@ public class MailServicioImpl implements MailServicio {
                     }
                 }
             }
-            
+
         } catch (ParseException e) {
             log.error("error en el metodo listarCorreosPendientes", e);
         }
         return lista;
     }
-    
+
     @Override
     public List<MailSalida> listarCorreoInvalidos(FiltroIndividual filtro) {
         MongoOperations mongoops;
@@ -708,7 +722,7 @@ public class MailServicioImpl implements MailServicio {
         }
         return lista;
     }
-    
+
     @Override
     public List<MailSalida> listarCorreos(FiltroIndividual filtro) {
         MongoOperations mongoops;
@@ -723,7 +737,7 @@ public class MailServicioImpl implements MailServicio {
                             .and("id_cola").in(filtro.getListadecolas()).and("estado").ne(0)),
                             MailSalida.class
                     );
-            
+
             for (MailSalida mail : lista) {
                 mail.setHora(
                         formatodefechas.cambiarFormatoFechas(mail.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_HORA));
@@ -757,7 +771,7 @@ public class MailServicioImpl implements MailServicio {
         }
         return lista;
     }
-    
+
     @Override
     public List<Pausa> detalleTiemposeEnPausa(FiltroIndividual filtro) {
         MongoOperations mongoops;
@@ -783,12 +797,12 @@ public class MailServicioImpl implements MailServicio {
         }
         return lista;
     }
-    
+
     @Override
     public List<ReporteGrupal> detalleGrupalDeCorreosPorDias(FiltroIndividual filtro) {
         MongoOperations mongoops;
         List<ReporteGrupal> lista = null;
-        
+
         Cond condicionrecibidos = ConditionalOperators.when(new Criteria("tipomail").is("entrada")).then(1).otherwise(0);
         Cond condicionencola = ConditionalOperators.when(new Criteria("estado").is(0)).then(1).otherwise(0);
         Cond condicionatendiendo = ConditionalOperators.when(new Criteria("estado").is(1)).then(1).otherwise(0);
@@ -821,19 +835,19 @@ public class MailServicioImpl implements MailServicio {
             AggregationResults<ReporteGrupal> resultado = mongoops.aggregate(agregacion, "mail", ReporteGrupal.class
             );
             lista = resultado.getMappedResults();
-            
+
         } catch (Exception e) {
             log.error("error en el metodo detalleGrupalDeCorreosPorDias", e);
         }
         return lista;
     }
-    
+
     @Override
     public List<ReporteGrupal> detalleGrupalDeCorreosPorHoras(FiltroIndividual filtro) {
-        
+
         MongoOperations mongoops;
         List<ReporteGrupal> lista = null;
-        
+
         Cond condicionrecibidos = ConditionalOperators.when(new Criteria("tipomail").is("entrada")).then(1).otherwise(0);
         Cond condicionencola = ConditionalOperators.when(new Criteria("estado").is(0)).then(1).otherwise(0);
         Cond condicionatendiendo = ConditionalOperators.when(new Criteria("estado").is(1)).then(1).otherwise(0);
@@ -865,18 +879,18 @@ public class MailServicioImpl implements MailServicio {
             );
             AggregationResults<ReporteGrupal> resultado = mongoops.aggregate(agregacion, "mail", ReporteGrupal.class);
             lista = resultado.getMappedResults();
-            
+
         } catch (Exception e) {
             log.error("error en el metodo detalleGrupalDeCorreosPorHoras", e);
         }
         return lista;
     }
-    
+
     @Override
     public List<ReporteGrupal> detalleGrupalDeCorreosPorAgente(FiltroIndividual filtro) {
         MongoOperations mongoops;
         List<ReporteGrupal> lista = null;
-        
+
         Cond condicionvalidos = ConditionalOperators.when(new Criteria().andOperator(new Criteria("hilocerrado").is(true),
                 new Criteria("tipificacion").ne(1))).then(1).otherwise(0);
         Cond condicioninvalidos = ConditionalOperators.when(new Criteria().andOperator(new Criteria("hilocerrado").is(true),
@@ -932,7 +946,7 @@ public class MailServicioImpl implements MailServicio {
         }
         return lista;
     }
-    
+
     @Override
     public List<MailSalida> detalleGrupalDeCorreosPorCola(FiltroIndividual filtro) {
         MongoOperations mongoops;
@@ -958,13 +972,13 @@ public class MailServicioImpl implements MailServicio {
             AggregationResults<MailSalida> resultado = mongoops.aggregate(agregacion, "mail", MailSalida.class
             );
             lista = resultado.getMappedResults();
-            
+
         } catch (Exception e) {
             log.error("error en el metodo detalleGrupalDeCorreosPorCola", e);
         }
         return lista;
     }
-    
+
     @Override
     public Grafico graficoMultiCanal(Contenido contenido) {
         MongoOperations mongoops;
@@ -1023,7 +1037,7 @@ public class MailServicioImpl implements MailServicio {
                             mail.setRango_minuto(1);
                         }
                         grafico.getValores_entrantes().set(mail.getHora() * 4 + mail.getRango_minuto() - 1, mail.getCantidad());
-                        
+
                     });
                     grafico.setValores_entrantes(grafico.getValores_entrantes().stream().skip(28).collect(Collectors.toList()));
                 }
@@ -1041,7 +1055,7 @@ public class MailServicioImpl implements MailServicio {
                         Aggregation.group("fecha", "hora").count().as("cantidad"),
                         Aggregation.project().andExpression("_id.fecha").as("fecha").andExpression("_id.hora").as("hora").andExpression("cantidad").as("cantidad")
                 );
-                
+
                 AggregationResults<ReporteGrafico> resultado = mongoops.aggregate(agregacion, "mail", ReporteGrafico.class);
                 lista = resultado.getMappedResults();
                 lista.stream().forEach((mail) -> {
@@ -1049,14 +1063,14 @@ public class MailServicioImpl implements MailServicio {
                 });
                 grafico.setValores_entrantes(grafico.getValores_entrantes().stream().limit(contenido.getHorafin()).skip(contenido.getHorainicio()).collect(Collectors.toList()));
             }
-            
+
         } catch (Exception e) {
             log.error("error en el metodo graficoMultiCanal", e);
         }
-        
+
         return grafico;
     }
-    
+
     @Override
     public Grafico reporteMensual(Contenido contenido) {
         MongoOperations mongoops;
@@ -1088,7 +1102,7 @@ public class MailServicioImpl implements MailServicio {
             lista.stream().forEach((mail) -> {
                 grafico.getValores_entrantes().set(mail.getDia() - 1, mail.getCantidad());
             });
-            
+
             agregacion = Aggregation.newAggregation(
                     Aggregation.match(Criteria.where("id_cola").in(contenido.getColas()).and("fecha_ingreso").regex(contenido.getAno() + "-" + ((contenido.getMes() + 1) < 10 ? "0" + (contenido.getMes() + 1) : (contenido.getMes() + 1))).and("tipomail").is("entrada")
                             .and("estado").is(1).and("hilocerrado").is(true)),
@@ -1103,14 +1117,14 @@ public class MailServicioImpl implements MailServicio {
             lista.stream().forEach((mail) -> {
                 grafico.getValores_contestadas().set(mail.getDia() - 1, mail.getCantidad());
             });
-            
+
         } catch (Exception e) {
             log.error("error en el metodo reporteMensual", e);
         }
-        
+
         return grafico;
     }
-    
+
     public List<Mes> obtenerListaMeses() {
         List<Mes> listameses = new ArrayList<>();
         listameses.add(new Mes(31, "enero"));
@@ -1127,7 +1141,7 @@ public class MailServicioImpl implements MailServicio {
         listameses.add(new Mes(31, "diciemrbe"));
         return listameses;
     }
-    
+
     @Override
     public List<AtendidosPorCola> atendidosPorCola(Contenido contenido) {
         MongoOperations mongoops;
@@ -1145,12 +1159,12 @@ public class MailServicioImpl implements MailServicio {
             AggregationResults<AtendidosPorCola> resultado = mongoops.aggregate(agregacion, "mail", AtendidosPorCola.class);
             System.out.println(agregacion.toString());
             lista = resultado.getMappedResults();
-            
+
         } catch (Exception e) {
             log.error("error en el metodo atendidosPorCola", e);
         }
-        
+
         return lista;
     }
-    
+
 }

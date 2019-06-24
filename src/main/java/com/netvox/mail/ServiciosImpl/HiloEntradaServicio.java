@@ -83,6 +83,12 @@ public class HiloEntradaServicio implements Runnable {
                         if (remitente.equals("")) {
                             log.info("REMITENTE NO CAPTURADO");
                         } else {
+
+                            Address[] direcciones = mensaje.getRecipients(Message.RecipientType.CC);
+                            for (Address correo : direcciones) {
+                                log.info("este es el correo en copia " + correo.toString());
+                            }
+
                             Mail mail = coremailservicio.insertarNuevoMail(
                                     cuentadecorreo.getIdconfiguracion(),
                                     cuentadecorreo.getId_cola(),
@@ -110,7 +116,7 @@ public class HiloEntradaServicio implements Runnable {
                 }
                 log.info("FIN LECTURA DE CUENTAS");
                 log.info("----------------------------------------------------------------------------------------");
-                Thread.sleep(1000 * 5);
+                Thread.sleep(1000 * 30);
             } catch (Exception ex) {
                 log.error("error en el HiloEntradaServicio", ex);
             }
