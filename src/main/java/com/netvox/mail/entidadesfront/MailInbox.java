@@ -7,13 +7,17 @@ package com.netvox.mail.entidadesfront;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 /**
  *
  * @author desarrollo5
  */
+@Document(collection = "mail")
 public class MailInbox {
 
+    @Field(value = "idcorreo")
     private int id;
     private int estado;
     private String remitente;
@@ -34,7 +38,6 @@ public class MailInbox {
     private String fechafingestion;
     private List<String> listacopia;
 
-    
     public int getId() {
         return id;
     }
@@ -75,8 +78,6 @@ public class MailInbox {
         this.fecha_ingreso = fecha_ingreso;
     }
 
- 
-
     public int getTipificacion() {
         return tipificacion;
     }
@@ -93,15 +94,13 @@ public class MailInbox {
         this.adjuntos = adjuntos;
     }
 
-      public String getDestino() {
+    public String getDestino() {
         return destino;
     }
 
     public void setDestino(String destino) {
         this.destino = destino;
     }
-
-  
 
     public String getMensaje() {
         return mensaje;

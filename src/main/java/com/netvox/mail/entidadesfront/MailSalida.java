@@ -359,4 +359,11 @@ public class MailSalida {
     public void setListacopia(List<String> listacopia) {
         this.listacopia = listacopia;
     }
+
+    @Override
+    public String toString() {
+        return "MailSalida{" + "id=" + id + ", tipo=" + tipo + ", titulo=" + titulo + ", remitente=" + remitente + ", destino=" + destino + ", copia=" + copia + ", cola=" + cola + ", mensaje=" + mensaje + ", tipificacion=" + tipificacion + ", id_agente=" + id_agente + ", reenvio=" + reenvio + ", id_campana=" + id_campana + ", nombre_campana=" + nombre_campana + ", estado=" + estado + ", fecha_ingreso=" + fecha_ingreso + ", fechainiciogestion=" + fechainiciogestion + ", fechafingestion=" + fechafingestion + ", descripcion_tipificacion=" + descripcion_tipificacion + ", listadeadjuntos=" + listadeadjuntos + ", listadeembebidos=" + listadeembebidos + ", comentario=" + comentario + ", idhilo=" + idhilo + ", hilocerrado=" + hilocerrado + ", tiempoencola=" + tiempoencola + ", tiempo_atencion=" + tiempo_atencion + ", nombre_cola=" + nombre_cola + ", listacopia=" + listacopia + ", hora=" + hora + ", estadoatencion=" + estadoatencion + ", validacion=" + validacion + ", tiempo_cola=" + tiempo_cola + ", tiempoatencion=" + tiempoatencion + '}';
+    }
+    
+    
 }

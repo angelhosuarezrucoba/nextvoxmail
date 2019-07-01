@@ -39,13 +39,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.stream.Collectors;
-import javax.mail.Address;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.web.client.RestTemplate;
 
 @Service("coremailservicio")
 public class CoreMailServicioImpl {
@@ -403,9 +401,9 @@ public class CoreMailServicioImpl {
         try {
             Connection conexion = clientemysqlservicio.obtenerConexion();
             Statement statement = conexion.createStatement();
-            ResultSet resultset = statement.executeQuery("select queue,usuario from email_configuracion");
+            ResultSet resultset = statement.executeQuery("select queue,usuario,queue_name from email_configuracion");
             while (resultset.next()) {
-                correos.add(new MailFront(resultset.getInt(1), resultset.getString(2)));
+                correos.add(new MailFront(resultset.getInt(1), resultset.getString(2),resultset.getString(3)));
             }
             correos = correos.stream().filter((cola) -> mensaje.getColas().contains(cola.getId())).collect(Collectors.toList());
             statement.close();

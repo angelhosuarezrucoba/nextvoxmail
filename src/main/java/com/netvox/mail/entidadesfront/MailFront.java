@@ -13,11 +13,15 @@ public class MailFront {
 
     private int id;
     private String correo;
+    private String nombre_cola;
 
-    public MailFront(int id, String correo) {
+    public MailFront(int id, String correo, String nombre_cola) {
         this.id = id;
         this.correo = correo;
+        this.nombre_cola = nombre_cola;
     }
+
+  
 
     public int getId() {
         return id;
@@ -33,5 +37,13 @@ public class MailFront {
 
     public void setCorreo(String correo) {
         this.correo = correo;
+    }
+
+    public String getNombre_cola() {
+        return nombre_cola;
+    }
+
+    public void setNombre_cola(String nombre_cola) {
+        this.nombre_cola = nombre_cola;
     }
 }

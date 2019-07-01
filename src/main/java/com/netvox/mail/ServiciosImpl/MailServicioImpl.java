@@ -167,7 +167,6 @@ public class MailServicioImpl implements MailServicio {
         List<MailSalida> listacorreosencola = mongoops.find(
                 new Query(Criteria.where("id_cola").in(mensaje.getColas()).and("estado").is(0).and("usuario").is(0)).with(new Sort(new Order(Direction.DESC, "idcorreo"))),
                 MailSalida.class);
-        log.error("listacorreosencola " + listacorreosencola.size());
         List<MailInbox> listamailinbox = new ArrayList<>();
         listacorreosencola.forEach((t) -> {
             MailInbox mailinbox = new MailInbox();
@@ -253,12 +252,12 @@ public class MailServicioImpl implements MailServicio {
         MongoOperations mongoops;
         try {
             mongoops = clientemongoservicio.clienteMongo();
-            Query query = new Query().with(new Sort(Direction.DESC, "$natural"));
-            query.fields().include("idcorreo");
             mailsalida.setFecha_ingreso(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA));
             mailsalida.setFechainiciogestion(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA));
+            mailsalida.setFechafingestion(formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA));
             mailsalida.setEstado(2);//correo enviado
             mailsalida.setTipo("salida");
+            mailsalida.setListacopia(mailsalida.getListacopia());
             mailsalida.setId(coremailservicio.generadorId());
             mailsalida.setIdhilo(mailsalida.getId());
             mongoops.insert(mailsalida);
@@ -311,21 +310,21 @@ public class MailServicioImpl implements MailServicio {
             nuevomail = mongoops.findAndModify(new Query(Criteria.where("idcorreo").is(mailsalida.getId())),
                     new Update().set("mensaje", reemplazarImagenesEnBase64(mailsalida)), opciones, MailSalida.class);
             archivo = new File(coremailservicio.getRUTA_OUT() + "/" + nuevomail.getId() + "/" + nuevomail.getId() + ".txt");
-            MailInbox nuevomailsalida = mongoops.find(new Query(Criteria.where("idhilo").is(nuevomail.getIdhilo())).with(new Sort(Direction.ASC, "idcorreo")), MailInbox.class).get(0);
-            nuevomailsalida.setFechainiciogestion(formatodefechas.cambiarFormatoFechas(nuevomailsalida.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_HORA_SLASH));
-            nuevomailsalida.setFechafingestion(formatodefechas.cambiarFormatoFechas(nuevomailsalida.getFechafingestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_HORA_SLASH));
+            MailSalida clasetransformadora = mongoops.find(new Query(Criteria.where("idhilo").is(nuevomail.getIdhilo())).with(new Sort(Direction.ASC, "idcorreo")), MailSalida.class).get(0);;
+            MailInbox nuevomailsalida = new MailInbox();
+            nuevomailsalida.setFechainiciogestion(formatodefechas.cambiarFormatoFechas(clasetransformadora.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_HORA_SLASH));
+            nuevomailsalida.setFechafingestion(formatodefechas.cambiarFormatoFechas(clasetransformadora.getFechafingestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_HORA_SLASH));
             archivosalidastream = new FileOutputStream(archivo);
             buferdesalida = new BufferedOutputStream(archivosalidastream);
             buferdesalida.write(nuevomail.getMensaje().getBytes());
             buferdesalida.close();
             archivosalidastream.close();
-
             usuarioresumen = resumenservicio.obtenerResumen(nuevomail.getId_agente());
             mensaje.setEstado_mail(resumenservicio.obtenerEstado(usuarioresumen.getAgente()));
             mensaje.setAcumulado_mail(resumenservicio.obtenerPendientes(usuarioresumen.getAgente()));
             mensaje.setPedido_pausa(resumenservicio.obtenerPedidoPausa(usuarioresumen.getAgente()));
             mensaje.setNew_mail(nuevomailsalida);
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             log.error("error en el metodo enviarcorreo", ex);
         }
         prepararMensaje(nuevomail);
