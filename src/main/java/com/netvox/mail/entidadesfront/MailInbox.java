@@ -36,7 +36,7 @@ public class MailInbox {
     private String nombre_cola;
     private String fechainiciogestion;
     private String fechafingestion;
-    private List<String> listacopia;
+    private List<String> listacopia = new ArrayList<>();
 
     public int getId() {
         return id;
