@@ -138,14 +138,14 @@ public class MailServicioImpl implements MailServicio {
             mailinbox.setIdhilo(t.getIdhilo());
             mailinbox.setDestino(t.getDestino());
             mailinbox.setId_cola(t.getCola());
-            mailinbox.setCc(t.getCopia());
+            mailinbox.setListacopia(t.getListacopia());
             listamailinbox.add(mailinbox);
         });
         return listamailinbox;
     }
 
     @Override
-    public String abrirCorreo(MailInbox mailconsultainbox) {
+    public MailSalida abrirCorreo(MailInbox mailconsultainbox) {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
         Query query = new Query(Criteria.where("idcorreo").is(mailconsultainbox.getId()));
         query.fields().include("idcorreo").include("mensaje").include("listadeembebidos");
@@ -154,11 +154,11 @@ public class MailServicioImpl implements MailServicio {
         if (mailconsultainbox.getTipo().equals("salida")) {//con esto transformo los base64 de salida
             if (!mail.getListadeembebidos().isEmpty()) {
                 for (String embebido : mail.getListadeembebidos()) {
-                    mensajefinal = mail.getMensaje().replace("cid:" + embebido, coremailservicio.getPath_salida() + "/" + mailconsultainbox.getId() + "/" + embebido);
+                    mail.setMensaje(mail.getMensaje().replace("cid:" + embebido, coremailservicio.getPath_salida() + "/" + mailconsultainbox.getId() + "/" + embebido));
                 }
             }
         }
-        return mensajefinal;
+        return mail;
     }
 
     @Override
@@ -183,6 +183,7 @@ public class MailServicioImpl implements MailServicio {
             mailinbox.setIdhilo(t.getIdhilo());
             mailinbox.setId_cola(t.getCola());
             mailinbox.setNombre_cola(t.getNombre_cola());
+            mailinbox.setListacopia(t.getListacopia());
             listamailinbox.add(mailinbox);
             System.out.println(listamailinbox.toString());
         });

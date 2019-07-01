@@ -19,7 +19,6 @@ public class MailInbox {
     private String remitente;
     private String destino;
     private String asunto;
-    private String cc;//copia
     private String mensaje;//comentario de tipificacion
     private String fecha_ingreso;
     private int tiempo_cola;//tiempo que estuvo en una cola;
@@ -33,13 +32,8 @@ public class MailInbox {
     private String nombre_cola;
     private String fechainiciogestion;
     private String fechafingestion;
-    
+    private List<String> listacopia;
 
-    @Override
-    public String toString() {
-        return "MailInbox{" + "id=" + id + ", estado=" + estado + ", remitente=" + remitente + ", destino=" + destino + ", asunto=" + asunto + ", cc=" + cc + ", mensaje=" + mensaje + ", fecha_ingreso=" + fecha_ingreso + ", tiempo_cola=" + tiempo_cola + ", tipificacion=" + tipificacion + ", adjuntos=" + adjuntos + ", tipo=" + tipo + ", descripcion_tipificacion=" + descripcion_tipificacion + ", idhilo=" + idhilo + ", hilocerrado=" + hilocerrado + ", id_cola=" + id_cola + '}';
-    }
-     
     
     public int getId() {
         return id;
@@ -107,13 +101,7 @@ public class MailInbox {
         this.destino = destino;
     }
 
-    public String getCc() {
-        return cc;
-    }
-
-    public void setCc(String cc) {
-        this.cc = cc;
-    }
+  
 
     public String getMensaje() {
         return mensaje;
@@ -193,5 +181,13 @@ public class MailInbox {
 
     public void setFechafingestion(String fechafingestion) {
         this.fechafingestion = fechafingestion;
+    }
+
+    public List<String> getListacopia() {
+        return listacopia;
+    }
+
+    public void setListacopia(List<String> listacopia) {
+        this.listacopia = listacopia;
     }
 }

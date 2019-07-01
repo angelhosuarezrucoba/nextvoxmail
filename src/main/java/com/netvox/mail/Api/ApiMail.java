@@ -76,16 +76,16 @@ public class ApiMail {
     }
 
     @PostMapping("/abrircorreo")
-    public String abrirCorreo(@RequestBody MailInbox mailconsultainbox, @RequestHeader String identificador,
+    public MailSalida abrirCorreo(@RequestBody MailInbox mailconsultainbox, @RequestHeader String identificador,
             HttpServletResponse response) {
-        String mensaje = "No autorizado";
+        MailSalida mail = null;
         if (verificadordesesionservicio.sesionvalida(identificador)) {
             response.setStatus(HttpServletResponse.SC_OK);
-            mensaje = mailservicio.abrirCorreo(mailconsultainbox);
+            mail = mailservicio.abrirCorreo(mailconsultainbox);
         } else {
             response.setStatus(HttpServletResponse.SC_CONFLICT);
         }
-        return mensaje;
+        return mail;
     }
 
     @PostMapping("/listarcorreoencola")

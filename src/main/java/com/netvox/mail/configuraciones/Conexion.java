@@ -8,12 +8,15 @@ package com.netvox.mail.configuraciones;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.netvox.mail.ServiciosImpl.LecturaServicioImpl;
+import java.sql.Connection;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import javax.sql.DataSource;
 import org.apache.commons.dbcp.BasicDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -39,6 +42,8 @@ public class Conexion {
     @Qualifier("lecturaservicio")
     LecturaServicioImpl lecturaservicio;
 
+    Logger log = LoggerFactory.getLogger(this.getClass());
+
     @Bean
     public MongoClient mongo() {
         List<String> lista = lecturaservicio.obtenerConfiguraciones();
@@ -51,7 +56,7 @@ public class Conexion {
         clavemysql = lista.get(6);
         ipmysql = lista.get(7);
         bdmysql = lista.get(8);
-        puertomysql = lista.get(9);        
+        puertomysql = lista.get(9);
         return new MongoClient(new MongoClientURI("mongodb://" + usuariomongo + ":" + clavemongo + "@" + ipmongo + ":" + puertomongo + "/" + bdmongo));
     }
 

@@ -26,7 +26,7 @@ public interface MailServicio {
 
     public abstract List<MailInbox> listarCorreos(Mensaje mensaje);
 
-    public String abrirCorreo(MailInbox mailconsultainbox);
+    public MailSalida abrirCorreo(MailInbox mailconsultainbox);
 
     public List<MailInbox> listarCorreosEnCola(Mensaje mensaje);
 

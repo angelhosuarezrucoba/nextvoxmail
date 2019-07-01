@@ -8,6 +8,7 @@ package com.netvox.mail.entidades;
 import com.netvox.mail.entidadesfront.Adjunto;
 import java.util.ArrayList;
 import java.util.List;
+import javax.mail.Address;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "mail")
@@ -34,9 +35,13 @@ public class Mail {
     private int tiempo_atencion;
     private String nombre_cola;
     private int usuario;
-        private String fechainiciogestion;
+    private String fechainiciogestion;
+    private List<String> listacopia;
+    private List<String> listacopiaoculta;
 
-    public Mail(int idcorreo, int estado, String tipomail, String fecha_ingreso, int idconfiguracion, int id_cola, String nombre_cola, int id_campana, String asunto, String remitente, String destino) {
+    public Mail(int idcorreo, int estado, String tipomail, String fecha_ingreso,
+            int idconfiguracion, int id_cola, String nombre_cola, int id_campana,
+            String asunto, String remitente, String destino, List<String> listacopia, List<String> listacopiaoculta) {
         this.idcorreo = idcorreo;
         this.tipomail = tipomail;
         this.estado = estado;
@@ -49,7 +54,9 @@ public class Mail {
         this.asunto = asunto;
         this.remitente = remitente;
         this.destino = destino;
-        
+        this.listacopia = listacopia;
+        this.listacopiaoculta = listacopiaoculta;
+
     }
 
     public Mail() {
@@ -232,4 +239,20 @@ public class Mail {
         this.fechainiciogestion = fechainiciogestion;
     }
 
+    public List<String> getListacopia() {
+        return listacopia;
+    }
+
+    public void setListacopia(List<String> listacopia) {
+        this.listacopia = listacopia;
+    }
+
+    public List<String> getListacopiaoculta() {
+        return listacopiaoculta;
+    }
+
+    public void setListacopiaoculta(List<String> listacopiaoculta) {
+        this.listacopiaoculta = listacopiaoculta;
+    }
+   
 }

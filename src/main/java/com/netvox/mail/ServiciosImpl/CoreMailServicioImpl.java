@@ -39,6 +39,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.stream.Collectors;
+import javax.mail.Address;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
@@ -161,11 +162,11 @@ public class CoreMailServicioImpl {
         return lista;
     }
 
-    public Mail insertarNuevoMail(int idconfiguracion, int idcola, String nombre_cola, int id_campana, String asunto, String remitente, String destino) {//  mongo, tipomail es entrada o salida
+    public Mail insertarNuevoMail(int idconfiguracion, int idcola, String nombre_cola, int id_campana, String asunto, String remitente, String destino, List<String> listacopia, List<String> listacopiaoculta) {
         MongoOperations mongoops = clientemongoservicio.clienteMongo();
         Mail nuevomail = null;
         try {
-            nuevomail = new Mail(generadorId(), 0, "entrada", formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA), idconfiguracion, idcola, nombre_cola, id_campana, asunto, remitente, destino);
+            nuevomail = new Mail(generadorId(), 0, "entrada", formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA), idconfiguracion, idcola, nombre_cola, id_campana, asunto, remitente, destino, listacopia, listacopiaoculta);
             mongoops.insert(nuevomail);
         } catch (Exception ex) {
             log.error("error en el metodo insertarNuevoMail", ex);
@@ -289,7 +290,7 @@ public class CoreMailServicioImpl {
                     mailinbox.setEstado(0);
                     mailinbox.setRemitente(mail.getRemitente());
                     mailinbox.setDestino(mail.getDestino());
-                    mailinbox.setCc("");//sera vacio hasta que podamos encontrar el codigo que llene eso en el metodo Utilidades.createhtml
+                    mailinbox.setListacopia(mail.getListacopia());//sera vacio hasta que podamos encontrar el codigo que llene eso en el metodo Utilidades.createhtml
                     mailinbox.setId_cola(mail.getId_cola());
                     mailinbox.setAsunto(mail.getAsunto());
                     mailinbox.setFecha_ingreso(formatodefechas.cambiarFormatoFechas(mail.getFecha_ingreso(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_HORA_SLASH));
@@ -380,7 +381,7 @@ public class CoreMailServicioImpl {
             mailinbox.setIdhilo(mail.getIdhilo());
             mailinbox.setId_cola(mail.getId_cola());
             mailinbox.setNombre_cola(mail.getNombre_cola());
-            mailinbox.setCc("");
+            mailinbox.setListacopia(mail.getListacopia());
             mensaje.setEvento("CORREOASIGNADO");
             getListaresumen().stream().filter((resumen) -> resumen.getListacolas().contains(mail.getId_cola())) // aqui le envio al resto
                     .forEach((resumen) -> {

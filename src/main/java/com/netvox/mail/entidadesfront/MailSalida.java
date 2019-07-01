@@ -91,6 +91,8 @@ public class MailSalida {
     private int tiempo_atencion;//
     
     private String nombre_cola;
+    
+    private List<String> listacopia ;
 
     //////////variables para el reporte
     private String hora;
@@ -348,5 +350,13 @@ public class MailSalida {
 
     public void setNombre_cola(String nombre_cola) {
         this.nombre_cola = nombre_cola;
+    }
+
+    public List<String> getListacopia() {
+        return listacopia;
+    }
+
+    public void setListacopia(List<String> listacopia) {
+        this.listacopia = listacopia;
     }
 }

@@ -84,19 +84,27 @@ public class HiloEntradaServicio implements Runnable {
                             log.info("REMITENTE NO CAPTURADO");
                         } else {
 
-                            Address[] direcciones = mensaje.getRecipients(Message.RecipientType.CC);
-                            for (Address correo : direcciones) {
-                                log.info("este es el correo en copia " + correo.toString());
+                            List<String> listacopia = new ArrayList<>();
+                            List<String> listacopiaoculta = new ArrayList<>();
+                            Address[] copia = mensaje.getRecipients(Message.RecipientType.CC) == null
+                                    ? new Address[0] : mensaje.getRecipients(Message.RecipientType.CC);
+                            Address[] copiaoculta = mensaje.getRecipients(Message.RecipientType.BCC) == null
+                                    ? new Address[0] : mensaje.getRecipients(Message.RecipientType.BCC);
+                            for (Address correo : copia) {
+                                listacopia.add(correo.toString());
                             }
-
+                            for (Address correo : copiaoculta) {
+                                listacopiaoculta.add(correo.toString());
+                            }
                             Mail mail = coremailservicio.insertarNuevoMail(
                                     cuentadecorreo.getIdconfiguracion(),
                                     cuentadecorreo.getId_cola(),
                                     cuentadecorreo.getNombre_cola(),
                                     cuentadecorreo.getId_campana(),
                                     mensaje.getSubject() == null ? "" : mensaje.getSubject(),
-                                    remitente,
-                                    cuentadecorreo.getUsuario()/*esto es el destino*/
+                                    remitente,/*esto es el destino*/
+                                    cuentadecorreo.getUsuario(),
+                                    listacopia, listacopiaoculta
                             );
                             if (!utilidades.createFileHTML(mensaje, mail, cuentadecorreo.getMaximo_adjunto())) {//aqui ya le tengo puesto el mensaje y los adjuntos
                                 log.info("FALLO EN EL CREATE HTML");
@@ -113,7 +121,7 @@ public class HiloEntradaServicio implements Runnable {
                         mensaje.setFlag(Flags.Flag.SEEN, true);
                     }
                     cerrarFolderYstore(folder, store);
-                }
+                }                
                 log.info("FIN LECTURA DE CUENTAS");
                 log.info("----------------------------------------------------------------------------------------");
                 Thread.sleep(1000 * 30);
