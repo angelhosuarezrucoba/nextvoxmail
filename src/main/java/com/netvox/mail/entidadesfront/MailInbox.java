@@ -37,6 +37,8 @@ public class MailInbox {
     private String fechainiciogestion;
     private String fechafingestion;
     private List<String> listacopia = new ArrayList<>();
+    private String fecha_inicio;
+    private String hora_inicio;
 
     public int getId() {
         return id;
@@ -188,5 +190,21 @@ public class MailInbox {
 
     public void setListacopia(List<String> listacopia) {
         this.listacopia = listacopia;
+    }
+
+    public String getFecha_inicio() {
+        return fecha_inicio;
+    }
+
+    public void setFecha_inicio(String fecha_inicio) {
+        this.fecha_inicio = fecha_inicio;
+    }
+
+    public String getHora_inicio() {
+        return hora_inicio;
+    }
+
+    public void setHora_inicio(String hora_inicio) {
+        this.hora_inicio = hora_inicio;
     }
 }
