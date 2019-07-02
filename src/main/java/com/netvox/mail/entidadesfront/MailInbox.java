@@ -207,4 +207,10 @@ public class MailInbox {
     public void setHora_inicio(String hora_inicio) {
         this.hora_inicio = hora_inicio;
     }
+
+    @Override
+    public String toString() {
+        return "MailInbox{" + "id=" + id + ", estado=" + estado + ", remitente=" + remitente + ", destino=" + destino + ", asunto=" + asunto + ", mensaje=" + mensaje + ", fecha_ingreso=" + fecha_ingreso + ", tiempo_cola=" + tiempo_cola + ", tipificacion=" + tipificacion + ", adjuntos=" + adjuntos + ", tipo=" + tipo + ", descripcion_tipificacion=" + descripcion_tipificacion + ", idhilo=" + idhilo + ", hilocerrado=" + hilocerrado + ", id_cola=" + id_cola + ", nombre_cola=" + nombre_cola + ", fechainiciogestion=" + fechainiciogestion + ", fechafingestion=" + fechafingestion + ", listacopia=" + listacopia + ", fecha_inicio=" + fecha_inicio + ", hora_inicio=" + hora_inicio + '}';
+    }
+    
 }

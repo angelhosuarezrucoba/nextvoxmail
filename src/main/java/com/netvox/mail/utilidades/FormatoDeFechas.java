@@ -18,6 +18,7 @@ public class FormatoDeFechas {
     public final SimpleDateFormat FORMATO_FECHA_HORA = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     public final SimpleDateFormat FORMATO_FECHA_HORA_SLASH = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     public final SimpleDateFormat FORMATO_FECHA_HORA_T = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+    public final SimpleDateFormat FORMATO_FECHA_SLASH = new SimpleDateFormat("dd/MM/yyyy");
     public final SimpleDateFormat FORMATO_FECHA_HORA_SIN_SEGUNDOS = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
     public final SimpleDateFormat FORMATO_FECHA_HORA_SIN_SEGUNDOS_NI_T = new SimpleDateFormat("yyyy-MM-dd HH:mm");
     public final SimpleDateFormat FORMATO_FECHA = new SimpleDateFormat("yyyy-MM-dd");

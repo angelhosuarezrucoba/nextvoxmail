@@ -323,9 +323,12 @@ public class MailServicioImpl implements MailServicio {
             mensaje.setEstado_mail(resumenservicio.obtenerEstado(usuarioresumen.getAgente()));
             mensaje.setAcumulado_mail(resumenservicio.obtenerPendientes(usuarioresumen.getAgente()));
             mensaje.setPedido_pausa(resumenservicio.obtenerPedidoPausa(usuarioresumen.getAgente()));
-            nuevomailsalida.setFecha_inicio(nuevomailsalida.getFechainiciogestion());
+            nuevomailsalida.setNombre_cola(clasetransformadora.getNombre_cola());
+            nuevomailsalida.setId_cola(clasetransformadora.getCola());            
+            nuevomailsalida.setFecha_inicio(formatodefechas.cambiarFormatoFechas(clasetransformadora.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_SLASH));
             nuevomailsalida.setHora_inicio(formatodefechas.cambiarFormatoFechas(clasetransformadora.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_HORA));
             mensaje.setNew_mail(nuevomailsalida);
+            log.error(nuevomailsalida.toString());
         } catch (Exception ex) {
             log.error("error en el metodo enviarcorreo", ex);
         }
