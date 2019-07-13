@@ -102,9 +102,9 @@ public class ApiMail {
     }
 
     @PostMapping("/asignarcorreo")
-    public String asignarCorreo(@RequestBody Mensaje mensaje, @RequestHeader String identificador,
+    public Mensaje asignarCorreo(@RequestBody Mensaje mensaje, @RequestHeader String identificador,
             HttpServletResponse response) {
-        String nuevomensaje = "";
+        Mensaje nuevomensaje = null;
         if (verificadordesesionservicio.sesionvalida(identificador)) {
             response.setStatus(HttpServletResponse.SC_OK);
             nuevomensaje = mailservicio.autoAsignarse(mensaje);

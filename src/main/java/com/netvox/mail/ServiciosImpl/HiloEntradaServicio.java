@@ -124,7 +124,7 @@ public class HiloEntradaServicio implements Runnable {
                 }                
                 log.info("FIN LECTURA DE CUENTAS");
                 log.info("----------------------------------------------------------------------------------------");
-                Thread.sleep(1000 * 30);
+                Thread.sleep(1000 * 10);
             } catch (Exception ex) {
                 log.error("error en el HiloEntradaServicio", ex);
             }

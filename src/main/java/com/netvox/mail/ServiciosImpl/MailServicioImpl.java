@@ -191,7 +191,7 @@ public class MailServicioImpl implements MailServicio {
     }
 
     @Override
-    public String autoAsignarse(Mensaje mensaje) {//deberia enviar un 500 si es que no se puede, y garantizar el query con estado 1
+    public Mensaje autoAsignarse(Mensaje mensaje) {//deberia enviar un 500 si es que no se puede, y garantizar el query con estado 1
         MongoOperations mongoops;
         Resumen usuarioresumen = getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).findFirst().get();
         FindAndModifyOptions opciones = new FindAndModifyOptions();
@@ -225,7 +225,11 @@ public class MailServicioImpl implements MailServicio {
         } catch (ParseException ex) {
             log.error("error en el metodo autoAsignarse", ex);
         }
-        return formatodefechas.cambiarFormatoFechas(nuevomail.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_HORA_SLASH);
+        MailInbox nuevahora = new MailInbox();
+        nuevahora.setFecha_inicio(formatodefechas.cambiarFormatoFechas(nuevomail.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_HORA_SLASH));
+        mensaje.setNew_mail(nuevahora);
+        return mensaje;
+        
     }
 
     @Override
@@ -324,7 +328,7 @@ public class MailServicioImpl implements MailServicio {
             mensaje.setAcumulado_mail(resumenservicio.obtenerPendientes(usuarioresumen.getAgente()));
             mensaje.setPedido_pausa(resumenservicio.obtenerPedidoPausa(usuarioresumen.getAgente()));
             nuevomailsalida.setNombre_cola(clasetransformadora.getNombre_cola());
-            nuevomailsalida.setId_cola(clasetransformadora.getCola());            
+            nuevomailsalida.setId_cola(clasetransformadora.getCola());
             nuevomailsalida.setFecha_inicio(formatodefechas.cambiarFormatoFechas(clasetransformadora.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_SLASH));
             nuevomailsalida.setHora_inicio(formatodefechas.cambiarFormatoFechas(clasetransformadora.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_HORA));
             mensaje.setNew_mail(nuevomailsalida);
@@ -405,17 +409,27 @@ public class MailServicioImpl implements MailServicio {
         return mailconfiguracion;
     }
 
-    public MimeMessage agregarDestinatariosEnCopia(MimeMessage mimemensaje, String copia) {
-        if (!copia.equals("")) {
-            String listadedestinosencopia[] = copia.split(";");
-            for (String destinoencopia : listadedestinosencopia) {
+    public MimeMessage agregarDestinatariosEnCopia(MimeMessage mimemensaje, List<String> listacopia) {
+        if (!listacopia.isEmpty()) {
+
+            for (String destinoencopia : listacopia) {
                 try {
-                    mimemensaje.addRecipient(Message.RecipientType.CC, new InternetAddress(destinoencopia));
+                    mimemensaje.addRecipient(Message.RecipientType.CC, new InternetAddress(destinoencopia.trim()));
                 } catch (MessagingException ex) {
                     log.error("error en el metodo agregarDestinatariosEnCopia", ex);
                 }
             }
         }
+//        if (!copia.equals("")) {
+//            String listadedestinosencopia[] = copia.split(";");
+//            for (String destinoencopia : listadedestinosencopia) {
+//                try {
+//                    mimemensaje.addRecipient(Message.RecipientType.CC, new InternetAddress(destinoencopia));
+//                } catch (MessagingException ex) {
+//                    log.error("error en el metodo agregarDestinatariosEnCopia", ex);
+//                }
+//            }
+//        }
         return mimemensaje;
     }
 
@@ -431,7 +445,8 @@ public class MailServicioImpl implements MailServicio {
             mimemensaje.setContent(multipart);
             mimemensaje.setFrom(new InternetAddress(mailsalida.getRemitente()));
             mimemensaje.addRecipient(Message.RecipientType.TO, new InternetAddress(mailsalida.getDestino()));
-            mimemensaje = agregarDestinatariosEnCopia(mimemensaje, mailsalida.getCopia());
+//            mimemensaje = agregarDestinatariosEnCopia(mimemensaje, mailsalida.getCopia());
+            mimemensaje = agregarDestinatariosEnCopia(mimemensaje, mailsalida.getListacopia());
             Transport.send(mimemensaje);
         } catch (MessagingException ex) {
             log.error("error en el metodo prepararMensaje", ex);
