@@ -256,7 +256,6 @@ public class CoreMailServicioImpl {
                     .set("tiempo_atencion", 0);
 
             nuevomail = mongoops.findAndModify(new Query(Criteria.where("idcorreo").is(mail.getIdcorreo())), update, opciones, Mail.class);
-//todo esto sigue sin tener sentido para el uso del mail
             procedimientoalmacenado = conexion.prepareCall("call sp_actualiza_resumen_servicio_en_cola(?,?,?)");
             procedimientoalmacenado.setInt(1, mail.getCampana());
             procedimientoalmacenado.setInt(2, SERVICIO_MAIL);
@@ -348,6 +347,8 @@ public class CoreMailServicioImpl {
     public void asignarMailAgente(Resumen usuarioresumen, Mail mail) {
         /* 1 disponible 2 atendiendo 4 pausa 5 timbrando*/
         MongoOperations mongoops;
+        Connection conexion;
+        PreparedStatement preparedstatement = null;
         try {
             mongoops = clientemongoservicio.clienteMongo();
             resumenservicio.modificarPendientes(usuarioresumen.getAgente(), usuarioresumen.getPendiente() + 1);
@@ -389,6 +390,20 @@ public class CoreMailServicioImpl {
             mailinbox.setFechainiciogestion(formatodefechas.cambiarFormatoFechas(nuevomail.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_HORA_SLASH));
             mensaje.setNew_mail(mailinbox);
             websocket.enviarMensajeParaUnUsuario(mensaje, usuarioresumen.getAgente());//aqui envio el mensaje a un usuario asignado
+
+/////////////todo este codigo es para que el sql del supervisor pueda mostrar sus reportes ////////////
+            conexion = clientemysqlservicio.obtenerConexion();
+            try {
+                preparedstatement = conexion.prepareStatement("delete from servicios_cola_online where id=? and campana=? and servicio=2");
+                preparedstatement.setInt(1, mail.getIdcorreo());
+                preparedstatement.setInt(2, mail.getCampana());
+                preparedstatement.execute();
+                preparedstatement.close();
+                conexion.close();
+            } catch (SQLException e) {
+                log.error("error al insertar en la tabla servicios_cola_online", e);
+            }
+//////////////////////////////////////////////////
         } catch (ParseException ex) {
 
             log.error("error en el metodo asignarMailAgente", ex);
@@ -403,7 +418,7 @@ public class CoreMailServicioImpl {
             Statement statement = conexion.createStatement();
             ResultSet resultset = statement.executeQuery("select queue,usuario,queue_name from email_configuracion");
             while (resultset.next()) {
-                correos.add(new MailFront(resultset.getInt(1), resultset.getString(2),resultset.getString(3)));
+                correos.add(new MailFront(resultset.getInt(1), resultset.getString(2), resultset.getString(3)));
             }
             correos = correos.stream().filter((cola) -> mensaje.getColas().contains(cola.getId())).collect(Collectors.toList());
             statement.close();
@@ -466,6 +481,7 @@ public class CoreMailServicioImpl {
             mensaje.setListacorreos(obtenerCorreos(mensaje));// estos son para eneviar mensaje.
             mensaje.setTiempo_pausa(resumendiarioservicio.tiempoEnPausa(mensaje.getIdagente()));
             mensaje.setPeso_maximo_adjunto(getConfiguraciones().getPeso_maximo_adjunto());
+            resumendiarioservicio.actualizarEstado(mensaje.getIdagente(), mensaje.getEstado_mail(), mensaje.getPedido_pausa());
         } catch (Exception e) {
             log.error("error en el metodo obtenerRespuestaDeLogin", e);
         }

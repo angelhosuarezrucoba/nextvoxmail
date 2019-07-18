@@ -40,7 +40,7 @@ public interface MailServicio {
 
     public Mensaje tipificarCorreo(MailSalida mailsalida);
 
-    public List<Tipificacion> listarTipificaciones();
+    public List<Tipificacion> listarTipificaciones(Mensaje mensaje);
 
     public List<MailSalida> listarCorreosPendientes(FiltroIndividual filtro);
 

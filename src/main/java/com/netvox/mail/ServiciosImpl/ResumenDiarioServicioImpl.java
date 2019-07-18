@@ -160,8 +160,13 @@ public class ResumenDiarioServicioImpl {
             String sql = "";
             duracion = tiempoEnPausa(idagente);
             switch (estadonuevo) {
+                case 0: //////////recordar esto.
+                    sql = ("update resumen_diario_correo set estado=" + estadonuevo
+                            + ", hora_inicio_estado='" + formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)
+                            + "', pedido_pausa=" + pedido_pausa                           
+                            + " where agente=" + idagente);
+                    break;
                 case 1:
-
                     sql = ("update resumen_diario_correo set estado=" + estadonuevo
                             + ", hora_inicio_estado='" + formatodefechas.convertirFechaString(new Date(), formatodefechas.FORMATO_FECHA_HORA)
                             + "', pedido_pausa=" + pedido_pausa

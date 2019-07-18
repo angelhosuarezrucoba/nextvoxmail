@@ -8,6 +8,7 @@ package com.netvox.mail.configuraciones;
 import com.google.gson.Gson;
 import com.netvox.mail.ServiciosImpl.CoreMailServicioImpl;
 import com.netvox.mail.ServiciosImpl.LogConexionesServicio;
+import com.netvox.mail.ServiciosImpl.ResumenDiarioServicioImpl;
 import com.netvox.mail.ServiciosImpl.VerificadorDeSesionServicioImpl;
 import com.netvox.mail.entidadesfront.Agente;
 import com.netvox.mail.entidadesfront.MapaAgentes;
@@ -50,6 +51,10 @@ public class WebSocket extends TextWebSocketHandler {
     @Autowired
     @Qualifier("pausaservicio")
     PausaServicio pausaservicio;
+
+    @Autowired
+    @Qualifier("resumendiarioservicio")
+    ResumenDiarioServicioImpl resumendiarioservicio;
 
     Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -116,6 +121,7 @@ public class WebSocket extends TextWebSocketHandler {
 
         if (lista.isEmpty()) {
             logconexionesservcio.grabarDesconexion(listaidagente.get(0).getIdagente());
+            resumendiarioservicio.actualizarEstado(listaidagente.get(0).getIdagente(), 0, 0);
             if (resumenservicio.obtenerEstado(listaidagente.get(0).getIdagente()) == 4) {
                 pausaservicio.despausar(listaidagente.get(0).getIdagente());
             }

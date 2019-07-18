@@ -154,12 +154,12 @@ public class ApiMail {
     }
 
     @PostMapping("/listartipificaciones")
-    public List<Tipificacion> listarTipificaciones(@RequestHeader String identificador,
+    public List<Tipificacion> listarTipificaciones(@RequestHeader String identificador, @RequestBody Mensaje mensaje,
             HttpServletResponse response) {
         List<Tipificacion> lista = new ArrayList<>();
         if (verificadordesesionservicio.sesionvalida(identificador)) {
             response.setStatus(HttpServletResponse.SC_OK);
-            lista = mailservicio.listarTipificaciones();
+            lista = mailservicio.listarTipificaciones(mensaje);
         } else {
             response.setStatus(HttpServletResponse.SC_CONFLICT);
         }

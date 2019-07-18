@@ -35,6 +35,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.ParseException;
@@ -192,6 +193,8 @@ public class MailServicioImpl implements MailServicio {
 
     @Override
     public Mensaje autoAsignarse(Mensaje mensaje) {//deberia enviar un 500 si es que no se puede, y garantizar el query con estado 1
+        Connection conexion;
+        PreparedStatement preparedstatement = null;
         MongoOperations mongoops;
         Resumen usuarioresumen = getListaresumen().stream().filter((resumen) -> resumen.getAgente() == mensaje.getIdagente()).findFirst().get();
         FindAndModifyOptions opciones = new FindAndModifyOptions();
@@ -228,8 +231,23 @@ public class MailServicioImpl implements MailServicio {
         MailInbox nuevahora = new MailInbox();
         nuevahora.setFecha_inicio(formatodefechas.cambiarFormatoFechas(nuevomail.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_HORA_SLASH));
         mensaje.setNew_mail(nuevahora);
+
+        /////////////todo este codigo es para que el sql del supervisor pueda mostrar sus reportes ////////////
+        conexion = clientemysqlservicio.obtenerConexion();
+        try {
+            preparedstatement = conexion.prepareStatement("delete from servicios_cola_online where id=? and campana=? and servicio=2");
+            preparedstatement.setInt(1, nuevomail.getIdcorreo());
+            preparedstatement.setInt(2, nuevomail.getCampana());
+            preparedstatement.execute();
+            preparedstatement.close();
+            conexion.close();
+        } catch (SQLException e) {
+            log.error("error al insertar en la tabla servicios_cola_online", e);
+        }
+//////////////////////////////////////////////////
+
         return mensaje;
-        
+
     }
 
     @Override
@@ -574,12 +592,14 @@ public class MailServicioImpl implements MailServicio {
     }
 
     @Override
-    public List<Tipificacion> listarTipificaciones() {
+    public List<Tipificacion> listarTipificaciones(Mensaje mensaje) {
         Connection conexion = clientemysqlservicio.obtenerConexion();
         ResultSet resultset;
         List<Tipificacion> listatipificaciones = new ArrayList<>();
         try {
-            resultset = conexion.createStatement().executeQuery("select id,nombre from tipificacion_mail where activo=1 and  id not in(1,2,7)");
+            resultset = conexion.createStatement().executeQuery("select tm.id,tm.nombre from tipificacion_mail "
+                    + "tm inner join campana_tipificacion_mail ctm on tm.id=ctm.tipificacion"
+                    + " where ctm.campana=" + mensaje.getCampana() + " and tm.activo=1 and  tm.id not in(1,2,7)");
             while (resultset.next()) {
                 listatipificaciones.add(new Tipificacion(resultset.getInt("id"), resultset.getString("nombre")));
             }
