@@ -13,8 +13,6 @@ import org.springframework.data.mongodb.core.mapping.Field;
 @Document(collection = "mail")
 public class MailSalida {
 
-
-
     @Field(value = "idcorreo")
     private int id;//idcorreo
 
@@ -35,6 +33,9 @@ public class MailSalida {
 
     @Field(value = "id_cola")
     private int cola;
+
+    @Field(value = "nombre")
+    private String nombre;
 
     @Field(value = "mensaje")
     private String mensaje;
@@ -89,10 +90,10 @@ public class MailSalida {
 
     @Field(value = "tiempo_atencion")
     private int tiempo_atencion;//
-    
+
     private String nombre_cola;
-    
-    private List<String> listacopia ;
+
+    private List<String> listacopia;
 
     //////////variables para el reporte
     private String hora;
@@ -311,7 +312,6 @@ public class MailSalida {
         this.tiempoatencion = tiempoatencion;
     }
 
-
     public String getComentario() {
         return comentario;
     }
@@ -364,6 +364,13 @@ public class MailSalida {
     public String toString() {
         return "MailSalida{" + "id=" + id + ", tipo=" + tipo + ", titulo=" + titulo + ", remitente=" + remitente + ", destino=" + destino + ", copia=" + copia + ", cola=" + cola + ", mensaje=" + mensaje + ", tipificacion=" + tipificacion + ", id_agente=" + id_agente + ", reenvio=" + reenvio + ", id_campana=" + id_campana + ", nombre_campana=" + nombre_campana + ", estado=" + estado + ", fecha_ingreso=" + fecha_ingreso + ", fechainiciogestion=" + fechainiciogestion + ", fechafingestion=" + fechafingestion + ", descripcion_tipificacion=" + descripcion_tipificacion + ", listadeadjuntos=" + listadeadjuntos + ", listadeembebidos=" + listadeembebidos + ", comentario=" + comentario + ", idhilo=" + idhilo + ", hilocerrado=" + hilocerrado + ", tiempoencola=" + tiempoencola + ", tiempo_atencion=" + tiempo_atencion + ", nombre_cola=" + nombre_cola + ", listacopia=" + listacopia + ", hora=" + hora + ", estadoatencion=" + estadoatencion + ", validacion=" + validacion + ", tiempo_cola=" + tiempo_cola + ", tiempoatencion=" + tiempoatencion + '}';
     }
-    
-    
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
 }
