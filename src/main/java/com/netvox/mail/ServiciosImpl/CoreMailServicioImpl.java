@@ -336,7 +336,9 @@ public class CoreMailServicioImpl {
             mongoops = clientemongoservicio.clienteMongo();
             query = new Query(Criteria.where("estado").is(0).and("campana").ne(0).and("tipomail").is("entrada"));
             query.fields().include("idcorreo").include("campana").include("fecha_ingreso").include("idhilo").
-                    include("asunto").include("idconfiguracion").include("id_cola").include("remitente").include("nombre_cola").include("nombre_campana").include("destino");
+                    include("asunto").include("idconfiguracion").include("id_cola").
+                    include("remitente").include("nombre_cola").include("nombre_campana").include("destino").
+                    include("listadeadjuntos");
             listado = mongoops.find(query, Mail.class);
         } catch (Exception e) {
             log.error("error en el metodo listarMailsEnCola", e);
