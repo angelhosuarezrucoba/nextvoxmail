@@ -262,10 +262,11 @@ public class CoreMailServicioImpl {
             procedimientoalmacenado.setBoolean(3, true);
             procedimientoalmacenado.execute();
 
-            String sql = "insert into servicios_cola_online set id = ?, campana = ?, servicio = 2, fecha_cola = now()";
+            String sql = "insert into servicios_cola_online set id = ?, campana = ?, servicio = 2, cola = ?, fecha_cola = now()";
             preparedstatement = conexion.prepareStatement(sql);
             preparedstatement.setInt(1, mail.getIdcorreo());
             preparedstatement.setInt(2, mail.getCampana());
+            preparedstatement.setInt(3, mail.getId_cola());
             preparedstatement.execute();
             preparedstatement.close();
 
@@ -403,7 +404,7 @@ public class CoreMailServicioImpl {
                 preparedstatement.close();
                 conexion.close();
             } catch (SQLException e) {
-                log.error("error al insertar en la tabla servicios_cola_online", e);
+                log.error("error al borrar en la tabla servicios_cola_online", e);
             }
 //////////////////////////////////////////////////
         } catch (ParseException ex) {

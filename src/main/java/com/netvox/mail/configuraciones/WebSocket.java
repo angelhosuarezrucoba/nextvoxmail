@@ -133,7 +133,7 @@ public class WebSocket extends TextWebSocketHandler {
     }
 
     public void enviarMensajeParaUnUsuario(Object mensaje, int idagente) {
-
+       
         MapaAgentes.getMapa().get(idagente).forEach((sesion) -> {
             if (sesion.getSesion().isOpen()) {
                 try {
