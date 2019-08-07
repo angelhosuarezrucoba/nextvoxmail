@@ -100,4 +100,11 @@ public class Pausa {
     public void setDuracionpausa(String duracionpausa) {
         this.duracionpausa = duracionpausa;
     }
+
+    @Override
+    public String toString() {
+        return "Pausa{" + "iniciopausa=" + iniciopausa + ", finpausa=" + finpausa + ", idagente=" + idagente + ", nombreagente=" + nombreagente + ", duracion=" + duracion + ", fecha=" + fecha + ", horainiciopausa=" + horainiciopausa + ", horafinpausa=" + horafinpausa + ", duracionpausa=" + duracionpausa + '}';
+    }
+    
+    
 }

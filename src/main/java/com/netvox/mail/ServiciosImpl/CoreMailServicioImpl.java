@@ -339,7 +339,7 @@ public class CoreMailServicioImpl {
             query.fields().include("idcorreo").include("campana").include("fecha_ingreso").include("idhilo").
                     include("asunto").include("idconfiguracion").include("id_cola").
                     include("remitente").include("nombre_cola").include("nombre_campana").include("destino").
-                    include("listadeadjuntos");
+                    include("listadeadjuntos").include("listacopia");
             listado = mongoops.find(query, Mail.class);
         } catch (Exception e) {
             log.error("error en el metodo listarMailsEnCola", e);

@@ -676,13 +676,13 @@ public class MailServicioImpl implements MailServicio {
                     new Query(new Criteria().andOperator(
                             Criteria.where("fecha_ingreso").gte(filtro.getFecha_inicio()),
                             Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin()))
-                            .and("estado").is(1).and("usuario").in(filtro.getListadeagentes())
+                            .and("estado").is(1).and("tipificacion").is(0).and("usuario").in(filtro.getListadeagentes())
                             .and("id_cola").in(filtro.getListadecolas())),
                     MailSalida.class
             );
             for (MailSalida mail : lista) {
                 mail.setHora(formatodefechas.cambiarFormatoFechas(mail.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_HORA));
-                mail.setEstadoatencion(mail.getEstado() == 1 ? "ATENDIENDO" : "FINALIZADO");
+                mail.setEstadoatencion((mail.getEstado() == 1 && mail.getTipificacion() == 0) ? "ATENDIENDO" : "FINALIZADO");
                 mail.setValidacion(mail.getTipificacion() == 1 ? "INVALIDO" : "VALIDO");
                 mail.setTiempo_cola(mail.getTiempoencola() == 0 ? "00:00:00" : formatodefechas.convertirSegundosAFecha(mail.getTiempoencola()));
                 if (mail.getTipo().equals("salida")) {
@@ -777,11 +777,11 @@ public class MailServicioImpl implements MailServicio {
                             .and("id_cola").in(filtro.getListadecolas()).and("estado").ne(0)),
                             MailSalida.class
                     );
-
             for (MailSalida mail : lista) {
+                mail.setComentario(mail.getComentario() == null ? "" : mail.getComentario());
                 mail.setHora(
                         formatodefechas.cambiarFormatoFechas(mail.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_HORA));
-                mail.setEstadoatencion(mail.getEstado() == 1 ? "ATENDIENDO" : "FINALIZADO");
+                mail.setEstadoatencion((mail.getEstado() == 1 && mail.getTipificacion() == 0) ? "ATENDIENDO" : "FINALIZADO");
                 mail.setValidacion(mail.getTipificacion() == 1 ? "INVALIDO" : "VALIDO");
                 mail.setTiempo_cola(mail.getTiempoencola() == 0 ? "00:00:00" : formatodefechas.convertirSegundosAFecha(mail.getTiempoencola()));
                 if (mail.getTipo().equals("salida")) {
@@ -835,6 +835,9 @@ public class MailServicioImpl implements MailServicio {
         } catch (Exception e) {
             log.error("error en el metodo detalleTiemposeEnPausa", e);
         }
+        lista.stream().forEach((t) -> {
+            log.warn(t.toString());
+        });
         return lista;
     }
 
@@ -845,7 +848,7 @@ public class MailServicioImpl implements MailServicio {
 
         Cond condicionrecibidos = ConditionalOperators.when(new Criteria("tipomail").is("entrada")).then(1).otherwise(0);
         Cond condicionencola = ConditionalOperators.when(new Criteria("estado").is(0)).then(1).otherwise(0);
-        Cond condicionatendiendo = ConditionalOperators.when(new Criteria("estado").is(1)).then(1).otherwise(0);
+        Cond condicionatendiendo = ConditionalOperators.when(new Criteria("tipificacion").is(0)).then(1).otherwise(0);
         Cond condicionvalidos = ConditionalOperators.when(new Criteria().andOperator(new Criteria("hilocerrado").is(true),
                 new Criteria("tipificacion").ne(1))).then(1).otherwise(0);
         Cond condicioninvalidos = ConditionalOperators.when(new Criteria().andOperator(new Criteria("hilocerrado").is(true),
@@ -955,23 +958,21 @@ public class MailServicioImpl implements MailServicio {
                             new Criteria().andOperator(
                                     Criteria.where("fechainiciogestion").gte(filtro.getFecha_inicio().substring(11, 13)),
                                     Criteria.where("fechainiciogestion").lte(filtro.getFecha_fin().substring(11, 13)))),
-                    Aggregation.group("fechainiciogestion", "nombre").
+                    Aggregation.group("nombre").
                             sum(condicionvalidos).as("validos").
                             sum(condicioninvalidos).as("invalidos").
                             sum(condicionfinalizados).as("finalizados").
                             sum("tiempo_atencion").as("tiempo_atencion").
                             avg("tiempo_atencion").as("tiempo_promedio_atencion"),
-                    Aggregation.project().andExpression("_id.fechainiciogestion").as("_id").
-                            andExpression("_id.nombre").as("nombre").
-                            andExpression("nombre").as("nombre").
+                    Aggregation.project().
+                            andExpression("_id").as("nombre").
                             andExpression("validos").as("validos").
                             andExpression("invalidos").as("invalidos").
                             andExpression("finalizados").as("finalizados").
                             andExpression("tiempo_atencion").as("tiempo_atencion_int").
                             andExpression("tiempo_promedio_atencion").trunc().as("tiempo_promedio_atencion_double")
             );
-            AggregationResults<ReporteGrupal> resultado = mongoops.aggregate(agregacion, "mail", ReporteGrupal.class
-            );
+            AggregationResults<ReporteGrupal> resultado = mongoops.aggregate(agregacion, "mail", ReporteGrupal.class);
             lista = resultado.getMappedResults();
             lista.stream().forEach((resultados) -> {
                 try {
@@ -997,8 +998,8 @@ public class MailServicioImpl implements MailServicio {
                     Aggregation.match(
                             new Criteria().andOperator(
                                     Criteria.where("fecha_ingreso").gte(filtro.getFecha_inicio()),
-                                    Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin())).
-                                    and("id_cola").in(filtro.getListadecolas()).and("tipomail").is("entrada").and("estado").is(0)),
+                                    Criteria.where("fecha_ingreso").lte(filtro.getFecha_fin()),
+                                    Criteria.where("id_cola").in(filtro.getListadecolas()).and("tipomail").is("entrada").and("estado").is(0))),
                     Aggregation.project().andExpression("fecha_ingreso").substring(11, 2).as("fecha"). //aqui lo hago solo para poder luego mostrar la fecha original                       
                             andExpression("idcorreo").as("idcorreo").
                             andExpression("fecha_ingreso").as("fecha_ingreso").

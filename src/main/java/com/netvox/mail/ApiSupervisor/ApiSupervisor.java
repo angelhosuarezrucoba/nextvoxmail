@@ -50,7 +50,7 @@ public class ApiSupervisor {
     }
 
     @PostMapping("/detalletiemposenpausa")
-    public List<Pausa> detalleTiemposeEnPausa(@RequestBody FiltroIndividual filtro) {
+    public List<Pausa> detalleTiemposeEnPausa(@RequestBody FiltroIndividual filtro) {        
         return mailservicio.detalleTiemposeEnPausa(filtro);
     }
 
