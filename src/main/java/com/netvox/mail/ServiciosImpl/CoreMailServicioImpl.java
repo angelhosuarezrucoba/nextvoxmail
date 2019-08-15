@@ -224,7 +224,6 @@ public class CoreMailServicioImpl {
         } catch (Exception ex) {
             log.error("error en el metodo ObtenerMailConfiguracion", ex);
         }
-
         return mailconfiguracion;
     }
 

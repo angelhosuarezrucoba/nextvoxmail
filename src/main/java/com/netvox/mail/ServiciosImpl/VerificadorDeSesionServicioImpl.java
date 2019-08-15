@@ -16,7 +16,7 @@ public class VerificadorDeSesionServicioImpl {
     public boolean sesionvalida(String identificador) {
         boolean valido = false;
         try {
-            RespuestaIdentificador respuesta = resttemplate.postForObject("http://localhost:8080/autenticacion/consultaridentificador", identificador, RespuestaIdentificador.class);
+            RespuestaIdentificador respuesta = resttemplate.postForObject("http://192.168.10.206:8080/autenticacion/consultaridentificador", identificador, RespuestaIdentificador.class);
             valido = true;
         } catch (HttpClientErrorException e) {
             log.error("error en el metodo sesionvalida", e);
