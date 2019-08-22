@@ -318,6 +318,7 @@ public class MailServicioImpl implements MailServicio {
 
     @Override
     public Mensaje enviarcorreo(MailSalida mailsalida) {
+        log.info("-----------Inicio enviarcorreo------------");
         Resumen usuarioresumen;
         Mensaje mensaje = new Mensaje();
         MongoOperations mongoops;
@@ -350,11 +351,12 @@ public class MailServicioImpl implements MailServicio {
             nuevomailsalida.setFecha_inicio(formatodefechas.cambiarFormatoFechas(clasetransformadora.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_FECHA_SLASH));
             nuevomailsalida.setHora_inicio(formatodefechas.cambiarFormatoFechas(clasetransformadora.getFechainiciogestion(), formatodefechas.FORMATO_FECHA_HORA, formatodefechas.FORMATO_HORA));
             mensaje.setNew_mail(nuevomailsalida);
-            log.error(nuevomailsalida.toString());
+            log.info(nuevomailsalida.toString());
         } catch (Exception ex) {
             log.error("error en el metodo enviarcorreo", ex);
         }
         prepararMensaje(nuevomail);
+        log.info("-----------Fin enviarcorreo------------");
         return mensaje;
     }
 
